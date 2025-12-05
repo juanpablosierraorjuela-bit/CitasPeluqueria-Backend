@@ -1,0 +1,1 @@
+web: gunicorn peluqueria_online.wsgi

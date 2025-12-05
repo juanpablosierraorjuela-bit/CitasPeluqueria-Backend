@@ -1,0 +1,12 @@
+# Archivos y carpetas a ignorar
+
+# Entorno virtual
+venv/
+*.pyc
+
+# Base de datos local
+db.sqlite3
+
+# Archivos de caché
+__pycache__/
+.DS_Store
