@@ -46,32 +46,45 @@ class PeluqueriaAdmin(admin.ModelAdmin):
     # Función para mostrar un ✅ si el bot está configurado
     @admin.display(boolean=True, description='Bot Configurado')
     def bot_activo(self, obj):
-        return bool(obj.telegram_token and obj.telegram_chat_id)
+        token = str(obj.telegram_token).strip() if obj.telegram_token else ''
+        chat_id = str(obj.telegram_chat_id).strip() if obj.telegram_chat_id else ''
+        return bool(token and chat_id)
 
-    # --- NUEVA FUNCIÓN DE DIAGNÓSTICO ---
+    # --- NUEVA FUNCIÓN DE DIAGNÓSTICO AVANZADA ---
     @admin.action(description='🔔 Enviar mensaje de prueba a Telegram')
     def enviar_prueba_telegram(self, request, queryset):
         enviados = 0
         errores = 0
         
         for peluqueria in queryset:
-            token = peluqueria.telegram_token
-            chat_id = peluqueria.telegram_chat_id
+            # 1. LIMPIEZA DE DATOS (Vital por si copiaste con espacios)
+            token = str(peluqueria.telegram_token).strip() if peluqueria.telegram_token else ""
+            chat_id = str(peluqueria.telegram_chat_id).strip() if peluqueria.telegram_chat_id else ""
             
+            # Identificador visual del token (para que sepas cuál está usando)
+            token_visible = f"...{token[-4:]}" if len(token) > 4 else "N/A"
+
             if not token or not chat_id:
-                self.message_user(request, f"⚠️ {peluqueria.nombre_visible}: Falta Token o ID.", level=messages.WARNING)
+                self.message_user(request, f"⚠️ {peluqueria.nombre_visible}: Falta Token o ID en la base de datos.", level=messages.WARNING)
                 errores += 1
                 continue
 
-            # Intentamos enviar el mensaje
+            # 2. INTENTO DE ENVÍO
             url = f"https://api.telegram.org/bot{token}/sendMessage"
+            mensaje_prueba = (
+                f"✅ *¡CONEXIÓN ESTABLECIDA!*\n"
+                f"Hola {peluqueria.nombre_visible}.\n"
+                f"Este bot está configurado correctamente con el token terminado en *{token_visible}*."
+            )
+            
             data = {
                 "chat_id": chat_id, 
-                "text": f"✅ *¡Conexión Exitosa!*\nHola {peluqueria.nombre_visible}, tu bot está funcionando perfectamente.", 
+                "text": mensaje_prueba, 
                 "parse_mode": "Markdown"
             }
             
             try:
+                # Timeout corto para no colgar el admin si falla
                 response = requests.post(url, data=data, timeout=5)
                 res_json = response.json()
                 
@@ -79,15 +92,24 @@ class PeluqueriaAdmin(admin.ModelAdmin):
                     enviados += 1
                 else:
                     errores += 1
+                    # ERROR DETALLADO QUE DEVUELVE TELEGRAM
                     desc = res_json.get('description', 'Error desconocido')
-                    # Mostramos el error exacto que devuelve Telegram
-                    self.message_user(request, f"❌ Error en {peluqueria.nombre_visible}: {desc}", level=messages.ERROR)
+                    error_msg = f"❌ Error en {peluqueria.nombre_visible} (Token finaliza en {token_visible}): {desc}"
+                    
+                    # Pistas comunes para ayudarte
+                    if "Unauthorized" in desc:
+                        error_msg += " -> EL TOKEN ESTÁ MAL O REVOCADO."
+                    elif "chat not found" in desc:
+                        error_msg += " -> EL CHAT ID ESTÁ MAL O NO HAS INICIADO EL BOT."
+                        
+                    self.message_user(request, error_msg, level=messages.ERROR)
+                    
             except Exception as e:
                 errores += 1
                 self.message_user(request, f"❌ Error de conexión: {str(e)}", level=messages.ERROR)
 
         if enviados > 0:
-            self.message_user(request, f"✅ Se enviaron {enviados} mensajes de prueba correctamente.", level=messages.SUCCESS)
+            self.message_user(request, f"✅ Se enviaron {enviados} mensajes correctamente.", level=messages.SUCCESS)
 
 # --- OTROS ADMINS ---
 
