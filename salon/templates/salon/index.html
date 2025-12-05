@@ -3,176 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bienvenido a PASO | Reserva de Belleza</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,600&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
-
+    <title>Bienvenido a PASO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
-        :root {
-            /* MISMA PALETA QUE AGENDAR.HTML */
-            --primary-color: #dfa6b0; 
-            --primary-dark: #c58692;  
-            --accent-color: #8e7f7f;
-            --bg-gradient: linear-gradient(135deg, #fff5f7 0%, #fff 100%);
-            --card-bg: #ffffff;
-            --text-main: #4a4a4a;
-            --shadow-soft: 0 10px 30px rgba(223, 166, 176, 0.15);
-            --shadow-hover: 0 15px 40px rgba(223, 166, 176, 0.25);
-        }
-
-        body { 
-            font-family: 'Poppins', sans-serif; 
-            background: var(--bg-gradient);
-            color: var(--text-main); 
-            margin: 0;
-            padding: 40px 20px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 50px;
-            animation: fadeIn 0.8s ease-out;
-        }
-
-        h1 { 
-            font-family: 'Playfair Display', serif; 
-            font-size: 3rem;
-            color: #333; 
-            margin-bottom: 10px;
-            letter-spacing: -1px;
-        }
-
-        .subtitle {
-            color: var(--accent-color);
-            font-size: 1.1rem;
-            font-weight: 300;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        /* GRID DE TARJETAS */
-        .salon-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 25px;
-            width: 100%;
-            max-width: 900px;
-            animation: slideUp 0.8s ease-out;
-        }
-
-        .salon-card {
-            background: var(--card-bg);
-            border-radius: 20px;
-            padding: 30px;
-            text-align: center;
-            text-decoration: none;
-            color: inherit;
-            box-shadow: var(--shadow-soft);
-            transition: all 0.3s ease;
-            border: 1px solid #fff;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 200px; /* Altura fija para uniformidad */
-        }
-
-        .salon-card:hover {
-            transform: translateY(-8px);
-            box-shadow: var(--shadow-hover);
-            border-color: var(--primary-color);
-        }
-
-        .salon-icon {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-            filter: grayscale(100%);
-            transition: filter 0.3s;
-        }
-
-        .salon-card:hover .salon-icon {
-            filter: grayscale(0%);
-        }
-
-        .salon-name {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.5rem;
-            color: #333;
-            margin: 0 0 10px 0;
-        }
-
-        .btn-action {
-            margin-top: auto; /* Empuja el botón al fondo */
-            background-color: var(--primary-color);
-            color: white;
-            padding: 8px 20px;
-            border-radius: 30px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: background 0.3s;
-        }
-
-        .salon-card:hover .btn-action {
-            background-color: var(--primary-dark);
-        }
-
-        /* Estado vacío */
-        .empty-state {
-            text-align: center;
-            color: #999;
-            padding: 40px;
-            background: white;
-            border-radius: 15px;
-            border: 1px dashed #ccc;
-        }
-
-        /* Animaciones */
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Responsive */
-        @media (max-width: 600px) {
-            h1 { font-size: 2.2rem; }
-            .salon-grid { grid-template-columns: 1fr; }
-        }
+        /* Estilos del index anterior, más estos ajustes para info de contacto */
+        body { font-family: 'Poppins', sans-serif; background: #fafafa; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .salon-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; max-width: 1000px; width: 100%; margin-top: 40px; }
+        .salon-card { background: white; border-radius: 15px; padding: 30px; text-decoration: none; color: #333; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s; border: 1px solid #f0f0f0; text-align: center; }
+        .salon-card:hover { transform: translateY(-5px); border-color: #dfa6b0; }
+        .salon-name { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin-bottom: 15px; color: #333; }
+        .info-item { font-size: 0.9rem; color: #777; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-action { background: #dfa6b0; color: white; padding: 10px 25px; border-radius: 30px; margin-top: 20px; display: inline-block; font-weight: 500; }
     </style>
 </head>
 <body>
-
-    <header>
-        <div style="font-size: 3rem; margin-bottom: 10px;">💈</div>
-        <h1>Bienvenido a PASO</h1>
-        <div class="subtitle">Elige tu experiencia de belleza</div>
+    <header style="text-align:center; margin-top:40px;">
+        <h1 style="font-family:'Playfair Display'; font-size:3rem; color:#333;">Bienvenido a PASO</h1>
+        <p style="color:#888; letter-spacing:2px; text-transform:uppercase;">Directorio Exclusivo de Belleza</p>
     </header>
 
     <div class="salon-grid">
         {% for p in peluquerias %}
             <a href="{% url 'agendar_cita' p.slug %}" class="salon-card">
-                <div class="salon-icon">✨</div> 
-                
+                <div style="font-size:2.5rem; margin-bottom:10px;">💈</div>
                 <h2 class="salon-name">{{ p.nombre_visible }}</h2>
+                
+                {% if p.direccion %}
+                    <div class="info-item">📍 {{ p.direccion }}</div>
+                {% endif %}
+                
+                {% if p.telefono %}
+                    <div class="info-item">📞 {{ p.telefono }}</div>
+                {% endif %}
                 
                 <span class="btn-action">Reservar Cita</span>
             </a>
         {% empty %}
-            <div class="empty-state">
-                <h3>Aún no hay salones registrados</h3>
-                <p>Contacta al administrador para dar de alta tu negocio.</p>
-            </div>
+            <p>No hay salones disponibles.</p>
         {% endfor %}
     </div>
-
-    <footer style="margin-top: 50px; color: #aaa; font-size: 0.8rem;">
-        &copy; 2025 Ecosistema PASO
-    </footer>
-
 </body>
 </html>
