@@ -1,6 +1,7 @@
 from django.contrib import admin, messages
 from django.contrib.auth.models import Group, User 
 from django.urls import path 
+from django.utils.safestring import mark_safe # <--- NECESARIO PARA EL BOTÓN
 from .models import (
     Peluqueria, Servicio, Empleado, HorarioSemanal, Cita, PerfilUsuario,
     enviar_mensaje_telegram 
@@ -66,14 +67,15 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
     readonly_fields = ('boton_prueba_telegram',) 
     
     # --- MÉTODO PARA CREAR EL BOTÓN VISUALMENTE ---
+    @admin.display(description='Diagnóstico Telegram') # Nuevo decorador para el encabezado
     def boton_prueba_telegram(self, obj):
         if obj.pk: 
             url = f"test_telegram/" 
-            return f'<a class="button" href="{url}" style="background-color: #007bff; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none;">Enviar Mensaje de Prueba</a>'
+            # FIX CLAVE: Usamos mark_safe para permitir que el HTML se renderice
+            return mark_safe(f'<a class="button" href="{url}" style="background-color: #007bff; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none;">Enviar Mensaje de Prueba</a>')
         return "Guarde la peluquería para probar"
     
-    boton_prueba_telegram.short_description = 'Diagnóstico Telegram'
-    boton_prueba_telegram.allow_tags = True 
+    # Eliminamos boton_prueba_telegram.short_description y .allow_tags
     
     # --- FUNCIÓN QUE AÑADE LA RUTA AL BOTÓN ---
     def get_urls(self):
@@ -128,10 +130,9 @@ class CitaAdmin(SalonOwnerAdmin):
 
     # --- MÉTODO PARA MOSTRAR LOS NOMBRES DE LOS SERVICIOS ---
     def servicios_listados(self, obj):
-        # Muestra una lista de los nombres de servicios separados por coma
         return ", ".join([s.nombre for s in obj.servicios.all()])
     
-    servicios_listados.short_description = 'Servicios' # Encabezado de la columna
+    servicios_listados.short_description = 'Servicios'
 
 # Desregistramos HorarioSemanal
 try:
