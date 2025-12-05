@@ -1,0 +1,18 @@
+# Contenido del archivo requirements.txt
+Django==5.2.8
+asgiref==3.11.0
+sqlparse==0.5.4
+requests==2.32.5
+certifi==2025.11.12
+charset-normalizer==3.4.4
+idna==3.11
+urllib3==2.5.0
+gunicorn==23.0.0
+whitenoise==6.11.0
+psycopg2-binary==2.9.11
+dj-database-url==3.0.1
+python-dateutil==2.9.0.post0
+pytz==2025.2
+six==1.17.0
+typing_extensions==4.15.0  # <--- Esta línea es la clave del FIX
+tzdata==2025.2
