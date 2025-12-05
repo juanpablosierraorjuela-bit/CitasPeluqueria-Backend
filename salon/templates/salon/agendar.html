@@ -3,281 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reserva tu Cita | {{ peluqueria.nombre_visible }}</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,600&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
-
+    <title>Agendar en {{ peluqueria.nombre_visible }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
-        :root {
-            /* PALETA DE COLORES FEMENINA Y ELEGANTE */
-            --primary-color: #dfa6b0; /* Rosa Palo */
-            --primary-dark: #c58692;  /* Rosa más oscuro para hover */
-            --accent-color: #8e7f7f;  /* Gris cálido */
-            --bg-color: #fdfbfb;      /* Blanco casi puro */
-            --card-bg: #ffffff;
-            --text-main: #4a4a4a;
-            --shadow-soft: 0 10px 40px rgba(223, 166, 176, 0.2);
-        }
-
-        body { 
-            font-family: 'Poppins', sans-serif; 
-            background: linear-gradient(135deg, #fff0f3 0%, #fff 100%);
-            color: var(--text-main); 
-            padding: 20px; 
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-        }
-
-        .container { 
-            width: 100%;
-            max-width: 480px; 
-            margin-top: 20px;
-            background: var(--card-bg); 
-            padding: 40px; 
-            border-radius: 25px; 
-            box-shadow: var(--shadow-soft); 
-            border: 1px solid #faeef0;
-        }
-
-        h1 { 
-            font-family: 'Playfair Display', serif; 
-            text-align: center; 
-            color: #333; 
-            margin-bottom: 5px; 
-            font-size: 2rem;
-            font-style: italic;
-        }
-
-        h3 { 
-            text-align: center; 
-            color: var(--accent-color); 
-            font-weight: 300; 
-            margin-top: 0; 
-            text-transform: uppercase; 
-            letter-spacing: 2px;
-            font-size: 0.9rem;
-            margin-bottom: 30px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 15px;
-        }
-
-        label { 
-            display: block; 
-            margin-top: 20px; 
-            font-weight: 500; 
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 8px;
-        }
-
-        select, input { 
-            width: 100%; 
-            padding: 12px 15px; 
-            margin-top: 0; 
-            border-radius: 12px; 
-            border: 1px solid #e0e0e0; 
-            background-color: #fcfcfc;
-            font-family: 'Poppins', sans-serif;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            box-sizing: border-box; /* Importante para que no se salga del contenedor */
-        }
-
-        select:focus, input:focus { 
-            border-color: var(--primary-color); 
-            outline: none; 
-            box-shadow: 0 0 0 3px rgba(223, 166, 176, 0.15);
-            background-color: #fff;
-        }
-
-        /* GRID DE HORARIOS (Botones más bonitos) */
-        #contenedor-horas { 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            gap: 12px; 
-            margin-top: 10px; 
-        }
-
-        .btn-hora { 
-            padding: 12px; 
-            background: #fff; 
-            border: 1px solid #eee; 
-            border-radius: 12px; 
-            cursor: pointer; 
-            text-align: center; 
-            font-size: 0.9rem;
-            color: #555;
-            transition: all 0.2s;
-        }
-
-        .btn-hora:hover { 
-            background: #fff0f3; 
-            border-color: var(--primary-color);
-            color: var(--primary-dark);
-        }
-
-        .btn-hora.seleccionado { 
-            background: var(--primary-color); 
-            color: white; 
-            border-color: var(--primary-color); 
-            box-shadow: 0 4px 10px rgba(223, 166, 176, 0.4);
-            font-weight: 600;
-            transform: scale(1.05);
-        }
+        :root { --primary: #dfa6b0; --dark: #c58692; --bg: #fdfbfb; }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; }
+        .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); width: 100%; max-width: 500px; }
+        h1 { font-family: 'Playfair Display'; text-align: center; color: #333; }
         
-        button[type="submit"] { 
-            width: 100%; 
-            padding: 16px; 
-            background-color: var(--primary-color); 
-            color: white; 
-            border: none; 
-            margin-top: 35px; 
-            border-radius: 50px; /* Botón redondo tipo píldora */
-            font-size: 16px; 
-            font-weight: 600; 
-            cursor: pointer; 
-            letter-spacing: 1px;
-            transition: transform 0.2s, background-color 0.2s;
-            box-shadow: 0 5px 15px rgba(223, 166, 176, 0.4);
+        /* Checkboxes bonitos para servicios */
+        .servicio-option { display: block; margin-bottom: 10px; cursor: pointer; }
+        .servicio-card { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 15px; border: 1px solid #eee; border-radius: 10px; transition: all 0.2s;
         }
-
-        button[type="submit"]:hover:not(:disabled) {
-            background-color: var(--primary-dark);
-            transform: translateY(-2px);
+        .servicio-option input:checked + .servicio-card { 
+            border-color: var(--primary); background: #fff0f3; color: #333;
         }
+        input[type="checkbox"] { display: none; } /* Ocultar el checkbox feo */
 
-        button:disabled {
-            background-color: #e0e0e0;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
+        /* Botones de hora */
+        #contenedor-horas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .btn-hora { padding: 10px; border: 1px solid #eee; border-radius: 8px; text-align: center; cursor: pointer; }
+        .btn-hora.seleccionado { background: var(--primary); color: white; border-color: var(--primary); }
+        
+        button[type="submit"] { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 30px; font-weight: 600; margin-top: 30px; cursor: pointer; }
+        button:disabled { background: #eee; cursor: not-allowed; }
         .hidden { display: none; }
-        
-        .back-link {
-            display: block;
-            text-align: center;
-            margin-top: 20px;
-            color: #999;
-            text-decoration: none;
-            font-size: 0.85rem;
-        }
-        .back-link:hover { color: var(--primary-dark); }
-
-        /* Animación suave de entrada */
-        .fade-in { animation: fadeIn 0.5s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
     </style>
 </head>
 <body>
 
-<div class="container fade-in">
-    {% if messages %}
-        {% for message in messages %}
-            <div style="background: #e8f5e9; color: #2e7d32; padding: 10px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-                {{ message }}
-            </div>
-        {% endfor %}
-    {% endif %}
+<div class="container">
+    <h1>Reserva tu Cita</h1>
+    <h3 style="text-align:center; color:#888; font-weight:300;">{{ peluqueria.nombre_visible }}</h3>
 
-    <h1>Reserva tu Momento</h1>
-    <h3>{{ peluqueria.nombre_visible }}</h3>
-
-    <form method="POST" id="form-cita">
+    <form method="POST">
         {% csrf_token %}
-        
         <input type="hidden" name="fecha_seleccionada" id="input_fecha">
         <input type="hidden" name="hora_seleccionada" id="input_hora">
 
-        <label for="servicio">✨ ¿Qué tratamiento deseas?</label>
-        <select name="servicio" id="servicio" required>
-            <option value="" selected disabled>Selecciona un servicio...</option>
+        <label><strong>1. Selecciona los tratamientos:</strong></label>
+        <div style="margin-top: 10px;">
             {% for s in servicios %}
-                <option value="{{ s.id }}">{{ s.nombre }} — ${{ s.precio }}</option>
+                <label class="servicio-option">
+                    <input type="checkbox" name="servicios" value="{{ s.id }}" class="check-servicio">
+                    <div class="servicio-card">
+                        <span>{{ s.nombre }}</span>
+                        <span style="font-weight:600;">${{ s.precio }}</span>
+                    </div>
+                </label>
             {% endfor %}
-        </select>
-
-        <label for="empleado">💇‍♀️ Elige a tu especialista:</label>
-        <select name="empleado" id="empleado" required disabled>
-            <option value="" selected disabled>Primero elige un servicio...</option>
-            {% for e in empleados %}
-                <option value="{{ e.id }}">{{ e.nombre }} {{ e.apellido }}</option>
-            {% endfor %}
-        </select>
-
-        <div id="paso-fecha" class="hidden fade-in">
-            <label for="picker-fecha">📅 Selecciona el día:</label>
-            <input type="date" id="picker-fecha" required>
         </div>
 
-        <div id="paso-horas" class="hidden fade-in">
-            <label>⏰ Horarios disponibles:</label>
+        <div id="step-empleado" class="hidden" style="margin-top:20px;">
+            <label><strong>2. Elige profesional:</strong></label>
+            <select name="empleado" id="empleado" style="width:100%; padding:10px; margin-top:5px; border-radius:8px; border:1px solid #ddd;">
+                <option value="" disabled selected>-- Seleccionar --</option>
+                {% for e in empleados %}
+                    <option value="{{ e.id }}">{{ e.nombre }} {{ e.apellido }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div id="step-fecha" class="hidden" style="margin-top:20px;">
+            <label><strong>3. Selecciona fecha:</strong></label>
+            <input type="date" id="picker-fecha" style="width:100%; padding:10px; margin-top:5px; border-radius:8px; border:1px solid #ddd;">
+            
             <div id="contenedor-horas"></div>
-            <p id="mensaje-error" style="color:#c58692; font-size:0.9em; text-align: center; margin-top: 10px;"></p>
+            <p id="mensaje-error" style="color:red; text-align:center;"></p>
         </div>
 
-        <div id="paso-datos" class="hidden fade-in">
-            <label>👤 Tus Datos:</label>
-            <input type="text" name="nombre_cliente" placeholder="Nombre completo" required style="margin-bottom: 10px;">
-            <input type="tel" name="telefono_cliente" placeholder="Teléfono de contacto" required>
+        <div id="step-datos" class="hidden" style="margin-top:20px;">
+            <label><strong>4. Tus datos:</strong></label>
+            <input type="text" name="nombre_cliente" placeholder="Nombre completo" required style="width:92%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
+            <input type="tel" name="telefono_cliente" placeholder="Teléfono" required style="width:92%; padding:10px; border-radius:8px; border:1px solid #ddd;">
         </div>
 
-        <button type="submit" id="btn-confirmar" disabled>CONFIRMAR RESERVA</button>
+        <button type="submit" id="btn-confirmar" disabled>CONFIRMAR CITA</button>
     </form>
-    
-    <a href="{% url 'inicio' %}" class="back-link">Cancelar y volver al inicio</a>
 </div>
 
 <script>
-    const servicioSelect = document.getElementById('servicio');
+    const checksServicios = document.querySelectorAll('.check-servicio');
+    const stepEmpleado = document.getElementById('step-empleado');
     const empleadoSelect = document.getElementById('empleado');
+    const stepFecha = document.getElementById('step-fecha');
     const fechaInput = document.getElementById('picker-fecha');
     const contenedorHoras = document.getElementById('contenedor-horas');
+    const stepDatos = document.getElementById('step-datos');
     const btnConfirmar = document.getElementById('btn-confirmar');
-    const inputFechaHidden = document.getElementById('input_fecha');
-    const inputHoraHidden = document.getElementById('input_hora');
-    const pasoDatos = document.getElementById('paso-datos');
 
-    // 1. Al elegir servicio, activar empleado
-    servicioSelect.addEventListener('change', () => {
-        empleadoSelect.disabled = false;
-        // Texto por defecto más amable
-        empleadoSelect.options[0].text = "Selecciona un estilista...";
-        resetHorarios();
+    // Al seleccionar servicios, mostramos empleado
+    checksServicios.forEach(check => {
+        check.addEventListener('change', () => {
+            const haySeleccion = Array.from(checksServicios).some(c => c.checked);
+            if(haySeleccion) stepEmpleado.classList.remove('hidden');
+            else {
+                stepEmpleado.classList.add('hidden');
+                resetPasosDesde(2);
+            }
+            resetPasosDesde(3); // Si cambia servicios, debe reelegir hora
+        });
     });
 
-    // 2. Al elegir empleado, mostrar fecha
     empleadoSelect.addEventListener('change', () => {
-        document.getElementById('paso-fecha').classList.remove('hidden');
-        resetHorarios();
+        stepFecha.classList.remove('hidden');
+        fechaInput.value = '';
+        contenedorHoras.innerHTML = '';
     });
 
-    // 3. Al cambiar fecha, BUSCAR HORARIOS (AJAX)
     fechaInput.addEventListener('change', async () => {
         const fecha = fechaInput.value;
         const empleadoId = empleadoSelect.value;
-        const servicioId = servicioSelect.value;
+        
+        // Obtener IDs de servicios seleccionados (Array)
+        const serviciosIds = Array.from(document.querySelectorAll('.check-servicio:checked')).map(c => c.value);
 
-        if (!fecha || !empleadoId || !servicioId) return;
+        if (!fecha || !empleadoId || serviciosIds.length === 0) return;
 
-        inputFechaHidden.value = fecha;
-
-        document.getElementById('paso-horas').classList.remove('hidden');
-        contenedorHoras.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #999;">Buscando huecos libres...</div>';
-        document.getElementById('mensaje-error').textContent = '';
-        pasoDatos.classList.add('hidden'); // Ocultar datos hasta elegir hora
+        document.getElementById('input_fecha').value = fecha;
+        contenedorHoras.innerHTML = 'Cargando...';
 
         try {
-            const response = await fetch(`/api/horarios/?empleado_id=${empleadoId}&fecha=${fecha}&servicio_id=${servicioId}`);
+            // Enviamos la lista de IDs unida por comas
+            const response = await fetch(`/api/horarios/?empleado_id=${empleadoId}&fecha=${fecha}&servicios_ids=${serviciosIds.join(',')}`);
             const data = await response.json();
-
+            
             contenedorHoras.innerHTML = '';
-
             if (data.horas && data.horas.length > 0) {
                 data.horas.forEach(hora => {
                     const btn = document.createElement('div');
@@ -287,43 +140,26 @@
                     contenedorHoras.appendChild(btn);
                 });
             } else {
-                contenedorHoras.innerHTML = '';
-                document.getElementById('mensaje-error').innerHTML = '😢 ' + (data.mensaje || 'Lo sentimos, no hay citas disponibles para esta fecha.');
+                contenedorHoras.innerHTML = '<p style="grid-column:1/-1; text-align:center;">Sin horas disponibles.</p>';
             }
-
-        } catch (error) {
-            console.error(error);
-            contenedorHoras.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: red;">Error de conexión. Intenta de nuevo.</div>';
-        }
+        } catch (e) { console.error(e); }
     });
 
     function seleccionarHora(btn, hora) {
         document.querySelectorAll('.btn-hora').forEach(b => b.classList.remove('seleccionado'));
         btn.classList.add('seleccionado');
-        inputHoraHidden.value = hora;
-        
-        // Mostrar formulario de datos y habilitar botón
-        pasoDatos.classList.remove('hidden');
+        document.getElementById('input_hora').value = hora;
+        stepDatos.classList.remove('hidden');
         btnConfirmar.disabled = false;
-        btnConfirmar.style.opacity = "1";
-        
-        // Scroll suave hacia abajo para ver el botón
-        setTimeout(() => {
-            btnConfirmar.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
+        btnConfirmar.scrollIntoView({behavior: "smooth"});
     }
 
-    function resetHorarios() {
-        contenedorHoras.innerHTML = '';
-        fechaInput.value = '';
-        btnConfirmar.disabled = true;
-        pasoDatos.classList.add('hidden');
-        document.getElementById('paso-horas').classList.add('hidden');
+    function resetPasosDesde(paso) {
+        if(paso <= 2) { empleadoSelect.value = ""; stepFecha.classList.add('hidden'); }
+        if(paso <= 3) { fechaInput.value = ""; contenedorHoras.innerHTML = ""; stepDatos.classList.add('hidden'); btnConfirmar.disabled = true; }
     }
     
-    // Fecha mínima hoy
     fechaInput.setAttribute('min', new Date().toISOString().split('T')[0]);
 </script>
-
 </body>
 </html>
