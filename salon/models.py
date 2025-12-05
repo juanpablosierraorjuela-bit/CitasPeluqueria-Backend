@@ -1,4 +1,4 @@
-import requests 
+import requests
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save, m2m_changed
@@ -6,17 +6,30 @@ from django.dispatch import receiver
 from django.utils.text import slugify
 from datetime import timedelta, datetime
 
-# CONFIGURACIÓN TELEGRAM
-TELEGRAM_BOT_TOKEN = '8430924416:AAHZoFzoeRE1bTLPZ9KNDjIsK6sDzfs0ag8' 
-TELEGRAM_GLOBAL_CHAT_ID = '8345213799' 
+# NOTA: Se eliminaron las variables globales de Telegram para permitir
+# que cada peluquería use su propio bot de forma autónoma.
 
 class Peluqueria(models.Model):
     nombre = models.CharField(max_length=100)
     slug = models.SlugField(unique=True, blank=True, null=True) 
     nombre_visible = models.CharField(max_length=100, default="Mi Salón")
-    telegram_chat_id = models.CharField(max_length=100, blank=True, null=True)
     
-    # --- NUEVOS CAMPOS DE CONTACTO ---
+    # --- CONFIGURACIÓN TELEGRAM AUTÓNOMA ---
+    # Cada dueño pone aquí SU propio token y SU propio ID
+    telegram_token = models.CharField(
+        max_length=100, 
+        blank=True, 
+        null=True, 
+        help_text="Token del bot creado con @BotFather"
+    )
+    telegram_chat_id = models.CharField(
+        max_length=100, 
+        blank=True, 
+        null=True, 
+        help_text="ID de chat del dueño para recibir avisos"
+    )
+    
+    # --- DATOS DE CONTACTO ---
     direccion = models.CharField(max_length=200, blank=True, null=True, help_text="Ej: Calle 123 #45-67")
     telefono = models.CharField(max_length=50, blank=True, null=True, help_text="Ej: +57 300 123 4567")
     
@@ -29,7 +42,7 @@ class Peluqueria(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.nombre
+        return self.nombre_visible
 
 class Servicio(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='servicios')
@@ -61,9 +74,12 @@ class HorarioSemanal(models.Model):
     descanso_inicio = models.TimeField(blank=True, null=True)
     descanso_fin = models.TimeField(blank=True, null=True)
     
-    class Meta: unique_together = ('empleado', 'dia_semana') 
+    class Meta: 
+        unique_together = ('empleado', 'dia_semana') 
+
     def save(self, *args, **kwargs):
-        if not self.peluqueria_id and self.empleado: self.peluqueria = self.empleado.peluqueria
+        if not self.peluqueria_id and self.empleado: 
+            self.peluqueria = self.empleado.peluqueria
         super().save(*args, **kwargs)
 
 class Cita(models.Model):
@@ -71,8 +87,6 @@ class Cita(models.Model):
     cliente_nombre = models.CharField(max_length=100)
     cliente_telefono = models.CharField(max_length=20)
     
-    # --- CAMBIO CRÍTICO: MUCHOS A MUCHOS ---
-    # Ya no es un solo servicio, pueden ser varios
     servicios = models.ManyToManyField(Servicio)
     
     precio_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -90,33 +104,63 @@ class PerfilUsuario(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.SET_NULL, null=True, blank=True)
 
 # --- SEÑALES ---
+
 @receiver(post_save, sender=User)
 def crear_perfil(sender, instance, created, **kwargs):
     if created:
         PerfilUsuario.objects.create(user=instance)
-    instance.perfil.save()
+    # Evitamos error si el perfil ya existe al guardar de nuevo
+    if hasattr(instance, 'perfil'):
+        instance.perfil.save()
 
 @receiver(post_save, sender=Empleado)
 def crear_horario_por_defecto(sender, instance, created, **kwargs):
     if created:
         for dia_num, _ in DIAS_SEMANA:
             if not HorarioSemanal.objects.filter(empleado=instance, dia_semana=dia_num).exists():
-                HorarioSemanal.objects.create(peluqueria=instance.peluqueria, empleado=instance, dia_semana=dia_num, hora_inicio="09:00", hora_fin="18:00", descanso_inicio="12:00", descanso_fin="13:00")
+                HorarioSemanal.objects.create(
+                    peluqueria=instance.peluqueria, 
+                    empleado=instance, 
+                    dia_semana=dia_num, 
+                    hora_inicio="09:00", 
+                    hora_fin="18:00", 
+                    descanso_inicio="12:00", 
+                    descanso_fin="13:00"
+                )
 
-# Señal para notificar (usamos m2m_changed porque ahora guardamos varios servicios)
+# --- NOTIFICACIÓN AUTÓNOMA POR PELUQUERÍA ---
 @receiver(m2m_changed, sender=Cita.servicios)
 def notificar_nueva_cita(sender, instance, action, **kwargs):
-    if action == 'post_add': # Solo enviar cuando se hayan agregado los servicios
-        chat_id = instance.peluqueria.telegram_chat_id or TELEGRAM_GLOBAL_CHAT_ID
-        if chat_id and TELEGRAM_BOT_TOKEN:
+    if action == 'post_add': 
+        # 1. Obtenemos la peluquería específica de esta cita
+        peluqueria = instance.peluqueria
+        
+        # 2. Verificamos si ESTA peluquería tiene configurado su bot
+        token = peluqueria.telegram_token
+        chat_id = peluqueria.telegram_chat_id
+        
+        if token and chat_id:
+            # Preparamos los datos
             servicios_nombres = ", ".join([s.nombre for s in instance.servicios.all()])
             msg = (
-                f"🔔 *NUEVA CITA MULTI-SERVICIO*\n"
-                f"👤 *Cliente:* {instance.cliente_nombre} ({instance.cliente_telefono})\n"
+                f"💈 *NUEVA CITA EN {peluqueria.nombre_visible.upper()}*\n\n"
+                f"👤 *Cliente:* {instance.cliente_nombre}\n"
+                f"📱 *Tel:* {instance.cliente_telefono}\n"
                 f"💇 *Servicios:* {servicios_nombres}\n"
                 f"💰 *Total:* ${instance.precio_total}\n"
                 f"✂️ *Estilista:* {instance.empleado.nombre}\n"
                 f"📅 *Fecha:* {instance.fecha_hora_inicio.strftime('%d/%m/%Y %H:%M')}"
             )
-            try: requests.post(f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage", data={"chat_id": chat_id, "text": msg, "parse_mode": "Markdown"}, timeout=5)
-            except: pass
+            
+            # 3. Enviamos usando EL TOKEN DE LA PELUQUERÍA
+            url = f"https://api.telegram.org/bot{token}/sendMessage"
+            data = {
+                "chat_id": chat_id, 
+                "text": msg, 
+                "parse_mode": "Markdown"
+            }
+            
+            try: 
+                requests.post(url, data=data, timeout=5)
+            except requests.exceptions.RequestException as e: 
+                print(f"Error enviando Telegram a {peluqueria.nombre}: {e}")
