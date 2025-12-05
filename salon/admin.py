@@ -1,9 +1,9 @@
 from django.contrib import admin, messages
 from django.contrib.auth.models import Group, User 
-from django.urls import path # Importamos path aquí para usarlo globalmente
+from django.urls import path 
 from .models import (
     Peluqueria, Servicio, Empleado, HorarioSemanal, Cita, PerfilUsuario,
-    enviar_mensaje_telegram # Importamos la función de Telegram
+    enviar_mensaje_telegram 
 )
 
 # =============================================================
@@ -67,14 +67,12 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
     
     # --- MÉTODO PARA CREAR EL BOTÓN VISUALMENTE ---
     def boton_prueba_telegram(self, obj):
-        if obj.pk: # Solo si el objeto ya existe
-            # FIX CLAVE: La URL ya sabe el object_id (el ID de la Peluquería)
+        if obj.pk: 
             url = f"test_telegram/" 
             return f'<a class="button" href="{url}" style="background-color: #007bff; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none;">Enviar Mensaje de Prueba</a>'
         return "Guarde la peluquería para probar"
     
     boton_prueba_telegram.short_description = 'Diagnóstico Telegram'
-    # Esta línea permite que Django renderice el HTML del botón
     boton_prueba_telegram.allow_tags = True 
     
     # --- FUNCIÓN QUE AÑADE LA RUTA AL BOTÓN ---
@@ -83,19 +81,16 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
         info = self.model._meta.app_label, self.model._meta.model_name
         
         extra_urls = [
-            # La ruta espera el object_id en la URL, pero lo pasamos implícitamente
             path('<path:object_id>/test_telegram/', self.admin_site.admin_view(self.test_telegram_view), name='%s_%s_test_telegram' % info),
         ]
         return extra_urls + urls
 
     # --- FUNCIÓN QUE EJECUTA LA LÓGICA DE TELEGRAM ---
     def test_telegram_view(self, request, object_id):
-        # Obtenemos la Peluquería por el ID de la URL
         peluqueria = self.get_object(request, object_id)
         
         if not peluqueria.telegram_token or not peluqueria.telegram_chat_id:
             self.message_user(request, "Error: Por favor, configure el Token y el ID de Chat antes de probar.", level=messages.ERROR)
-            # Redirige de vuelta al formulario de edición (change_view)
             return self.change_view(request, object_id)
         
         mensaje_prueba = (
@@ -110,11 +105,11 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
         else:
             self.message_user(request, f"Fallo al enviar el mensaje: {resultado}. Verifique el Chat ID (con el signo -) y el Token.", level=messages.ERROR)
         
-        # Redirige de vuelta al formulario de edición
         return self.change_view(request, object_id)
 
 
 # Modelos Transaccionales (Visibles para Dueños)
+
 @admin.register(Servicio)
 class ServicioAdmin(SalonOwnerAdmin):
     list_display = ('nombre', 'precio', 'duracion')
@@ -122,24 +117,31 @@ class ServicioAdmin(SalonOwnerAdmin):
 @admin.register(Empleado)
 class EmpleadoAdmin(SalonOwnerAdmin):
     list_display = ('nombre', 'apellido')
-    inlines = [HorarioSemanalInline] # Incluye los horarios
+    inlines = [HorarioSemanalInline] 
 
-# Desregistramos HorarioSemanal de la lista principal (ya está en Empleado)
+# FIX DEL ERROR DE RENDER: CitaAdmin debe usar el nuevo campo ManyToManyField 'servicios'
+@admin.register(Cita)
+class CitaAdmin(SalonOwnerAdmin):
+    # CORRECCIÓN CLAVE: Reemplazamos 'servicio' por un método para mostrar la lista de servicios
+    list_display = ('cliente_nombre', 'empleado', 'fecha_hora_inicio', 'servicios_listados', 'estado') 
+    filter_horizontal = ('servicios',) 
+
+    # --- MÉTODO PARA MOSTRAR LOS NOMBRES DE LOS SERVICIOS ---
+    def servicios_listados(self, obj):
+        # Muestra una lista de los nombres de servicios separados por coma
+        return ", ".join([s.nombre for s in obj.servicios.all()])
+    
+    servicios_listados.short_description = 'Servicios' # Encabezado de la columna
+
+# Desregistramos HorarioSemanal
 try:
     admin.site.unregister(HorarioSemanal)
 except admin.sites.NotRegistered:
     pass
 
-@admin.register(Cita)
-class CitaAdmin(SalonOwnerAdmin):
-    list_display = ('cliente_nombre', 'servicio', 'empleado', 'fecha_hora_inicio', 'estado')
-    # Permite añadir múltiples servicios en la cita:
-    filter_horizontal = ('servicios',) 
-
 @admin.register(PerfilUsuario)
 class PerfilUsuarioAdmin(SuperuserOnlyAdmin):
     list_display = ('user', 'peluqueria')
-    # Se hereda la lógica de get_queryset para ver solo su perfil
     pass 
 
 
