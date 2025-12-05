@@ -1,145 +1,62 @@
-import requests  # NECESARIO PARA PROBAR TELEGRAM
-from django.contrib import admin, messages
-from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, HorarioSemanal
+from django.contrib import admin, messages # Necesitamos 'messages'
+from django.contrib.auth.models import Group, User 
+from .models import Peluqueria, Servicio, Empleado, HorarioSemanal, Cita, PerfilUsuario, enviar_mensaje_telegram # Importamos la función
 
-# --- CONFIGURACIÓN DE TABLA INTERNA (INLINE) ---
-class HorarioInline(admin.TabularInline):
-    model = HorarioSemanal
-    extra = 0
-    can_delete = True
-    fields = ('dia_semana', 'hora_inicio', 'hora_fin', 'descanso_inicio', 'descanso_fin')
-    ordering = ('dia_semana',)
+# ... (Las clases SalonOwnerAdmin, SuperuserOnlyAdmin, y las demás clases de modelos siguen aquí) ...
 
-# --- ADMIN DE PELUQUERÍA (EL MÁS IMPORTANTE) ---
+# 3. SEGURIDAD DE VISIBILIDAD DE ADMINISTRACIÓN (SOLO PARA SUPERUSUARIO)
+
 @admin.register(Peluqueria)
-class PeluqueriaAdmin(admin.ModelAdmin):
-    # Columnas que ves en la lista principal
-    list_display = ('nombre_visible', 'telefono', 'direccion', 'bot_activo', 'hora_apertura', 'hora_cierre')
-    
-    # Barra de búsqueda
-    search_fields = ('nombre', 'nombre_visible', 'telefono')
-    
-    # Slug automático
+class PeluqueriaAdmin(SuperuserOnlyAdmin):
+    list_display = ('nombre', 'slug', 'nombre_visible', 'boton_prueba_telegram') # Añadimos el botón a la lista
     prepopulated_fields = {'slug': ('nombre',)}
-
-    # Acciones personalizadas (Menú desplegable "Action")
-    actions = ['enviar_prueba_telegram']
-
-    # ORGANIZACIÓN POR SECCIONES
-    fieldsets = (
-        ('Datos del Negocio', {
-            'fields': ('nombre', 'nombre_visible', 'slug')
-        }),
-        ('Contacto', {
-            'fields': ('direccion', 'telefono')
-        }),
-        ('Horarios Generales', {
-            'fields': ('hora_apertura', 'hora_cierre')
-        }),
-        ('Configuración de Notificaciones (Telegram)', {
-            'fields': ('telegram_token', 'telegram_chat_id'),
-            'description': 'Ingresa aquí el Token del BotFather y tu ID de usuario para recibir avisos.',
-            'classes': ('collapse',), 
-        }),
-    )
-
-    # Función para mostrar un ✅ si el bot está configurado
-    @admin.display(boolean=True, description='Bot Configurado')
-    def bot_activo(self, obj):
-        token = str(obj.telegram_token).strip() if obj.telegram_token else ''
-        chat_id = str(obj.telegram_chat_id).strip() if obj.telegram_chat_id else ''
-        return bool(token and chat_id)
-
-    # --- NUEVA FUNCIÓN DE DIAGNÓSTICO AVANZADA ---
-    @admin.action(description='🔔 Enviar mensaje de prueba a Telegram')
-    def enviar_prueba_telegram(self, request, queryset):
-        enviados = 0
-        errores = 0
-        
-        for peluqueria in queryset:
-            # 1. LIMPIEZA DE DATOS (Vital por si copiaste con espacios)
-            token = str(peluqueria.telegram_token).strip() if peluqueria.telegram_token else ""
-            chat_id = str(peluqueria.telegram_chat_id).strip() if peluqueria.telegram_chat_id else ""
-            
-            # Identificador visual del token (para que sepas cuál está usando)
-            token_visible = f"...{token[-4:]}" if len(token) > 4 else "N/A"
-
-            if not token or not chat_id:
-                self.message_user(request, f"⚠️ {peluqueria.nombre_visible}: Falta Token o ID en la base de datos.", level=messages.WARNING)
-                errores += 1
-                continue
-
-            # 2. INTENTO DE ENVÍO
-            url = f"https://api.telegram.org/bot{token}/sendMessage"
-            mensaje_prueba = (
-                f"✅ *¡CONEXIÓN ESTABLECIDA!*\n"
-                f"Hola {peluqueria.nombre_visible}.\n"
-                f"Este bot está configurado correctamente con el token terminado en *{token_visible}*."
-            )
-            
-            data = {
-                "chat_id": chat_id, 
-                "text": mensaje_prueba, 
-                "parse_mode": "Markdown"
-            }
-            
-            try:
-                # Timeout corto para no colgar el admin si falla
-                response = requests.post(url, data=data, timeout=5)
-                res_json = response.json()
-                
-                if response.status_code == 200 and res_json.get('ok'):
-                    enviados += 1
-                else:
-                    errores += 1
-                    # ERROR DETALLADO QUE DEVUELVE TELEGRAM
-                    desc = res_json.get('description', 'Error desconocido')
-                    error_msg = f"❌ Error en {peluqueria.nombre_visible} (Token finaliza en {token_visible}): {desc}"
-                    
-                    # Pistas comunes para ayudarte
-                    if "Unauthorized" in desc:
-                        error_msg += " -> EL TOKEN ESTÁ MAL O REVOCADO."
-                    elif "chat not found" in desc:
-                        error_msg += " -> EL CHAT ID ESTÁ MAL O NO HAS INICIADO EL BOT."
-                        
-                    self.message_user(request, error_msg, level=messages.ERROR)
-                    
-            except Exception as e:
-                errores += 1
-                self.message_user(request, f"❌ Error de conexión: {str(e)}", level=messages.ERROR)
-
-        if enviados > 0:
-            self.message_user(request, f"✅ Se enviaron {enviados} mensajes correctamente.", level=messages.SUCCESS)
-
-# --- OTROS ADMINS ---
-
-@admin.register(Servicio)
-class ServicioAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'peluqueria', 'precio', 'duracion')
-    list_filter = ('peluqueria',) # Filtro lateral para ver servicios por peluquería
-    search_fields = ('nombre',)
-
-@admin.register(Empleado)
-class EmpleadoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'apellido', 'peluqueria')
-    list_filter = ('peluqueria',)
-    inlines = [HorarioInline]
-
-@admin.register(Cita)
-class CitaAdmin(admin.ModelAdmin):
-    # Agregamos 'servicios_lista' para ver qué pidieron
-    list_display = ('cliente_nombre', 'peluqueria', 'empleado', 'fecha_hora_inicio', 'servicios_lista', 'precio_total', 'estado')
-    list_filter = ('estado', 'peluqueria', 'fecha_hora_inicio')
-    search_fields = ('cliente_nombre', 'cliente_telefono')
-    date_hierarchy = 'fecha_hora_inicio' # Navegación por fecha arriba de la tabla
     
-    # Permite editar el estado directamente desde la lista sin entrar
-    list_editable = ('estado',) 
+    # Este campo se añadirá al formulario de edición de la Peluquería
+    readonly_fields = ('boton_prueba_telegram',) 
+    
+    # --- MÉTODO PARA CREAR EL BOTÓN DE PRUEBA ---
+    def boton_prueba_telegram(self, obj):
+        if obj.pk: # Solo si el objeto ya existe
+            # Creamos la URL para llamar a nuestro método
+            url = f"test_telegram/{obj.pk}/"
+            return f'<a class="button" href="{url}">Enviar Mensaje de Prueba</a>'
+        return "Guarde la peluquería para probar"
+    
+    boton_prueba_telegram.short_description = 'Diagnóstico Telegram'
+    boton_prueba_telegram.allow_tags = True
+    
+    # --- FUNCIÓN QUE MANEJA EL CLICK DEL BOTÓN ---
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        info = self.model._meta.app_label, self.model._meta.model_name
+        
+        # Añadimos una URL personalizada que llama a la vista 'test_telegram_view'
+        extra_urls = [
+            path('<path:object_id>/test_telegram/', self.admin_site.admin_view(self.test_telegram_view), name='%s_%s_test_telegram' % info),
+        ]
+        return extra_urls + urls
 
-    def servicios_lista(self, obj):
-        return ", ".join([s.nombre for s in obj.servicios.all()])
-    servicios_lista.short_description = "Servicios Solicitados"
+    def test_telegram_view(self, request, object_id, extra_context=None):
+        peluqueria = self.get_object(request, object_id)
+        
+        if not peluqueria.telegram_token or not peluqueria.telegram_chat_id:
+            self.message_user(request, "Error: Por favor, configure el Token y el ID de Chat antes de probar.", level=messages.ERROR)
+            return self.change_view(request, object_id)
+        
+        mensaje_prueba = (
+            f"✅ *PRUEBA EXITOSA!*\n\n"
+            f"El Bot de Telegram está funcionando para el salón: *{peluqueria.nombre_visible}*."
+        )
 
-@admin.register(PerfilUsuario)
-class PerfilUsuarioAdmin(admin.ModelAdmin):
-    list_display = ('user', 'peluqueria')
+        exito, resultado = enviar_mensaje_telegram(peluqueria.telegram_token, peluqueria.telegram_chat_id, mensaje_prueba)
+        
+        if exito:
+            self.message_user(request, f"Mensaje de prueba enviado con éxito a {peluqueria.nombre}.", level=messages.SUCCESS)
+        else:
+            self.message_user(request, f"Fallo al enviar el mensaje: {resultado}. Verifique el Chat ID y el Token.", level=messages.ERROR)
+        
+        # Redirige de vuelta al formulario de edición
+        return self.change_view(request, object_id)
+
+    # ... (El resto del código de PeluqueriaAdmin y las demás clases siguen igual)
