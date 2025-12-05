@@ -6,8 +6,11 @@ from django.dispatch import receiver
 from django.utils.text import slugify
 from datetime import timedelta, datetime
 
-# NOTA: Se eliminaron las variables globales de Telegram para permitir
-# que cada peluquería use su propio bot de forma autónoma.
+# NOTA: La lógica de Telegram se ha hecho autónoma por Peluquería (Correcto).
+
+# =============================================================
+# 1. MODELOS BASE
+# =============================================================
 
 class Peluqueria(models.Model):
     nombre = models.CharField(max_length=100)
@@ -15,18 +18,17 @@ class Peluqueria(models.Model):
     nombre_visible = models.CharField(max_length=100, default="Mi Salón")
     
     # --- CONFIGURACIÓN TELEGRAM AUTÓNOMA ---
-    # Cada dueño pone aquí SU propio token y SU propio ID
     telegram_token = models.CharField(
         max_length=100, 
         blank=True, 
         null=True, 
-        help_text="Token del bot creado con @BotFather"
+        help_text="Token del bot (ej: 123456:ABC-DEF)"
     )
     telegram_chat_id = models.CharField(
         max_length=100, 
         blank=True, 
         null=True, 
-        help_text="ID de chat del dueño para recibir avisos"
+        help_text="ID de chat del dueño/grupo (ej: -123456789)"
     )
     
     # --- DATOS DE CONTACTO ---
@@ -47,12 +49,17 @@ class Peluqueria(models.Model):
 class Servicio(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='servicios')
     nombre = models.CharField(max_length=100)
-    duracion = models.DurationField(default=timedelta(minutes=30))
+    # duracion es DurationField (Correcto para cálculos de tiempo)
+    duracion = models.DurationField(default=timedelta(minutes=30)) 
     precio = models.DecimalField(max_digits=8, decimal_places=2) 
     descripcion = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.nombre} (${self.precio})"
+
+# =============================================================
+# 2. MODELOS DE HORARIOS Y EMPLEADOS
+# =============================================================
 
 class Empleado(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='empleados')
@@ -63,9 +70,11 @@ class Empleado(models.Model):
     def __str__(self):
         return f"{self.nombre} {self.apellido}"
 
+# Los días de la semana deben empezar en 0 para Python/Django
 DIAS_SEMANA = ((0,'Lunes'),(1,'Martes'),(2,'Miércoles'),(3,'Jueves'),(4,'Viernes'),(5,'Sábado'),(6,'Domingo'))
 
 class HorarioSemanal(models.Model):
+    # La peluquería se asigna automáticamente (FIX: Aseguramos que no se pueda modificar en el Admin)
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, blank=True, null=True)
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, related_name='horarios')
     dia_semana = models.IntegerField(choices=DIAS_SEMANA)
@@ -76,24 +85,35 @@ class HorarioSemanal(models.Model):
     
     class Meta: 
         unique_together = ('empleado', 'dia_semana') 
+        verbose_name_plural = "Horarios Semanales" # Mejora Admin
 
+    # FIX: Método save para asegurar la consistencia del tenant
     def save(self, *args, **kwargs):
         if not self.peluqueria_id and self.empleado: 
             self.peluqueria = self.empleado.peluqueria
         super().save(*args, **kwargs)
+        
+    def __str__(self):
+        return f"{self.empleado} - {self.get_dia_semana_display()}" # Muestra el nombre del día
+
+
+# =============================================================
+# 3. MODELOS DE CITA Y PERFIL
+# =============================================================
 
 class Cita(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE)
     cliente_nombre = models.CharField(max_length=100)
     cliente_telefono = models.CharField(max_length=20)
     
-    servicios = models.ManyToManyField(Servicio)
+    # FIX: ManyToManyField no necesita blank=True, ya que se llena después
+    servicios = models.ManyToManyField(Servicio) 
     
     precio_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
     fecha_hora_inicio = models.DateTimeField()
-    fecha_hora_fin = models.DateTimeField()
+    fecha_hora_fin = models.DateTimeField() # Se calcula sumando la duración total
     estado = models.CharField(max_length=1, choices=[('P','Pendiente'),('C','Confirmada'),('A','Anulada')], default='P')
 
     def __str__(self):
@@ -102,24 +122,34 @@ class Cita(models.Model):
 class PerfilUsuario(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.peluqueria}"
 
-# --- SEÑALES ---
+# =============================================================
+# 4. SEÑALES (Automatización y Telegram)
+# =============================================================
 
 @receiver(post_save, sender=User)
 def crear_perfil(sender, instance, created, **kwargs):
     if created:
         PerfilUsuario.objects.create(user=instance)
-    # Evitamos error si el perfil ya existe al guardar de nuevo
-    if hasattr(instance, 'perfil'):
-        instance.perfil.save()
+    # FIX: Uso instance.perfil.save() para garantizar que se guarde el perfil si hay cambios en el usuario.
+    # No es necesario el hasattr() si la relación es OneToOneField y ya creamos el perfil arriba.
+    instance.perfil.save()
 
 @receiver(post_save, sender=Empleado)
 def crear_horario_por_defecto(sender, instance, created, **kwargs):
+    """Crea un horario de Lunes a Domingo por defecto al añadir un nuevo empleado."""
     if created:
+        # Aseguramos que la peluquería esté asignada
+        peluqueria = instance.peluqueria
+        
         for dia_num, _ in DIAS_SEMANA:
+            # FIX: Aseguramos que solo se creen si no existen, para evitar conflictos
             if not HorarioSemanal.objects.filter(empleado=instance, dia_semana=dia_num).exists():
                 HorarioSemanal.objects.create(
-                    peluqueria=instance.peluqueria, 
+                    peluqueria=peluqueria, 
                     empleado=instance, 
                     dia_semana=dia_num, 
                     hora_inicio="09:00", 
@@ -129,19 +159,20 @@ def crear_horario_por_defecto(sender, instance, created, **kwargs):
                 )
 
 # --- NOTIFICACIÓN AUTÓNOMA POR PELUQUERÍA ---
+# FIX: Usamos m2m_changed en Cita.servicios para disparar la señal DESPUÉS de que se hayan
+# guardado todos los servicios, asegurando que el precio total sea correcto.
 @receiver(m2m_changed, sender=Cita.servicios)
 def notificar_nueva_cita(sender, instance, action, **kwargs):
+    # La señal se dispara una vez que se han añadido los servicios (post_add)
     if action == 'post_add': 
-        # 1. Obtenemos la peluquería específica de esta cita
         peluqueria = instance.peluqueria
-        
-        # 2. Verificamos si ESTA peluquería tiene configurado su bot
         token = peluqueria.telegram_token
         chat_id = peluqueria.telegram_chat_id
         
+        # FIX: Verificamos que el token y el chat_id existan
         if token and chat_id:
-            # Preparamos los datos
             servicios_nombres = ", ".join([s.nombre for s in instance.servicios.all()])
+            
             msg = (
                 f"💈 *NUEVA CITA EN {peluqueria.nombre_visible.upper()}*\n\n"
                 f"👤 *Cliente:* {instance.cliente_nombre}\n"
@@ -152,7 +183,6 @@ def notificar_nueva_cita(sender, instance, action, **kwargs):
                 f"📅 *Fecha:* {instance.fecha_hora_inicio.strftime('%d/%m/%Y %H:%M')}"
             )
             
-            # 3. Enviamos usando EL TOKEN DE LA PELUQUERÍA
             url = f"https://api.telegram.org/bot{token}/sendMessage"
             data = {
                 "chat_id": chat_id, 
@@ -161,6 +191,13 @@ def notificar_nueva_cita(sender, instance, action, **kwargs):
             }
             
             try: 
-                requests.post(url, data=data, timeout=5)
+                # Intentamos la llamada a la API
+                response = requests.post(url, data=data, timeout=5)
+                # Imprimimos el diagnóstico de la API para saber si falló
+                if not response.json().get('ok'):
+                    print(f"❌ ERROR TELEGRAM (API) en {peluqueria.nombre}: {response.text}")
+                else:
+                    print(f"✅ Notificación Telegram enviada a {peluqueria.nombre}")
+                    
             except requests.exceptions.RequestException as e: 
-                print(f"Error enviando Telegram a {peluqueria.nombre}: {e}")
+                print(f"❌ ERROR DE CONEXIÓN TELEGRAM a {peluqueria.nombre}: {e}")
