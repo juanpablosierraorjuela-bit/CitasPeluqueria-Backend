@@ -1,6 +1,7 @@
 from django.contrib import admin, messages
 from django.contrib.auth.models import Group, User 
-from django.urls import path 
+from django.urls import path, reverse # <--- AGREGADO: reverse para obtener URLs reales
+from django.http import HttpResponseRedirect # <--- AGREGADO: Para redireccionar correctamente
 from django.utils.safestring import mark_safe 
 from .models import (
     Peluqueria, Servicio, Empleado, HorarioSemanal, Cita, PerfilUsuario,
@@ -70,7 +71,7 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
     @admin.display(description='Diagnóstico Telegram') 
     def boton_prueba_telegram(self, obj):
         if obj.pk: 
-            # FIX DE RUTA: Usamos ../ID/accion para evitar errores de redirección relativa
+            # FIX: Usamos una ruta relativa segura para llegar a la vista personalizada
             url = f"../{obj.pk}/test_telegram/" 
             return mark_safe(f'<a class="button" href="{url}" style="background-color: #007bff; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none;">Enviar Mensaje de Prueba</a>')
         return "Guarde la peluquería para probar"
@@ -89,9 +90,13 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
     def test_telegram_view(self, request, object_id):
         peluqueria = self.get_object(request, object_id)
         
+        # URL de retorno: Calculamos la URL exacta de "editar peluquería"
+        url_retorno = reverse('admin:salon_peluqueria_change', args=[peluqueria.pk])
+
         if not peluqueria.telegram_token or not peluqueria.telegram_chat_id:
             self.message_user(request, "Error: Por favor, configure el Token y el ID de Chat antes de probar.", level=messages.ERROR)
-            return self.change_view(request, object_id)
+            # FIX: Redirección explicita en lugar de self.change_view
+            return HttpResponseRedirect(url_retorno)
         
         mensaje_prueba = (
             f"✅ *PRUEBA EXITOSA!*\n\n"
@@ -105,7 +110,8 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
         else:
             self.message_user(request, f"Fallo al enviar el mensaje: {resultado}. Verifique el Chat ID (con el signo -) y el Token.", level=messages.ERROR)
         
-        return self.change_view(request, object_id)
+        # FIX FINAL: Redireccionamos al usuario a la página de edición para evitar errores 404/Pantalla blanca
+        return HttpResponseRedirect(url_retorno)
 
 
 # Modelos Transaccionales (Visibles para Dueños)
