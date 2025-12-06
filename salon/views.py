@@ -4,12 +4,12 @@ from django.http import JsonResponse
 from datetime import datetime, timedelta
 from .models import Cita, Peluqueria, Servicio, Empleado, HorarioSemanal
 
-# 1. VISTA DE INICIO
+# 1. VISTA DE INICIO (PORTADA)
 def inicio(request):
     peluquerias = Peluqueria.objects.all()
     return render(request, 'salon/index.html', {'peluquerias': peluquerias})
 
-# 2. API PARA CALCULAR HORARIOS DISPONIBLES (ESTA FALTABA)
+# 2. API PARA CALCULAR HORARIOS DISPONIBLES (ESTA ES LA QUE FALTA)
 def obtener_horas_disponibles(request):
     try:
         empleado_id = request.GET.get('empleado_id')
@@ -31,7 +31,7 @@ def obtener_horas_disponibles(request):
                     duracion_total += s.duracion
                 except: pass
 
-        # Buscar el horario del empleado para ese día de la semana (0=Lunes, 6=Domingo)
+        # Buscar el horario del empleado para ese día (0=Lunes, 6=Domingo)
         dia_semana = fecha.weekday()
         horario = HorarioSemanal.objects.filter(empleado=empleado, dia_semana=dia_semana).first()
         
@@ -122,11 +122,15 @@ def enviar_notificacion_telegram(cita):
         print(f"❌ TELEGRAM ERROR: {str(e)}")
         return False
 
-# 4. AGENDAR CITA
+# 4. AGENDAR CITA (LÓGICA PRINCIPAL)
 def agendar_cita(request, slug):
     print(f"🌟 Iniciando Agendar: {slug}")
     peluqueria = get_object_or_404(Peluqueria, slug=slug)
     
+    # Variables iniciales para el GET
+    servicios = peluqueria.servicios.all()
+    empleados = peluqueria.empleados.all()
+
     if request.method == 'POST':
         try:
             nombre = request.POST.get('nombre_cliente')
@@ -170,14 +174,15 @@ def agendar_cita(request, slug):
             # Volver a cargar formulario con error
             return render(request, 'agendar.html', {
                 'peluqueria': peluqueria, 
-                'servicios': peluqueria.servicios.all(),
-                'empleados': peluqueria.empleados.all()
+                'servicios': servicios,
+                'empleados': empleados,
+                'error': 'Error al procesar la cita. Verifique los datos.'
             })
 
     return render(request, 'agendar.html', {
         'peluqueria': peluqueria, 
-        'servicios': peluqueria.servicios.all(),
-        'empleados': peluqueria.empleados.all()
+        'servicios': servicios,
+        'empleados': empleados
     })
 
 # Vista extra por si acaso
