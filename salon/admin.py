@@ -3,7 +3,7 @@ from django.contrib.auth.models import Group, User
 from django.urls import path, reverse 
 from django.http import HttpResponseRedirect 
 from django.utils.safestring import mark_safe 
-import requests # Usamos requests directamente aquí
+import requests 
 from .models import (
     Peluqueria, Servicio, Empleado, HorarioSemanal, Cita, PerfilUsuario
 )
