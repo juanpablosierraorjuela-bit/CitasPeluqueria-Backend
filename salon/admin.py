@@ -9,11 +9,13 @@ from .models import (
 )
 
 # =============================================================
-# 1. CLASES BASE DE SEGURIDAD
+# 1. CLASES BASE DE SEGURIDAD (AQUÍ ESTÁ LA CORRECCIÓN)
 # =============================================================
 
 class SalonOwnerAdmin(admin.ModelAdmin):
     """Clase base para modelos que el Dueño SÍ debe ver y gestionar."""
+    
+    # 1. Filtramos para que solo vean SU peluquería
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
@@ -22,31 +24,31 @@ class SalonOwnerAdmin(admin.ModelAdmin):
             return qs.filter(peluqueria=request.user.perfil.peluqueria)
         return qs.none()
 
-    # 1. Al guardar el modelo PRINCIPAL (Ej: Empleado)
+    # 2. Quitamos el campo peluquería del formulario visualmente para evitar errores
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        if not request.user.is_superuser:
+            if 'peluqueria' in form.base_fields:
+                del form.base_fields['peluqueria']  # ¡Lo borramos del form para que no valide!
+        return form
+
+    # 3. Al guardar el modelo PRINCIPAL (Empleado, Cita, etc), inyectamos la peluquería
     def save_model(self, request, obj, form, change):
-        if not request.user.is_superuser and not obj.pk:
+        if not request.user.is_superuser:
+            # IMPORTANTE: Lo asignamos SIEMPRE, no solo al crear (quitamos el 'if not obj.pk')
             if hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
                 obj.peluqueria = request.user.perfil.peluqueria
         super().save_model(request, obj, form, change)
 
-    # 2. Al guardar los INLINES (Ej: Horarios), inyectamos la peluquería automáticamente
+    # 4. Al guardar los SUB-ELEMENTOS (Horarios), inyectamos la peluquería
     def save_formset(self, request, form, formset, change):
         instances = formset.save(commit=False)
         for instance in instances:
-            # Si el usuario es dueño y el objeto tiene el campo 'peluqueria'
             if not request.user.is_superuser:
                 if hasattr(instance, 'peluqueria') and hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
                     instance.peluqueria = request.user.perfil.peluqueria
             instance.save()
         formset.save_m2m()
-        
-    def get_form(self, request, obj=None, **kwargs):
-        form = super().get_form(request, obj, **kwargs)
-        if not request.user.is_superuser:
-            if 'peluqueria' in form.base_fields:
-                form.base_fields['peluqueria'].widget.attrs['disabled'] = True
-                form.base_fields['peluqueria'].required = False
-        return form
 
 class SuperuserOnlyAdmin(admin.ModelAdmin):
     """Clase base para ocultar modelos a usuarios normales."""
@@ -117,27 +119,32 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
 class HorarioSemanalInline(admin.TabularInline):
     """
     Inline para editar horarios dentro del Empleado.
-    IMPORTANTE: 'exclude' evita que el formulario pida la peluquería obligatoriamente,
-    permitiendo que 'save_formset' la rellene después.
+    'exclude' evita que pida la peluquería en el formulario.
     """
     model = HorarioSemanal
     extra = 1
     max_num = 7
-    exclude = ('peluqueria',)  # <--- ¡ESTA ES LA LÍNEA MÁGICA QUE EVITA EL ERROR 500!
+    exclude = ('peluqueria',) 
 
 @admin.register(Servicio)
 class ServicioAdmin(SalonOwnerAdmin):
     list_display = ('nombre', 'precio', 'duracion')
+    # Opcional: si Servicio también da problemas, esto lo asegura:
+    exclude = ('peluqueria',)
 
 @admin.register(Empleado)
 class EmpleadoAdmin(SalonOwnerAdmin):
     list_display = ('nombre', 'apellido')
-    inlines = [HorarioSemanalInline] 
+    inlines = [HorarioSemanalInline]
+    # Opcional: aseguramos que el Empleado tampoco pida peluquería
+    exclude = ('peluqueria',)
 
 @admin.register(Cita)
 class CitaAdmin(SalonOwnerAdmin):
     list_display = ('cliente_nombre', 'empleado', 'fecha_hora_inicio', 'servicios_listados', 'estado') 
     filter_horizontal = ('servicios',) 
+    exclude = ('peluqueria',) # Aseguramos Cita también
+    
     def servicios_listados(self, obj):
         return ", ".join([s.nombre for s in obj.servicios.all()])
     servicios_listados.short_description = 'Servicios'
