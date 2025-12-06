@@ -3,19 +3,18 @@ from django.contrib.auth.models import Group, User
 from django.urls import path, reverse 
 from django.http import HttpResponseRedirect 
 from django.utils.safestring import mark_safe 
+import requests 
 from .models import (
-    Peluqueria, Servicio, Empleado, HorarioSemanal, Cita, PerfilUsuario,
-    enviar_mensaje_telegram 
+    Peluqueria, Servicio, Empleado, HorarioSemanal, Cita, PerfilUsuario
 )
 
 # =============================================================
-# 1. CLASES BASE DE SEGURIDAD (AQUÍ ESTÁ LA CORRECCIÓN)
+# 1. CLASES BASE DE SEGURIDAD
 # =============================================================
 
 class SalonOwnerAdmin(admin.ModelAdmin):
     """Clase base para modelos que el Dueño SÍ debe ver y gestionar."""
     
-    # 1. Filtramos para que solo vean SU peluquería
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
@@ -24,23 +23,19 @@ class SalonOwnerAdmin(admin.ModelAdmin):
             return qs.filter(peluqueria=request.user.perfil.peluqueria)
         return qs.none()
 
-    # 2. Quitamos el campo peluquería del formulario visualmente para evitar errores
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         if not request.user.is_superuser:
             if 'peluqueria' in form.base_fields:
-                del form.base_fields['peluqueria']  # ¡Lo borramos del form para que no valide!
+                del form.base_fields['peluqueria'] 
         return form
 
-    # 3. Al guardar el modelo PRINCIPAL (Empleado, Cita, etc), inyectamos la peluquería
     def save_model(self, request, obj, form, change):
         if not request.user.is_superuser:
-            # IMPORTANTE: Lo asignamos SIEMPRE, no solo al crear (quitamos el 'if not obj.pk')
             if hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
                 obj.peluqueria = request.user.perfil.peluqueria
         super().save_model(request, obj, form, change)
 
-    # 4. Al guardar los SUB-ELEMENTOS (Horarios), inyectamos la peluquería
     def save_formset(self, request, form, formset, change):
         instances = formset.save(commit=False)
         for instance in instances:
@@ -51,7 +46,6 @@ class SalonOwnerAdmin(admin.ModelAdmin):
         formset.save_m2m()
 
 class SuperuserOnlyAdmin(admin.ModelAdmin):
-    """Clase base para ocultar modelos a usuarios normales."""
     def has_module_permission(self, request):
         return request.user.is_superuser
     def has_view_permission(self, request, obj=None): return request.user.is_superuser
@@ -61,7 +55,7 @@ class SuperuserOnlyAdmin(admin.ModelAdmin):
 
 
 # =============================================================
-# 2. PELUQUERIA ADMIN (Con Botón Telegram)
+# 2. PELUQUERIA ADMIN (Corrección Telegram)
 # =============================================================
 
 @admin.register(Peluqueria)
@@ -90,37 +84,43 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
             peluqueria = self.get_object(request, object_id)
             url_retorno = reverse('admin:salon_peluqueria_change', args=[peluqueria.pk])
 
-            if not peluqueria.telegram_token or not peluqueria.telegram_chat_id:
-                self.message_user(request, "Error: Faltan datos de Telegram.", level=messages.ERROR)
+            # 1. Validar datos
+            token = str(peluqueria.telegram_token).strip() if peluqueria.telegram_token else None
+            chat_id = str(peluqueria.telegram_chat_id).strip() if peluqueria.telegram_chat_id else None
+
+            if not token or not chat_id:
+                self.message_user(request, "⚠️ Faltan Token o ID en la configuración.", level=messages.WARNING)
                 return HttpResponseRedirect(url_retorno)
             
-            exito, resultado = enviar_mensaje_telegram(
-                peluqueria.telegram_token, 
-                peluqueria.telegram_chat_id, 
-                f"✅ *TEST EXITOSO*\nHola desde PASO Tunja. Tu sistema funciona."
-            )
+            # 2. Enviar mensaje directamente (sin depender de imports rotos)
+            url_api = f"https://api.telegram.org/bot{token}/sendMessage"
+            data = {
+                "chat_id": chat_id,
+                "text": "✅ *CONEXIÓN EXITOSA*\nHola, tu bot de PASO está funcionando correctamente.",
+                "parse_mode": "Markdown"
+            }
             
-            if exito:
-                self.message_user(request, f"¡Éxito! Mensaje enviado.", level=messages.SUCCESS)
+            resp = requests.post(url_api, data=data, timeout=5)
+            res_json = resp.json()
+            
+            if resp.status_code == 200 and res_json.get('ok'):
+                self.message_user(request, f"✅ Mensaje enviado con éxito a {peluqueria.nombre_visible}.", level=messages.SUCCESS)
             else:
-                self.message_user(request, f"Error de Telegram: {resultado}", level=messages.ERROR)
+                desc = res_json.get('description', 'Error desconocido')
+                self.message_user(request, f"❌ Error de Telegram: {desc}", level=messages.ERROR)
             
             return HttpResponseRedirect(url_retorno)
 
         except Exception as e:
-            self.message_user(request, f"Error interno del sistema: {str(e)}", level=messages.ERROR)
+            self.message_user(request, f"❌ Error interno: {str(e)}", level=messages.ERROR)
             return HttpResponseRedirect("../")
 
 
 # =============================================================
-# 3. CONFIGURACIÓN DE MODELOS E INLINES
+# 3. OTROS ADMINS
 # =============================================================
 
 class HorarioSemanalInline(admin.TabularInline):
-    """
-    Inline para editar horarios dentro del Empleado.
-    'exclude' evita que pida la peluquería en el formulario.
-    """
     model = HorarioSemanal
     extra = 1
     max_num = 7
@@ -129,27 +129,25 @@ class HorarioSemanalInline(admin.TabularInline):
 @admin.register(Servicio)
 class ServicioAdmin(SalonOwnerAdmin):
     list_display = ('nombre', 'precio', 'duracion')
-    # Opcional: si Servicio también da problemas, esto lo asegura:
     exclude = ('peluqueria',)
 
 @admin.register(Empleado)
 class EmpleadoAdmin(SalonOwnerAdmin):
     list_display = ('nombre', 'apellido')
     inlines = [HorarioSemanalInline]
-    # Opcional: aseguramos que el Empleado tampoco pida peluquería
     exclude = ('peluqueria',)
 
 @admin.register(Cita)
 class CitaAdmin(SalonOwnerAdmin):
     list_display = ('cliente_nombre', 'empleado', 'fecha_hora_inicio', 'servicios_listados', 'estado') 
     filter_horizontal = ('servicios',) 
-    exclude = ('peluqueria',) # Aseguramos Cita también
+    exclude = ('peluqueria',) 
     
     def servicios_listados(self, obj):
         return ", ".join([s.nombre for s in obj.servicios.all()])
     servicios_listados.short_description = 'Servicios'
 
-# Desregistramos HorarioSemanal para que no aparezca suelto en el menú
+# Limpieza del menú
 try:
     admin.site.unregister(HorarioSemanal)
 except admin.sites.NotRegistered:
