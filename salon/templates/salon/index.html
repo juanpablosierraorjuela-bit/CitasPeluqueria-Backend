@@ -3,43 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bienvenido a PASO</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+    <title>PASO | Directorio de Salones Exclusivos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
     <style>
-        /* Estilos del index anterior, más estos ajustes para info de contacto */
-        body { font-family: 'Poppins', sans-serif; background: #fafafa; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .salon-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; max-width: 1000px; width: 100%; margin-top: 40px; }
-        .salon-card { background: white; border-radius: 15px; padding: 30px; text-decoration: none; color: #333; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s; border: 1px solid #f0f0f0; text-align: center; }
-        .salon-card:hover { transform: translateY(-5px); border-color: #dfa6b0; }
-        .salon-name { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin-bottom: 15px; color: #333; }
-        .info-item { font-size: 0.9rem; color: #777; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-action { background: #dfa6b0; color: white; padding: 10px 25px; border-radius: 30px; margin-top: 20px; display: inline-block; font-weight: 500; }
+        /* Paleta de colores: 
+           --primary-rose: #dfa6b0 (Rosa Suave)
+           --secondary-gold: #c39d6e (Oro envejecido, usado para acentos)
+           --text-dark: #2c3e50; (Azul oscuro elegante)
+           --text-light: #7f8c8d;
+        */
+        :root {
+            --primary-rose: #dfa6b0;
+            --secondary-gold: #c39d6e;
+            --text-dark: #2c3e50;
+            --text-light: #7f8c8d;
+            --bg-light: #fefefe;
+            --bg-soft: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-soft); /* Fondo suave */
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        /* --- HEADER & TITLES --- */
+        header {
+            text-align: center;
+            padding: 40px 20px 60px;
+            max-width: 800px;
+        }
+
+        .header-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
+            color: var(--text-dark);
+            margin: 0;
+            line-height: 1.1;
+        }
+
+        .header-subtitle {
+            color: var(--text-light);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            margin-top: 5px;
+            font-weight: 300;
+        }
+        
+        /* --- GRID & CARDS --- */
+        .salon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            max-width: 1200px;
+            width: 100%;
+            padding: 0 20px;
+        }
+
+        .salon-card {
+            background: var(--bg-light);
+            border-radius: 12px;
+            padding: 30px;
+            text-decoration: none;
+            color: var(--text-dark);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08); /* Sombra más pronunciada pero suave */
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 2px solid transparent;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .salon-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+            border-color: var(--primary-rose);
+        }
+        
+        /* Icono/logo de la tarjeta */
+        .icon-container {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            color: var(--secondary-gold); /* Color elegante */
+            /* Efecto de fondo sutil para el icono */
+            padding: 10px;
+            display: inline-block;
+            border-radius: 50%;
+            background: rgba(224, 187, 228, 0.1); 
+        }
+
+        .salon-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: var(--text-dark);
+        }
+
+        .info-item {
+            font-size: 0.95rem;
+            color: var(--text-light);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-weight: 400;
+        }
+        
+        .info-item i {
+            color: var(--primary-rose);
+            font-size: 1.1rem;
+        }
+
+        .btn-action {
+            background: var(--primary-rose);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px; /* Más redondo */
+            margin-top: 25px;
+            display: inline-block;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+        }
+        
+        .btn-action:hover {
+            background: var(--secondary-gold); /* Cambio a dorado al pasar el mouse */
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-title { font-size: 2.5rem; }
+            .salon-grid { gap: 20px; padding: 0 10px; }
+            .salon-card { padding: 25px; }
+        }
     </style>
 </head>
 <body>
-    <header style="text-align:center; margin-top:40px;">
-        <h1 style="font-family:'Playfair Display'; font-size:3rem; color:#333;">Bienvenido a PASO</h1>
-        <p style="color:#888; letter-spacing:2px; text-transform:uppercase;">Directorio Exclusivo de Belleza</p>
+    <header>
+        <h1 class="header-title">Bienvenido a PASO</h1>
+        <p class="header-subtitle">Directorio Exclusivo de Belleza</p>
     </header>
 
     <div class="salon-grid">
         {% for p in peluquerias %}
             <a href="{% url 'agendar_cita' p.slug %}" class="salon-card">
-                <div style="font-size:2.5rem; margin-bottom:10px;">💈</div>
+                <div class="icon-container">
+                    <i class="fas fa-magic"></i> 
+                </div>
+                
                 <h2 class="salon-name">{{ p.nombre_visible }}</h2>
                 
                 {% if p.direccion %}
-                    <div class="info-item">📍 {{ p.direccion }}</div>
+                    <div class="info-item">
+                        <i class="fas fa-map-marker-alt"></i> <span>{{ p.direccion }}</span>
+                    </div>
                 {% endif %}
                 
                 {% if p.telefono %}
-                    <div class="info-item">📞 {{ p.telefono }}</div>
+                    <div class="info-item">
+                        <i class="fas fa-phone"></i> <span>{{ p.telefono }}</span>
+                    </div>
                 {% endif %}
                 
                 <span class="btn-action">Reservar Cita</span>
             </a>
         {% empty %}
-            <p>No hay salones disponibles.</p>
+            <p style="text-align: center; width: 100%; color: var(--text-dark); font-size: 1.1rem;">✨ No hay salones exclusivos disponibles en este momento. ✨</p>
         {% endfor %}
     </div>
 </body>

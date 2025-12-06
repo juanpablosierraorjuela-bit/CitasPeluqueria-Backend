@@ -3,47 +3,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agendar en {{ peluqueria.nombre_visible }}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+    <title>Agendar Cita en {{ peluqueria.nombre_visible }}</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        :root { --primary: #dfa6b0; --dark: #c58692; --bg: #fdfbfb; }
-        body { font-family: 'Poppins', sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; }
-        .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); width: 100%; max-width: 500px; }
-        h1 { font-family: 'Playfair Display'; text-align: center; color: #333; }
-        
-        /* Checkboxes bonitos para servicios */
-        .servicio-option { display: block; margin-bottom: 10px; cursor: pointer; }
-        .servicio-card { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 15px; border: 1px solid #eee; border-radius: 10px; transition: all 0.2s;
+        /* Definición de la paleta de colores unificada */
+        :root {
+            --primary-rose: #dfa6b0; /* Rosa Suave */
+            --secondary-gold: #c39d6e; /* Oro Envejecido */
+            --text-dark: #2c3e50; /* Azul oscuro elegante */
+            --text-light: #7f8c8d;
+            --bg-soft: #f4f7f6;
+            --border-soft: #e0e0e0;
         }
-        .servicio-option input:checked + .servicio-card { 
-            border-color: var(--primary); background: #fff0f3; color: #333;
-        }
-        input[type="checkbox"] { display: none; } /* Ocultar el checkbox feo */
 
-        /* Botones de hora */
-        #contenedor-horas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
-        .btn-hora { padding: 10px; border: 1px solid #eee; border-radius: 8px; text-align: center; cursor: pointer; }
-        .btn-hora.seleccionado { background: var(--primary); color: white; border-color: var(--primary); }
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background: var(--bg-soft); 
+            display: flex; 
+            justify-content: center; 
+            padding: 40px 20px; 
+            margin: 0;
+        }
+
+        .container { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 16px; 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1); 
+            width: 100%; 
+            max-width: 550px; 
+        }
+
+        /* --- HEADERS --- */
+        .header-title { 
+            font-family: 'Playfair Display', serif; 
+            font-size: 2.5rem; 
+            text-align: center; 
+            color: var(--text-dark); 
+            margin-bottom: 5px;
+        }
+
+        .header-subtitle { 
+            text-align: center; 
+            color: var(--text-light); 
+            font-weight: 400; 
+            font-size: 1rem;
+            margin-bottom: 30px;
+        }
+
+        /* --- PASOS --- */
+        .step-label {
+            font-weight: 600;
+            color: var(--primary-rose);
+            font-size: 1rem;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
         
-        button[type="submit"] { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 30px; font-weight: 600; margin-top: 30px; cursor: pointer; }
-        button:disabled { background: #eee; cursor: not-allowed; }
-        .hidden { display: none; }
+        /* --- CHECKBOXES / SERVICIOS --- */
+        .servicio-option { 
+            display: block; 
+            margin-bottom: 10px; 
+            cursor: pointer; 
+        }
+        
+        .servicio-card { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 15px; 
+            border: 1px solid var(--border-soft); 
+            border-radius: 12px; 
+            transition: all 0.2s;
+            background: #ffffff;
+            font-size: 0.95rem;
+        }
+        
+        .servicio-option input:checked + .servicio-card { 
+            border-color: var(--primary-rose); 
+            background: #fffafa; /* Fondo muy suave al seleccionar */
+            box-shadow: 0 4px 10px rgba(223, 166, 176, 0.2);
+        }
+        
+        .servicio-card span:last-child {
+            font-weight: 600;
+            color: var(--secondary-gold); /* Precio en tono dorado/acento */
+        }
+        
+        input[type="checkbox"] { 
+            display: none; 
+        } 
+
+        /* --- SELECTS E INPUTS --- */
+        select, input[type="date"], input[type="text"], input[type="tel"] {
+            width: 100%; 
+            padding: 12px; 
+            margin-top: 5px; 
+            border-radius: 8px; 
+            border: 1px solid var(--border-soft);
+            background: var(--bg-soft);
+            font-size: 1rem;
+            box-sizing: border-box; /* Importante para el width:100% */
+        }
+        
+        input::placeholder {
+            color: var(--text-light);
+        }
+
+        /* --- BOTONES DE HORA --- */
+        #contenedor-horas { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); 
+            gap: 12px; 
+            margin-top: 15px; 
+        }
+        
+        .btn-hora { 
+            padding: 10px 5px; 
+            border: 1px solid var(--border-soft); 
+            border-radius: 8px; 
+            text-align: center; 
+            cursor: pointer; 
+            background: white;
+            transition: all 0.2s;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+        
+        .btn-hora:hover:not(.seleccionado) {
+            background: #fdf0f2;
+            border-color: var(--primary-rose);
+        }
+        
+        .btn-hora.seleccionado { 
+            background: var(--primary-rose); 
+            color: white; 
+            border-color: var(--primary-rose); 
+            box-shadow: 0 4px 8px rgba(223, 166, 176, 0.4);
+        }
+        
+        /* --- BOTÓN CONFIRMAR --- */
+        #btn-confirmar { 
+            width: 100%; 
+            padding: 18px; 
+            background: var(--primary-rose); 
+            color: white; 
+            border: none; 
+            border-radius: 50px; 
+            font-weight: 600; 
+            margin-top: 40px; 
+            cursor: pointer; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: background 0.3s;
+        }
+        
+        #btn-confirmar:hover:not(:disabled) {
+            background: var(--secondary-gold);
+        }
+        
+        #btn-confirmar:disabled { 
+            background: #e9e9e9; 
+            color: var(--text-light);
+            cursor: not-allowed; 
+            box-shadow: none;
+        }
+
+        .hidden { 
+            display: none !important; 
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Reserva tu Cita</h1>
-    <h3 style="text-align:center; color:#888; font-weight:300;">{{ peluqueria.nombre_visible }}</h3>
+    <h1 class="header-title">Reserva Exclusiva</h1>
+    <h3 class="header-subtitle"><i class="fas fa-cut"></i> {{ peluqueria.nombre_visible }}</h3>
 
     <form method="POST">
         {% csrf_token %}
         <input type="hidden" name="fecha_seleccionada" id="input_fecha">
         <input type="hidden" name="hora_seleccionada" id="input_hora">
 
-        <label><strong>1. Selecciona los tratamientos:</strong></label>
+        <label class="step-label"><i class="fas fa-star"></i> 1. Selecciona los tratamientos:</label>
         <div style="margin-top: 10px;">
             {% for s in servicios %}
                 <label class="servicio-option">
@@ -56,28 +204,28 @@
             {% endfor %}
         </div>
 
-        <div id="step-empleado" class="hidden" style="margin-top:20px;">
-            <label><strong>2. Elige profesional:</strong></label>
-            <select name="empleado" id="empleado" style="width:100%; padding:10px; margin-top:5px; border-radius:8px; border:1px solid #ddd;">
-                <option value="" disabled selected>-- Seleccionar --</option>
+        <div id="step-empleado" class="hidden">
+            <label class="step-label"><i class="fas fa-user-tag"></i> 2. Elige profesional:</label>
+            <select name="empleado" id="empleado">
+                <option value="" disabled selected>-- Seleccionar profesional --</option>
                 {% for e in empleados %}
                     <option value="{{ e.id }}">{{ e.nombre }} {{ e.apellido }}</option>
                 {% endfor %}
             </select>
         </div>
 
-        <div id="step-fecha" class="hidden" style="margin-top:20px;">
-            <label><strong>3. Selecciona fecha:</strong></label>
-            <input type="date" id="picker-fecha" style="width:100%; padding:10px; margin-top:5px; border-radius:8px; border:1px solid #ddd;">
+        <div id="step-fecha" class="hidden">
+            <label class="step-label"><i class="fas fa-calendar-alt"></i> 3. Selecciona fecha y hora:</label>
+            <input type="date" id="picker-fecha">
             
             <div id="contenedor-horas"></div>
-            <p id="mensaje-error" style="color:red; text-align:center;"></p>
+            <p id="mensaje-error" style="color:var(--primary-rose); text-align:center; font-size:0.9rem; margin-top:15px;"></p>
         </div>
 
-        <div id="step-datos" class="hidden" style="margin-top:20px;">
-            <label><strong>4. Tus datos:</strong></label>
-            <input type="text" name="nombre_cliente" placeholder="Nombre completo" required style="width:92%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
-            <input type="tel" name="telefono_cliente" placeholder="Teléfono" required style="width:92%; padding:10px; border-radius:8px; border:1px solid #ddd;">
+        <div id="step-datos" class="hidden">
+            <label class="step-label"><i class="fas fa-address-book"></i> 4. Tus datos:</label>
+            <input type="text" name="nombre_cliente" placeholder="Nombre completo" required>
+            <input type="tel" name="telefono_cliente" placeholder="Teléfono de contacto" required>
         </div>
 
         <button type="submit" id="btn-confirmar" disabled>CONFIRMAR CITA</button>
@@ -85,6 +233,7 @@
 </div>
 
 <script>
+    // Tu código JavaScript original (sin cambios funcionales, solo visuales)
     const checksServicios = document.querySelectorAll('.check-servicio');
     const stepEmpleado = document.getElementById('step-empleado');
     const empleadoSelect = document.getElementById('empleado');
@@ -123,10 +272,10 @@
         if (!fecha || !empleadoId || serviciosIds.length === 0) return;
 
         document.getElementById('input_fecha').value = fecha;
-        contenedorHoras.innerHTML = 'Cargando...';
+        contenedorHoras.innerHTML = '<p style="grid-column:1/-1; text-align:center;">Cargando horarios...</p>';
 
         try {
-            // Enviamos la lista de IDs unida por comas
+            // Asegúrate de que la URL de la API es correcta según tu Django. Si la vista está en la raíz, debería funcionar.
             const response = await fetch(`/api/horarios/?empleado_id=${empleadoId}&fecha=${fecha}&servicios_ids=${serviciosIds.join(',')}`);
             const data = await response.json();
             
@@ -140,9 +289,12 @@
                     contenedorHoras.appendChild(btn);
                 });
             } else {
-                contenedorHoras.innerHTML = '<p style="grid-column:1/-1; text-align:center;">Sin horas disponibles.</p>';
+                contenedorHoras.innerHTML = '<p style="grid-column:1/-1; text-align:center;">No hay horas disponibles para los servicios seleccionados.</p>';
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            console.error(e);
+            contenedorHoras.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:red;">Error al cargar horarios. Intente otra fecha.</p>';
+        }
     });
 
     function seleccionarHora(btn, hora) {
@@ -155,10 +307,23 @@
     }
 
     function resetPasosDesde(paso) {
-        if(paso <= 2) { empleadoSelect.value = ""; stepFecha.classList.add('hidden'); }
-        if(paso <= 3) { fechaInput.value = ""; contenedorHoras.innerHTML = ""; stepDatos.classList.add('hidden'); btnConfirmar.disabled = true; }
+        if(paso <= 2) { 
+            empleadoSelect.value = ""; 
+            stepFecha.classList.add('hidden'); 
+            // Vaciamos el selector de empleado al resetear
+            const options = empleadoSelect.querySelectorAll('option');
+            options.forEach(opt => { if(!opt.disabled) opt.selected = false; });
+            empleadoSelect.value = empleadoSelect.querySelector('option[disabled]').value; // Seleccionar el placeholder
+        }
+        if(paso <= 3) { 
+            fechaInput.value = ""; 
+            contenedorHoras.innerHTML = ""; 
+            stepDatos.classList.add('hidden'); 
+            btnConfirmar.disabled = true; 
+        }
     }
     
+    // Configura la fecha mínima para hoy
     fechaInput.setAttribute('min', new Date().toISOString().split('T')[0]);
 </script>
 </body>
