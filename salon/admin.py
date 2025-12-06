@@ -1,7 +1,7 @@
 from django.contrib import admin, messages
 from django.contrib.auth.models import Group, User 
 from django.urls import path 
-from django.utils.safestring import mark_safe # <--- NECESARIO PARA EL BOTÓN
+from django.utils.safestring import mark_safe 
 from .models import (
     Peluqueria, Servicio, Empleado, HorarioSemanal, Cita, PerfilUsuario,
     enviar_mensaje_telegram 
@@ -67,15 +67,13 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
     readonly_fields = ('boton_prueba_telegram',) 
     
     # --- MÉTODO PARA CREAR EL BOTÓN VISUALMENTE ---
-    @admin.display(description='Diagnóstico Telegram') # Nuevo decorador para el encabezado
+    @admin.display(description='Diagnóstico Telegram') 
     def boton_prueba_telegram(self, obj):
         if obj.pk: 
-            url = f"test_telegram/" 
-            # FIX CLAVE: Usamos mark_safe para permitir que el HTML se renderice
+            # FIX DE RUTA: Usamos ../ID/accion para evitar errores de redirección relativa
+            url = f"../{obj.pk}/test_telegram/" 
             return mark_safe(f'<a class="button" href="{url}" style="background-color: #007bff; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none;">Enviar Mensaje de Prueba</a>')
         return "Guarde la peluquería para probar"
-    
-    # Eliminamos boton_prueba_telegram.short_description y .allow_tags
     
     # --- FUNCIÓN QUE AÑADE LA RUTA AL BOTÓN ---
     def get_urls(self):
@@ -121,14 +119,11 @@ class EmpleadoAdmin(SalonOwnerAdmin):
     list_display = ('nombre', 'apellido')
     inlines = [HorarioSemanalInline] 
 
-# FIX DEL ERROR DE RENDER: CitaAdmin debe usar el nuevo campo ManyToManyField 'servicios'
 @admin.register(Cita)
 class CitaAdmin(SalonOwnerAdmin):
-    # CORRECCIÓN CLAVE: Reemplazamos 'servicio' por un método para mostrar la lista de servicios
     list_display = ('cliente_nombre', 'empleado', 'fecha_hora_inicio', 'servicios_listados', 'estado') 
     filter_horizontal = ('servicios',) 
 
-    # --- MÉTODO PARA MOSTRAR LOS NOMBRES DE LOS SERVICIOS ---
     def servicios_listados(self, obj):
         return ", ".join([s.nombre for s in obj.servicios.all()])
     
@@ -146,7 +141,7 @@ class PerfilUsuarioAdmin(SuperuserOnlyAdmin):
     pass 
 
 
-# 4. FIX FINAL: OCULTAR "AUTENTICACIÓN Y AUTORIZACIÓN"
+# 4. OCULTAR "AUTENTICACIÓN Y AUTORIZACIÓN"
 admin.site.unregister(User)
 admin.site.unregister(Group)
 
