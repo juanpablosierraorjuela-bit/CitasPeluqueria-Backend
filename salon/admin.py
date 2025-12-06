@@ -3,7 +3,7 @@ from django.contrib.auth.models import Group, User
 from django.urls import path, reverse 
 from django.http import HttpResponseRedirect 
 from django.utils.safestring import mark_safe 
-import requests 
+import requests # Usamos requests directamente aquí
 from .models import (
     Peluqueria, Servicio, Empleado, HorarioSemanal, Cita, PerfilUsuario
 )
@@ -55,7 +55,7 @@ class SuperuserOnlyAdmin(admin.ModelAdmin):
 
 
 # =============================================================
-# 2. PELUQUERIA ADMIN (Corrección Telegram)
+# 2. PELUQUERIA ADMIN (Corrección Telegram Integrada)
 # =============================================================
 
 @admin.register(Peluqueria)
@@ -80,6 +80,7 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
         return extra_urls + urls
 
     def test_telegram_view(self, request, object_id):
+        # Lógica de envío AUTÓNOMA (No depende de models.py ni views.py)
         try:
             peluqueria = self.get_object(request, object_id)
             url_retorno = reverse('admin:salon_peluqueria_change', args=[peluqueria.pk])
@@ -92,7 +93,7 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
                 self.message_user(request, "⚠️ Faltan Token o ID en la configuración.", level=messages.WARNING)
                 return HttpResponseRedirect(url_retorno)
             
-            # 2. Enviar mensaje directamente (sin depender de imports rotos)
+            # 2. Enviar mensaje
             url_api = f"https://api.telegram.org/bot{token}/sendMessage"
             data = {
                 "chat_id": chat_id,
