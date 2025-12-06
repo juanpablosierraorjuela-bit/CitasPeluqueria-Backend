@@ -1,100 +1,149 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>¡Cita Confirmada!</title>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Reserva Exitosa | PASO</title>
+    <!-- Misma fuente 'Outfit' para consistencia total -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
     
     <style>
-        /* Paleta de colores unificada */
         :root {
-            --primary-rose: #dfa6b0; /* Rosa Suave */
-            --secondary-gold: #c39d6e; /* Oro Envejecido para acentos */
-            --text-dark: #2c3e50; /* Azul oscuro elegante */
-            --bg-soft: #f4f7f6;
-            --success-color: #5cb85c; /* Mantenemos un verde suave para el éxito lógico */
+            /* Misma paleta que el Index */
+            --bg-color: #f8fafc;
+            --text-dark: #0f172a;
+            --text-gray: #64748b;
+            --card-bg: #ffffff;
+            
+            /* Degradados */
+            --primary-gradient: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+            --accent-gradient: linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%);
+            
+            /* Sombras */
+            --shadow-card: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: 'Poppins', sans-serif;
-            background-color: var(--bg-soft);
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            margin: 0;
             padding: 20px;
-        }
-
-        .card {
-            background: white;
-            padding: 50px 40px;
-            border-radius: 16px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 450px;
-            width: 100%;
-            border-top: 5px solid var(--primary-rose); /* Detalle de color elegante */
-        }
-
-        .icon {
-            font-size: 60px;
-            color: var(--primary-rose); /* Usamos el rosa como color principal de éxito */
-            margin-bottom: 25px;
-            animation: pulse 1s infinite alternate; /* Efecto sutil de pulso */
-        }
-
-        @keyframes pulse {
-            from { transform: scale(1); }
-            to { transform: scale(1.05); }
-        }
-
-        h1 {
-            font-family: 'Playfair Display', serif;
             color: var(--text-dark);
+        }
+
+        /* --- TARJETA CENTRAL --- */
+        .success-card {
+            background: var(--card-bg);
+            padding: 60px 40px;
+            border-radius: 32px;
+            text-align: center;
+            max-width: 480px;
+            width: 100%;
+            box-shadow: var(--shadow-card);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            position: relative;
+            overflow: hidden;
+            animation: floatUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes floatUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Línea superior decorativa */
+        .success-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: var(--accent-gradient);
+        }
+
+        /* --- ÍCONO ELEGANTE --- */
+        .icon-wrapper {
+            width: 80px;
+            height: 80px;
+            background: rgba(236, 72, 153, 0.08); /* Fondo rosa muy sutil */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+        }
+
+        .check-mark {
+            font-size: 32px;
+            /* El check tiene el color del gradiente */
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        /* --- TIPOGRAFÍA --- */
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
             margin-bottom: 15px;
-            font-size: 2.2rem;
+            letter-spacing: -0.5px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         p {
-            color: var(--text-light);
-            line-height: 1.7;
-            margin-bottom: 35px;
+            color: var(--text-gray);
             font-size: 1.05rem;
+            line-height: 1.6;
+            margin-bottom: 40px;
+            font-weight: 300;
         }
 
-        .btn {
-            display: inline-block;
-            background-color: var(--primary-rose);
+        /* --- BOTÓN PREMIUM --- */
+        .btn-home {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 40px;
+            background: var(--text-dark); /* Fondo oscuro elegante */
             color: white;
-            padding: 12px 30px;
             text-decoration: none;
-            border-radius: 50px; /* Botón redondeado */
-            font-weight: 600;
-            transition: background 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 4px 10px rgba(223, 166, 176, 0.4);
+            border-radius: 50px;
+            font-weight: 500;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
         }
 
-        .btn:hover {
-            background-color: var(--secondary-gold); /* Cambio a dorado al pasar el mouse */
+        .btn-home:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.25);
+            background: black;
         }
+
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <div class="icon">
-            <i class="fas fa-calendar-check"></i>
+    <div class="success-card">
+        <!-- Círculo sutil con check elegante -->
+        <div class="icon-wrapper">
+            <span class="check-mark">✓</span>
         </div>
-        <h1>¡Reserva Agendada!</h1>
-        <p>Tu cita ha sido procesada con éxito. ¡Hemos notificado al estilista y te esperamos!</p>
+
+        <h1>¡Reserva Confirmada!</h1>
+        <p>Tu cita ha quedado agendada correctamente. Hemos notificado al estilista y todo está listo para tu llegada.</p>
         
-        <a href="{% url 'inicio' %}" class="btn">Volver al Directorio</a>
+        <a href="{% url 'inicio' %}" class="btn-home">Volver al Directorio</a>
     </div>
 
 </body>

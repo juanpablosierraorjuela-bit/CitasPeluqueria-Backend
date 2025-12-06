@@ -1,185 +1,241 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PASO | Directorio de Salones Exclusivos</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <title>PASO | Colección de Estilos</title>
+    <!-- Fuente 'Outfit' para un look moderno y geométrico -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
     
     <style>
-        /* Paleta de colores: 
-           --primary-rose: #dfa6b0 (Rosa Suave)
-           --secondary-gold: #c39d6e (Oro envejecido, usado para acentos)
-           --text-dark: #2c3e50; (Azul oscuro elegante)
-           --text-light: #7f8c8d;
-        */
         :root {
-            --primary-rose: #dfa6b0;
-            --secondary-gold: #c39d6e;
-            --text-dark: #2c3e50;
-            --text-light: #7f8c8d;
-            --bg-light: #fefefe;
-            --bg-soft: #f4f7f6;
+            /* Paleta de Colores Exclusiva */
+            --bg-color: #f8fafc;
+            --text-dark: #0f172a;
+            --text-gray: #64748b;
+            --card-bg: #ffffff;
+            
+            /* Degradados sutiles y modernos */
+            --primary-gradient: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+            --accent-gradient: linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%); /* Rosa a Violeta */
+            
+            /* Sombras sofisticadas */
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            font-family: 'Poppins', sans-serif;
-            background: var(--bg-soft); /* Fondo suave */
-            padding: 20px;
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
-            margin: 0;
         }
 
-        /* --- HEADER & TITLES --- */
+        /* --- HERO SECTION (ENCABEZADO) --- */
         header {
             text-align: center;
-            padding: 40px 20px 60px;
-            max-width: 800px;
+            padding: 100px 20px 60px;
+            max-width: 900px;
+            position: relative;
+        }
+
+        /* Fondo decorativo muy sutil (Glow) */
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.08) 0%, rgba(248, 250, 252, 0) 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .brand-badge {
+            display: inline-block;
+            background: rgba(15, 23, 42, 0.05);
+            color: var(--text-dark);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
 
         .header-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 3.5rem;
-            color: var(--text-dark);
-            margin: 0;
+            font-size: 4rem; /* Título grande e impactante */
+            font-weight: 700;
             line-height: 1.1;
+            margin-bottom: 20px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1.5px;
         }
 
         .header-subtitle {
-            color: var(--text-light);
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            font-size: 0.9rem;
-            margin-top: 5px;
+            font-size: 1.25rem;
+            color: var(--text-gray);
             font-weight: 300;
+            max-width: 500px;
+            margin: 0 auto;
+            line-height: 1.6;
         }
-        
+
         /* --- GRID & CARDS --- */
         .salon-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 40px;
             max-width: 1200px;
             width: 100%;
-            padding: 0 20px;
+            padding: 0 40px 100px;
         }
 
         .salon-card {
-            background: var(--bg-light);
-            border-radius: 12px;
-            padding: 30px;
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 35px;
             text-decoration: none;
-            color: var(--text-dark);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08); /* Sombra más pronunciada pero suave */
-            transition: transform 0.3s, box-shadow 0.3s;
-            border: 2px solid transparent;
-            text-align: center;
+            color: inherit;
             position: relative;
             overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 220px;
         }
 
+        /* Efecto Hover: Elevación */
         .salon-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
-            border-color: var(--primary-rose);
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-hover);
+            border-color: rgba(236, 72, 153, 0.15);
         }
-        
-        /* Icono/logo de la tarjeta */
-        .icon-container {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-            color: var(--secondary-gold); /* Color elegante */
-            /* Efecto de fondo sutil para el icono */
-            padding: 10px;
-            display: inline-block;
-            border-radius: 50%;
-            background: rgba(224, 187, 228, 0.1); 
+
+        /* Línea de gradiente animada en la parte inferior */
+        .salon-card::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            height: 4px;
+            width: 0%;
+            background: var(--accent-gradient);
+            transition: width 0.4s ease;
+        }
+
+        .salon-card:hover::after {
+            width: 100%;
+        }
+
+        .salon-content {
+            margin-bottom: 20px;
         }
 
         .salon-name {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.8rem;
-            margin-bottom: 20px;
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 12px;
             color: var(--text-dark);
+            letter-spacing: -0.5px;
         }
 
-        .info-item {
-            font-size: 0.95rem;
-            color: var(--text-light);
-            margin-bottom: 12px;
+        .info-row {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
+            gap: 8px;
+            font-size: 0.95rem;
+            color: var(--text-gray);
+            margin-bottom: 6px;
             font-weight: 400;
         }
-        
-        .info-item i {
-            color: var(--primary-rose);
-            font-size: 1.1rem;
+
+        /* Texto de acción sutil en lugar de botón grande */
+        .action-link {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #db2777; /* Rosa oscuro */
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.7;
+            transition: all 0.3s;
+            margin-top: auto;
         }
 
-        .btn-action {
-            background: var(--primary-rose);
-            color: white;
-            padding: 12px 30px;
-            border-radius: 50px; /* Más redondo */
-            margin-top: 25px;
-            display: inline-block;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.9rem;
-            transition: background 0.3s;
+        .salon-card:hover .action-link {
+            opacity: 1;
+            transform: translateX(5px);
         }
-        
-        .btn-action:hover {
-            background: var(--secondary-gold); /* Cambio a dorado al pasar el mouse */
-        }
-        
-        /* Responsive */
+
+        /* --- RESPONSIVE --- */
         @media (max-width: 768px) {
-            .header-title { font-size: 2.5rem; }
-            .salon-grid { gap: 20px; padding: 0 10px; }
-            .salon-card { padding: 25px; }
+            .header-title { font-size: 2.8rem; }
+            .salon-grid { padding: 0 20px 80px; grid-template-columns: 1fr; }
+            .salon-card { min-height: auto; }
         }
     </style>
 </head>
 <body>
+
     <header>
-        <h1 class="header-title">Bienvenido a PASO</h1>
-        <p class="header-subtitle">Directorio Exclusivo de Belleza</p>
+        <span class="brand-badge">PASO APP</span>
+        <h1 class="header-title">Encuentra tu<br>lugar ideal</h1>
+        <p class="header-subtitle">Una selección curada de espacios dedicados a tu estilo y bienestar.</p>
     </header>
 
     <div class="salon-grid">
         {% for p in peluquerias %}
             <a href="{% url 'agendar_cita' p.slug %}" class="salon-card">
-                <div class="icon-container">
-                    <i class="fas fa-magic"></i> 
+                <div class="salon-content">
+                    <h2 class="salon-name">{{ p.nombre_visible }}</h2>
+                    
+                    {% if p.direccion %}
+                        <div class="info-row">
+                            <!-- Símbolo de texto limpio en lugar de icono FontAwesome -->
+                            <span>📍</span> {{ p.direccion }}
+                        </div>
+                    {% else %}
+                         <div class="info-row">
+                            <span>📍</span> Ubicación exclusiva
+                        </div>
+                    {% endif %}
+
+                    {% if p.telefono %}
+                        <div class="info-row">
+                            <span>📞</span> {{ p.telefono }}
+                        </div>
+                    {% endif %}
                 </div>
                 
-                <h2 class="salon-name">{{ p.nombre_visible }}</h2>
-                
-                {% if p.direccion %}
-                    <div class="info-item">
-                        <i class="fas fa-map-marker-alt"></i> <span>{{ p.direccion }}</span>
-                    </div>
-                {% endif %}
-                
-                {% if p.telefono %}
-                    <div class="info-item">
-                        <i class="fas fa-phone"></i> <span>{{ p.telefono }}</span>
-                    </div>
-                {% endif %}
-                
-                <span class="btn-action">Reservar Cita</span>
+                <div class="action-link">
+                    Reservar Cita <span>&rarr;</span>
+                </div>
             </a>
         {% empty %}
-            <p style="text-align: center; width: 100%; color: var(--text-dark); font-size: 1.1rem;">✨ No hay salones exclusivos disponibles en este momento. ✨</p>
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+                <p style="color: var(--text-gray); font-size: 1.2rem;">Estamos actualizando nuestra lista de salones exclusivos.</p>
+            </div>
         {% endfor %}
     </div>
+
 </body>
 </html>

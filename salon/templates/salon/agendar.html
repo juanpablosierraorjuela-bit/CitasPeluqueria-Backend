@@ -1,239 +1,312 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agendar Cita en {{ peluqueria.nombre_visible }}</title>
+    <title>Reserva en {{ peluqueria.nombre_visible }} | PASO</title>
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Fuente 'Outfit' -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* Definición de la paleta de colores unificada */
         :root {
-            --primary-rose: #dfa6b0; /* Rosa Suave */
-            --secondary-gold: #c39d6e; /* Oro Envejecido */
-            --text-dark: #2c3e50; /* Azul oscuro elegante */
-            --text-light: #7f8c8d;
-            --bg-soft: #f4f7f6;
-            --border-soft: #e0e0e0;
+            /* Misma paleta Premium */
+            --bg-color: #f8fafc;
+            --text-dark: #0f172a;
+            --text-gray: #64748b;
+            --card-bg: #ffffff;
+            --border-light: #e2e8f0;
+            
+            /* Degradados y Acentos */
+            --primary-gradient: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+            --accent-gradient: linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%);
+            --accent-color: #ec4899; /* Rosa fuerte para bordes activos */
+            
+            /* Sombras */
+            --shadow-card: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01);
+            --shadow-input: 0 2px 4px rgba(0,0,0,0.02);
         }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body { 
-            font-family: 'Poppins', sans-serif; 
-            background: var(--bg-soft); 
+            font-family: 'Outfit', sans-serif; 
+            background-color: var(--bg-color); 
             display: flex; 
             justify-content: center; 
-            padding: 40px 20px; 
-            margin: 0;
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: var(--text-dark);
         }
 
         .container { 
-            background: white; 
-            padding: 40px; 
-            border-radius: 16px; 
-            box-shadow: 0 15px 40px rgba(0,0,0,0.1); 
+            background: var(--card-bg); 
+            padding: 50px 40px; 
+            border-radius: 32px; 
+            box-shadow: var(--shadow-card); 
             width: 100%; 
-            max-width: 550px; 
+            max-width: 600px; 
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            position: relative;
         }
 
-        /* --- HEADERS --- */
+        /* Línea decorativa superior */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: var(--accent-gradient);
+            border-radius: 32px 32px 0 0;
+        }
+
+        /* --- HEADER --- */
+        .header-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
         .header-title { 
-            font-family: 'Playfair Display', serif; 
-            font-size: 2.5rem; 
-            text-align: center; 
-            color: var(--text-dark); 
-            margin-bottom: 5px;
+            font-size: 2.2rem; 
+            font-weight: 700; 
+            margin-bottom: 8px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
         }
 
         .header-subtitle { 
-            text-align: center; 
-            color: var(--text-light); 
-            font-weight: 400; 
+            color: var(--text-gray); 
             font-size: 1rem;
-            margin-bottom: 30px;
+            font-weight: 400;
         }
 
-        /* --- PASOS --- */
+        /* --- PASOS Y ETIQUETAS --- */
         .step-label {
+            font-size: 0.9rem;
             font-weight: 600;
-            color: var(--primary-rose);
-            font-size: 1rem;
-            margin-top: 25px;
-            margin-bottom: 10px;
+            color: var(--text-dark);
+            margin: 30px 0 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             display: flex;
             align-items: center;
             gap: 10px;
         }
         
-        /* --- CHECKBOXES / SERVICIOS --- */
+        .step-number {
+            background: #f1f5f9;
+            color: var(--text-gray);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        /* --- TARJETAS DE SERVICIOS (CHECKBOX) --- */
+        .servicios-grid {
+            display: grid;
+            gap: 12px;
+        }
+
         .servicio-option { 
             display: block; 
-            margin-bottom: 10px; 
             cursor: pointer; 
+            position: relative;
         }
         
         .servicio-card { 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
-            padding: 15px; 
-            border: 1px solid var(--border-soft); 
-            border-radius: 12px; 
-            transition: all 0.2s;
+            padding: 16px 20px; 
+            border: 1px solid var(--border-light); 
+            border-radius: 16px; 
+            transition: all 0.3s ease;
             background: #ffffff;
-            font-size: 0.95rem;
         }
         
-        .servicio-option input:checked + .servicio-card { 
-            border-color: var(--primary-rose); 
-            background: #fffafa; /* Fondo muy suave al seleccionar */
-            box-shadow: 0 4px 10px rgba(223, 166, 176, 0.2);
-        }
-        
-        .servicio-card span:last-child {
-            font-weight: 600;
-            color: var(--secondary-gold); /* Precio en tono dorado/acento */
-        }
-        
-        input[type="checkbox"] { 
-            display: none; 
-        } 
+        /* Checkbox oculto */
+        input[type="checkbox"] { display: none; } 
 
-        /* --- SELECTS E INPUTS --- */
+        /* Estado Seleccionado */
+        .servicio-option input:checked + .servicio-card { 
+            border-color: var(--accent-color); 
+            background: #fdf2f8; /* Rosa muy pálido */
+            box-shadow: 0 4px 12px rgba(236, 72, 153, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .servicio-name { font-weight: 500; font-size: 1rem; }
+        .servicio-price { font-weight: 700; color: var(--text-dark); }
+
+        /* --- INPUTS Y SELECTS --- */
         select, input[type="date"], input[type="text"], input[type="tel"] {
             width: 100%; 
-            padding: 12px; 
-            margin-top: 5px; 
-            border-radius: 8px; 
-            border: 1px solid var(--border-soft);
-            background: var(--bg-soft);
+            padding: 16px; 
+            border-radius: 16px; 
+            border: 1px solid var(--border-light);
+            background: #f8fafc;
             font-size: 1rem;
-            box-sizing: border-box; /* Importante para el width:100% */
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.3s;
+            color: var(--text-dark);
+            outline: none;
+            -webkit-appearance: none; /* Quita estilos por defecto en iOS */
         }
         
-        input::placeholder {
-            color: var(--text-light);
+        select:focus, input:focus {
+            border-color: var(--accent-color);
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.1);
         }
 
-        /* --- BOTONES DE HORA --- */
+        /* --- GRILLA DE HORAS --- */
         #contenedor-horas { 
             display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); 
-            gap: 12px; 
+            grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); 
+            gap: 10px; 
             margin-top: 15px; 
         }
         
         .btn-hora { 
-            padding: 10px 5px; 
-            border: 1px solid var(--border-soft); 
-            border-radius: 8px; 
+            padding: 12px 5px; 
+            border: 1px solid var(--border-light); 
+            border-radius: 12px; 
             text-align: center; 
             cursor: pointer; 
             background: white;
             transition: all 0.2s;
+            font-size: 0.9rem;
             font-weight: 500;
-            color: var(--text-dark);
         }
         
         .btn-hora:hover:not(.seleccionado) {
-            background: #fdf0f2;
-            border-color: var(--primary-rose);
+            border-color: var(--text-gray);
+            background: #f1f5f9;
         }
         
         .btn-hora.seleccionado { 
-            background: var(--primary-rose); 
+            background: var(--text-dark); /* Negro elegante */
             color: white; 
-            border-color: var(--primary-rose); 
-            box-shadow: 0 4px 8px rgba(223, 166, 176, 0.4);
+            border-color: var(--text-dark); 
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
+            transform: scale(1.05);
         }
-        
+
         /* --- BOTÓN CONFIRMAR --- */
         #btn-confirmar { 
             width: 100%; 
-            padding: 18px; 
-            background: var(--primary-rose); 
+            padding: 20px; 
+            background: var(--accent-gradient); 
             color: white; 
             border: none; 
             border-radius: 50px; 
             font-weight: 600; 
-            margin-top: 40px; 
+            font-size: 1.1rem;
+            margin-top: 50px; 
             cursor: pointer; 
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: background 0.3s;
+            box-shadow: 0 10px 20px rgba(236, 72, 153, 0.3);
+            transition: all 0.3s ease;
         }
         
         #btn-confirmar:hover:not(:disabled) {
-            background: var(--secondary-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(236, 72, 153, 0.4);
         }
         
         #btn-confirmar:disabled { 
-            background: #e9e9e9; 
-            color: var(--text-light);
+            background: #cbd5e1; 
             cursor: not-allowed; 
             box-shadow: none;
+            transform: none;
         }
 
-        .hidden { 
-            display: none !important; 
-        }
+        .hidden { display: none !important; }
+        
+        /* Animación suave para aparecer secciones */
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1 class="header-title">Reserva Exclusiva</h1>
-    <h3 class="header-subtitle"><i class="fas fa-cut"></i> {{ peluqueria.nombre_visible }}</h3>
+    <div class="header-section">
+        <h1 class="header-title">Configura tu Cita</h1>
+        <p class="header-subtitle">{{ peluqueria.nombre_visible }}</p>
+    </div>
 
     <form method="POST">
         {% csrf_token %}
         <input type="hidden" name="fecha_seleccionada" id="input_fecha">
         <input type="hidden" name="hora_seleccionada" id="input_hora">
 
-        <label class="step-label"><i class="fas fa-star"></i> 1. Selecciona los tratamientos:</label>
-        <div style="margin-top: 10px;">
+        <!-- PASO 1 -->
+        <div class="step-label">
+            <span class="step-number">1</span> Tratamientos
+        </div>
+        <div class="servicios-grid">
             {% for s in servicios %}
                 <label class="servicio-option">
                     <input type="checkbox" name="servicios" value="{{ s.id }}" class="check-servicio">
                     <div class="servicio-card">
-                        <span>{{ s.nombre }}</span>
-                        <span style="font-weight:600;">${{ s.precio }}</span>
+                        <span class="servicio-name">{{ s.nombre }}</span>
+                        <span class="servicio-price">${{ s.precio }}</span>
                     </div>
                 </label>
             {% endfor %}
         </div>
 
-        <div id="step-empleado" class="hidden">
-            <label class="step-label"><i class="fas fa-user-tag"></i> 2. Elige profesional:</label>
+        <!-- PASO 2 -->
+        <div id="step-empleado" class="hidden fade-in">
+            <div class="step-label">
+                <span class="step-number">2</span> Profesional
+            </div>
             <select name="empleado" id="empleado">
-                <option value="" disabled selected>-- Seleccionar profesional --</option>
+                <option value="" disabled selected>Selecciona un estilista</option>
                 {% for e in empleados %}
                     <option value="{{ e.id }}">{{ e.nombre }} {{ e.apellido }}</option>
                 {% endfor %}
             </select>
         </div>
 
-        <div id="step-fecha" class="hidden">
-            <label class="step-label"><i class="fas fa-calendar-alt"></i> 3. Selecciona fecha y hora:</label>
+        <!-- PASO 3 -->
+        <div id="step-fecha" class="hidden fade-in">
+            <div class="step-label">
+                <span class="step-number">3</span> Fecha y Hora
+            </div>
             <input type="date" id="picker-fecha">
             
             <div id="contenedor-horas"></div>
-            <p id="mensaje-error" style="color:var(--primary-rose); text-align:center; font-size:0.9rem; margin-top:15px;"></p>
+            <p id="mensaje-error" style="color:var(--accent-color); text-align:center; font-size:0.9rem; margin-top:15px;"></p>
         </div>
 
-        <div id="step-datos" class="hidden">
-            <label class="step-label"><i class="fas fa-address-book"></i> 4. Tus datos:</label>
-            <input type="text" name="nombre_cliente" placeholder="Nombre completo" required>
-            <input type="tel" name="telefono_cliente" placeholder="Teléfono de contacto" required>
+        <!-- PASO 4 -->
+        <div id="step-datos" class="hidden fade-in">
+            <div class="step-label">
+                <span class="step-number">4</span> Tus Datos
+            </div>
+            <div style="display: grid; gap: 15px;">
+                <input type="text" name="nombre_cliente" placeholder="Nombre completo" required>
+                <input type="tel" name="telefono_cliente" placeholder="Número de celular" required>
+            </div>
         </div>
 
-        <button type="submit" id="btn-confirmar" disabled>CONFIRMAR CITA</button>
+        <button type="submit" id="btn-confirmar" disabled>Confirmar Reserva</button>
     </form>
 </div>
 
 <script>
-    // Tu código JavaScript original (sin cambios funcionales, solo visuales)
+    // --- LÓGICA JAVASCRIPT ORIGINAL ---
     const checksServicios = document.querySelectorAll('.check-servicio');
     const stepEmpleado = document.getElementById('step-empleado');
     const empleadoSelect = document.getElementById('empleado');
@@ -243,7 +316,9 @@
     const stepDatos = document.getElementById('step-datos');
     const btnConfirmar = document.getElementById('btn-confirmar');
 
-    // Al seleccionar servicios, mostramos empleado
+    // Configura la fecha mínima para hoy
+    fechaInput.setAttribute('min', new Date().toISOString().split('T')[0]);
+
     checksServicios.forEach(check => {
         check.addEventListener('change', () => {
             const haySeleccion = Array.from(checksServicios).some(c => c.checked);
@@ -252,7 +327,7 @@
                 stepEmpleado.classList.add('hidden');
                 resetPasosDesde(2);
             }
-            resetPasosDesde(3); // Si cambia servicios, debe reelegir hora
+            resetPasosDesde(3);
         });
     });
 
@@ -260,22 +335,21 @@
         stepFecha.classList.remove('hidden');
         fechaInput.value = '';
         contenedorHoras.innerHTML = '';
+        stepDatos.classList.add('hidden'); // Ocultar datos si cambia empleado
     });
 
     fechaInput.addEventListener('change', async () => {
         const fecha = fechaInput.value;
         const empleadoId = empleadoSelect.value;
-        
-        // Obtener IDs de servicios seleccionados (Array)
         const serviciosIds = Array.from(document.querySelectorAll('.check-servicio:checked')).map(c => c.value);
 
         if (!fecha || !empleadoId || serviciosIds.length === 0) return;
 
         document.getElementById('input_fecha').value = fecha;
-        contenedorHoras.innerHTML = '<p style="grid-column:1/-1; text-align:center;">Cargando horarios...</p>';
+        contenedorHoras.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:var(--text-gray);">Buscando disponibilidad...</p>';
 
         try {
-            // Asegúrate de que la URL de la API es correcta según tu Django. Si la vista está en la raíz, debería funcionar.
+            // Asegúrate que esta ruta coincide con tu urls.py
             const response = await fetch(`/api/horarios/?empleado_id=${empleadoId}&fecha=${fecha}&servicios_ids=${serviciosIds.join(',')}`);
             const data = await response.json();
             
@@ -289,11 +363,11 @@
                     contenedorHoras.appendChild(btn);
                 });
             } else {
-                contenedorHoras.innerHTML = '<p style="grid-column:1/-1; text-align:center;">No hay horas disponibles para los servicios seleccionados.</p>';
+                contenedorHoras.innerHTML = '<p style="grid-column:1/-1; text-align:center; font-size:0.9rem;">No hay cupos disponibles. Intenta otra fecha.</p>';
             }
         } catch (e) { 
             console.error(e);
-            contenedorHoras.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:red;">Error al cargar horarios. Intente otra fecha.</p>';
+            contenedorHoras.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:var(--accent-color);">Error de conexión.</p>';
         }
     });
 
@@ -303,17 +377,20 @@
         document.getElementById('input_hora').value = hora;
         stepDatos.classList.remove('hidden');
         btnConfirmar.disabled = false;
-        btnConfirmar.scrollIntoView({behavior: "smooth"});
+        
+        // Scroll suave hacia el final para ver el botón
+        setTimeout(() => {
+             btnConfirmar.scrollIntoView({behavior: "smooth", block: "center"});
+        }, 200);
     }
 
     function resetPasosDesde(paso) {
         if(paso <= 2) { 
             empleadoSelect.value = ""; 
             stepFecha.classList.add('hidden'); 
-            // Vaciamos el selector de empleado al resetear
             const options = empleadoSelect.querySelectorAll('option');
             options.forEach(opt => { if(!opt.disabled) opt.selected = false; });
-            empleadoSelect.value = empleadoSelect.querySelector('option[disabled]').value; // Seleccionar el placeholder
+            empleadoSelect.value = empleadoSelect.querySelector('option[disabled]').value; 
         }
         if(paso <= 3) { 
             fechaInput.value = ""; 
@@ -322,9 +399,6 @@
             btnConfirmar.disabled = true; 
         }
     }
-    
-    // Configura la fecha mínima para hoy
-    fechaInput.setAttribute('min', new Date().toISOString().split('T')[0]);
 </script>
 </body>
 </html>
