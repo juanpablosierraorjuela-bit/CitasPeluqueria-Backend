@@ -1,1 +1,1 @@
-web: gunicorn peluqueria_online.wsgi
+web: gunicorn salon_project.wsgi
