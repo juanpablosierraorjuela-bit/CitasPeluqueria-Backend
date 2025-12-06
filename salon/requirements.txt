@@ -16,3 +16,5 @@ pytz==2025.2
 six==1.17.0
 typing_extensions==4.15.0  # <--- Esta línea es la clave del FIX
 tzdata==2025.2
+requests
+django-jazzmin
