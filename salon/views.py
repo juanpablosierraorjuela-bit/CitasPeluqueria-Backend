@@ -3,20 +3,19 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Cita, Peluqueria, Servicio, Empleado
 from datetime import datetime
 
-# --- VISTA DE INICIO (LA QUE FALTABA) ---
+# --- VISTA DE INICIO (ESTA ES LA QUE FALTABA Y ARREGLA RENDER) ---
 def inicio(request):
-    # Traemos todas las peluquerías para mostrarlas en el home
     peluquerias = Peluqueria.objects.all()
     return render(request, 'salon/index.html', {'peluquerias': peluquerias})
 
 # --- FUNCIÓN DE TELEGRAM ---
 def enviar_notificacion_telegram(cita):
     try:
-        # Limpieza de datos
         peluqueria = cita.peluqueria
         token = str(peluqueria.telegram_token).strip() if peluqueria.telegram_token else None
         chat_id = str(peluqueria.telegram_chat_id).strip() if peluqueria.telegram_chat_id else None
 
+        # LOGS PARA DEPURAR EN RENDER
         print(f"--- 🚀 INTENTANDO ENVIAR A: {peluqueria.nombre_visible} ---")
         print(f"--- DATOS: Token=...{token[-5:] if token else 'N/A'} | ChatID={chat_id} ---")
 
@@ -57,7 +56,6 @@ def enviar_notificacion_telegram(cita):
 
 # --- VISTA PRINCIPAL DE AGENDAR ---
 def agendar_cita(request, slug):
-    # ESTE ES EL PRINT QUE OBLIGARÁ A RENDER A MOSTRARNOS QUE ESTÁ VIVO
     print(f"\n🌟🌟🌟 INICIANDO PROCESO DE AGENDA PARA: {slug} 🌟🌟🌟\n")
     
     peluqueria = get_object_or_404(Peluqueria, slug=slug)
@@ -83,7 +81,7 @@ def agendar_cita(request, slug):
         servicios_objs = Servicio.objects.filter(id__in=servicios_ids)
         total = sum([s.precio for s in servicios_objs])
 
-        # Crear cita CONFIRMADA 'C'
+        # Crear cita 
         cita = Cita.objects.create(
             peluqueria=peluqueria,
             cliente_nombre=nombre,
@@ -106,3 +104,6 @@ def agendar_cita(request, slug):
 
 def respuesta_bold(request):
     return render(request, 'confirmacion.html')
+
+# --- ACTUALIZACION FORZADA PARA RENDER ---
+# CAMBIO NUMERO 2 PARA FORZAR RENDER
