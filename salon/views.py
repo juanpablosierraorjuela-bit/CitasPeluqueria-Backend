@@ -3,6 +3,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Cita, Peluqueria, Servicio, Empleado
 from datetime import datetime
 
+# --- VISTA DE INICIO (LA QUE FALTABA) ---
+def inicio(request):
+    # Traemos todas las peluquerías para mostrarlas en el home
+    peluquerias = Peluqueria.objects.all()
+    return render(request, 'salon/index.html', {'peluquerias': peluquerias})
+
 # --- FUNCIÓN DE TELEGRAM ---
 def enviar_notificacion_telegram(cita):
     try:
@@ -49,7 +55,7 @@ def enviar_notificacion_telegram(cita):
         return False
 
 
-# --- VISTA PRINCIPAL ---
+# --- VISTA PRINCIPAL DE AGENDAR ---
 def agendar_cita(request, slug):
     # ESTE ES EL PRINT QUE OBLIGARÁ A RENDER A MOSTRARNOS QUE ESTÁ VIVO
     print(f"\n🌟🌟🌟 INICIANDO PROCESO DE AGENDA PARA: {slug} 🌟🌟🌟\n")
@@ -84,7 +90,7 @@ def agendar_cita(request, slug):
             cliente_telefono=telefono,
             empleado=empleado,
             fecha_hora_inicio=fecha_hora_inicio,
-            fecha_hora_fin=fecha_hora_inicio, # Ajustar fin si quieres
+            fecha_hora_fin=fecha_hora_inicio, 
             precio_total=total,
             estado='C' 
         )
