@@ -141,4 +141,4 @@ def crear_horario_por_defecto(sender, instance, created, **kwargs):
                     hora_fin="18:00", 
                     descanso_inicio="12:00", 
                     descanso_fin="13:00"
-                ) # <--- ¡ESTE PARÉNTESIS ERA EL QUE FALTABA!
+                )
