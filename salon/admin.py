@@ -8,11 +8,15 @@ from .models import (
     Peluqueria, Servicio, Empleado, HorarioSemanal, Cita, PerfilUsuario
 )
 
-# CLASES BASE DE SEGURIDAD
+# =============================================================
+# 1. CLASES BASE DE SEGURIDAD
+# =============================================================
+
 class SalonOwnerAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        if request.user.is_superuser: return qs
+        if request.user.is_superuser:
+            return qs
         if hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
             return qs.filter(peluqueria=request.user.perfil.peluqueria)
         return qs.none()
@@ -20,7 +24,8 @@ class SalonOwnerAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         if not request.user.is_superuser:
-            if 'peluqueria' in form.base_fields: del form.base_fields['peluqueria'] 
+            if 'peluqueria' in form.base_fields:
+                del form.base_fields['peluqueria'] 
         return form
 
     def save_model(self, request, obj, form, change):
@@ -29,6 +34,15 @@ class SalonOwnerAdmin(admin.ModelAdmin):
                 obj.peluqueria = request.user.perfil.peluqueria
         super().save_model(request, obj, form, change)
 
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        for instance in instances:
+            if not request.user.is_superuser:
+                if hasattr(instance, 'peluqueria') and hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
+                    instance.peluqueria = request.user.perfil.peluqueria
+            instance.save()
+        formset.save_m2m()
+
 class SuperuserOnlyAdmin(admin.ModelAdmin):
     def has_module_permission(self, request): return request.user.is_superuser
     def has_view_permission(self, request, obj=None): return request.user.is_superuser
@@ -36,7 +50,11 @@ class SuperuserOnlyAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None): return request.user.is_superuser
     def has_delete_permission(self, request, obj=None): return request.user.is_superuser
 
-# PELUQUERIA ADMIN (TELEGRAM AUTONOMO)
+
+# =============================================================
+# 2. PELUQUERIA ADMIN (BOTÓN ARREGLADO)
+# =============================================================
+
 @admin.register(Peluqueria)
 class PeluqueriaAdmin(SuperuserOnlyAdmin):
     list_display = ('nombre', 'slug', 'nombre_visible', 'boton_prueba_telegram')
@@ -46,9 +64,14 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
     @admin.display(description='Diagnóstico Telegram') 
     def boton_prueba_telegram(self, obj):
         if obj.pk: 
-            url = f"../{obj.pk}/test_telegram/" 
-            return mark_safe(f'<a class="button" href="{url}" style="background-color: #007bff; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none;">Enviar Mensaje de Prueba</a>')
-        return "Guarde la peluquería para probar"
+            # --- CORRECCIÓN AQUÍ: Usamos reverse para obtener la URL exacta ---
+            # Esto evita el error "1/1" que salía antes
+            try:
+                url = reverse('admin:salon_peluqueria_test_telegram', args=[obj.pk])
+                return mark_safe(f'<a class="button" href="{url}" style="background-color: #007bff; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none;">🔔 Probar Telegram</a>')
+            except Exception:
+                return "Error generando botón"
+        return "Guarde primero para probar"
     
     def get_urls(self):
         urls = super().get_urls()
@@ -60,29 +83,53 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
 
     def test_telegram_view(self, request, object_id):
         try:
-            peluqueria = self.get_object(request, object_id)
+            # Recuperamos la peluquería asegurándonos de limpiar el ID
+            # Esto nos protege si llega algo sucio
+            clean_id = str(object_id).split('/')[0] 
+            peluqueria = self.get_object(request, clean_id)
+            
+            if not peluqueria:
+                self.message_user(request, "❌ Error: No se encontró la peluquería.", level=messages.ERROR)
+                return HttpResponseRedirect("../")
+
             url_retorno = reverse('admin:salon_peluqueria_change', args=[peluqueria.pk])
+
+            # 1. Validar datos
             token = str(peluqueria.telegram_token).strip() if peluqueria.telegram_token else None
             chat_id = str(peluqueria.telegram_chat_id).strip() if peluqueria.telegram_chat_id else None
 
             if not token or not chat_id:
-                self.message_user(request, "⚠️ Faltan Token o ID.", level=messages.WARNING)
+                self.message_user(request, "⚠️ Faltan Token o ID en la configuración.", level=messages.WARNING)
                 return HttpResponseRedirect(url_retorno)
             
+            # 2. Enviar mensaje
             url_api = f"https://api.telegram.org/bot{token}/sendMessage"
-            data = {"chat_id": chat_id, "text": "✅ *CONEXIÓN EXITOSA*\nBot activo.", "parse_mode": "Markdown"}
+            data = {
+                "chat_id": chat_id,
+                "text": f"✅ *CONEXIÓN EXITOSA*\nHola {peluqueria.nombre_visible}, tu bot está conectado.",
+                "parse_mode": "Markdown"
+            }
             
             resp = requests.post(url_api, data=data, timeout=5)
-            if resp.status_code == 200 and resp.json().get('ok'):
-                self.message_user(request, f"✅ Mensaje enviado a {peluqueria.nombre_visible}.", level=messages.SUCCESS)
+            res_json = resp.json()
+            
+            if resp.status_code == 200 and res_json.get('ok'):
+                self.message_user(request, f"✅ Mensaje enviado con éxito.", level=messages.SUCCESS)
             else:
-                self.message_user(request, f"❌ Error Telegram: {resp.json()}", level=messages.ERROR)
+                desc = res_json.get('description', 'Error desconocido')
+                self.message_user(request, f"❌ Error de Telegram: {desc}", level=messages.ERROR)
+            
             return HttpResponseRedirect(url_retorno)
+
         except Exception as e:
             self.message_user(request, f"❌ Error interno: {str(e)}", level=messages.ERROR)
             return HttpResponseRedirect("../")
 
-# OTROS ADMINS
+
+# =============================================================
+# 3. OTROS ADMINS
+# =============================================================
+
 class HorarioSemanalInline(admin.TabularInline):
     model = HorarioSemanal
     extra = 1
@@ -110,8 +157,10 @@ class CitaAdmin(SalonOwnerAdmin):
         return ", ".join([s.nombre for s in obj.servicios.all()])
     servicios_listados.short_description = 'Servicios'
 
-try: admin.site.unregister(HorarioSemanal)
-except: pass
+try:
+    admin.site.unregister(HorarioSemanal)
+except admin.sites.NotRegistered:
+    pass
 
 @admin.register(PerfilUsuario)
 class PerfilUsuarioAdmin(SuperuserOnlyAdmin):
@@ -119,7 +168,10 @@ class PerfilUsuarioAdmin(SuperuserOnlyAdmin):
 
 admin.site.unregister(User)
 admin.site.unregister(Group)
+
 class GlobalAdminUser(admin.ModelAdmin):
-    def has_module_permission(self, request): return request.user.is_superuser
+    def has_module_permission(self, request):
+        return request.user.is_superuser
+
 admin.site.register(User, GlobalAdminUser)
 admin.site.register(Group, GlobalAdminUser)
