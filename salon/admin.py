@@ -9,7 +9,7 @@ from .models import (
 )
 
 # =============================================================
-# 1. CLASES BASE DE SEGURIDAD (¡AQUÍ ESTÁ EL ARREGLO!)
+# 1. CLASES BASE DE SEGURIDAD
 # =============================================================
 
 class SalonOwnerAdmin(admin.ModelAdmin):
@@ -22,18 +22,18 @@ class SalonOwnerAdmin(admin.ModelAdmin):
             return qs.filter(peluqueria=request.user.perfil.peluqueria)
         return qs.none()
 
-    # Arreglo 1: Para el modelo principal (Ej: Empleado)
+    # 1. Al guardar el modelo PRINCIPAL (Ej: Empleado), le ponemos su peluquería
     def save_model(self, request, obj, form, change):
         if not request.user.is_superuser and not obj.pk:
             if hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
                 obj.peluqueria = request.user.perfil.peluqueria
         super().save_model(request, obj, form, change)
 
-    # Arreglo 2: ¡NUEVO! Para los Inlines (Ej: Horarios dentro de Empleado)
+    # 2. Al guardar los INLINES (Ej: Horarios), les inyectamos la peluquería a la fuerza
     def save_formset(self, request, form, formset, change):
         instances = formset.save(commit=False)
         for instance in instances:
-            # Si el usuario es dueño (no admin) y el objeto tiene campo peluqueria
+            # Si el usuario es dueño y el objeto necesita peluqueria
             if not request.user.is_superuser:
                 if hasattr(instance, 'peluqueria') and hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
                     instance.peluqueria = request.user.perfil.peluqueria
@@ -59,7 +59,7 @@ class SuperuserOnlyAdmin(admin.ModelAdmin):
 
 
 # =============================================================
-# 2. PELUQUERIA ADMIN
+# 2. PELUQUERIA ADMIN (Con Botón Telegram)
 # =============================================================
 
 @admin.register(Peluqueria)
@@ -111,13 +111,19 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
 
 
 # =============================================================
-# 3. OTROS MODELOS
+# 3. CONFIGURACIÓN DE MODELOS E INLINES
 # =============================================================
 
 class HorarioSemanalInline(admin.TabularInline):
+    """
+    Inline para editar horarios dentro del Empleado.
+    IMPORTANTE: Excluimos 'peluqueria' para que no pida el dato en el formulario,
+    ya que lo rellenamos automáticamente en save_formset.
+    """
     model = HorarioSemanal
-    extra = 1  # Reducido a 1 para que sea más limpio
+    extra = 1
     max_num = 7
+    exclude = ('peluqueria',)  # <--- ¡ESTA LÍNEA EVITA EL ERROR 500!
 
 @admin.register(Servicio)
 class ServicioAdmin(SalonOwnerAdmin):
@@ -136,7 +142,7 @@ class CitaAdmin(SalonOwnerAdmin):
         return ", ".join([s.nombre for s in obj.servicios.all()])
     servicios_listados.short_description = 'Servicios'
 
-# Intentamos ocultar HorarioSemanal de la barra lateral para obligar a usarlo dentro de Empleado
+# Desregistramos HorarioSemanal suelto para evitar confusiones
 try:
     admin.site.unregister(HorarioSemanal)
 except admin.sites.NotRegistered:
