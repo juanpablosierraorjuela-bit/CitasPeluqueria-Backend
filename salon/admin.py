@@ -9,10 +9,11 @@ from .models import (
 )
 
 # =============================================================
-# 1. CLASES BASE DE SEGURIDAD Y VISIBILIDAD
+# 1. CLASES BASE DE SEGURIDAD (¡AQUÍ ESTÁ EL ARREGLO!)
 # =============================================================
 
 class SalonOwnerAdmin(admin.ModelAdmin):
+    """Clase base para modelos que el Dueño SÍ debe ver y gestionar."""
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
@@ -21,11 +22,23 @@ class SalonOwnerAdmin(admin.ModelAdmin):
             return qs.filter(peluqueria=request.user.perfil.peluqueria)
         return qs.none()
 
+    # Arreglo 1: Para el modelo principal (Ej: Empleado)
     def save_model(self, request, obj, form, change):
         if not request.user.is_superuser and not obj.pk:
             if hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
                 obj.peluqueria = request.user.perfil.peluqueria
         super().save_model(request, obj, form, change)
+
+    # Arreglo 2: ¡NUEVO! Para los Inlines (Ej: Horarios dentro de Empleado)
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        for instance in instances:
+            # Si el usuario es dueño (no admin) y el objeto tiene campo peluqueria
+            if not request.user.is_superuser:
+                if hasattr(instance, 'peluqueria') and hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
+                    instance.peluqueria = request.user.perfil.peluqueria
+            instance.save()
+        formset.save_m2m()
         
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
@@ -36,6 +49,7 @@ class SalonOwnerAdmin(admin.ModelAdmin):
         return form
 
 class SuperuserOnlyAdmin(admin.ModelAdmin):
+    """Clase base que oculta el modelo completamente de la barra lateral."""
     def has_module_permission(self, request):
         return request.user.is_superuser
     def has_view_permission(self, request, obj=None): return request.user.is_superuser
@@ -45,7 +59,7 @@ class SuperuserOnlyAdmin(admin.ModelAdmin):
 
 
 # =============================================================
-# 2. PELUQUERIA ADMIN (CON EL FIX DEL ERROR 500)
+# 2. PELUQUERIA ADMIN
 # =============================================================
 
 @admin.register(Peluqueria)
@@ -57,7 +71,6 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
     @admin.display(description='Diagnóstico Telegram') 
     def boton_prueba_telegram(self, obj):
         if obj.pk: 
-            # URL segura relativa
             url = f"../{obj.pk}/test_telegram/" 
             return mark_safe(f'<a class="button" href="{url}" style="background-color: #007bff; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none;">Enviar Mensaje de Prueba</a>')
         return "Guarde la peluquería para probar"
@@ -70,9 +83,7 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
         ]
         return extra_urls + urls
 
-    # --- FUNCIÓN QUE EJECUTA LA LÓGICA DE TELEGRAM ---
     def test_telegram_view(self, request, object_id):
-        # BLOQUE DE SEGURIDAD PARA EVITAR ERROR 500
         try:
             peluqueria = self.get_object(request, object_id)
             url_retorno = reverse('admin:salon_peluqueria_change', args=[peluqueria.pk])
@@ -81,7 +92,6 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
                 self.message_user(request, "Error: Faltan datos de Telegram.", level=messages.ERROR)
                 return HttpResponseRedirect(url_retorno)
             
-            # Intentar enviar
             exito, resultado = enviar_mensaje_telegram(
                 peluqueria.telegram_token, 
                 peluqueria.telegram_chat_id, 
@@ -96,9 +106,7 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
             return HttpResponseRedirect(url_retorno)
 
         except Exception as e:
-            # Si algo explota, capturamos el error y lo mostramos en lugar de pantalla blanca
             self.message_user(request, f"Error interno del sistema: {str(e)}", level=messages.ERROR)
-            # Intentamos volver a la lista general si no podemos ir al detalle
             return HttpResponseRedirect("../")
 
 
@@ -108,7 +116,7 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
 
 class HorarioSemanalInline(admin.TabularInline):
     model = HorarioSemanal
-    extra = 7
+    extra = 1  # Reducido a 1 para que sea más limpio
     max_num = 7
 
 @admin.register(Servicio)
@@ -128,6 +136,7 @@ class CitaAdmin(SalonOwnerAdmin):
         return ", ".join([s.nombre for s in obj.servicios.all()])
     servicios_listados.short_description = 'Servicios'
 
+# Intentamos ocultar HorarioSemanal de la barra lateral para obligar a usarlo dentro de Empleado
 try:
     admin.site.unregister(HorarioSemanal)
 except admin.sites.NotRegistered:
