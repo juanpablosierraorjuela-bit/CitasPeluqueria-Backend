@@ -9,7 +9,7 @@ def inicio(request):
     peluquerias = Peluqueria.objects.all()
     return render(request, 'salon/index.html', {'peluquerias': peluquerias})
 
-# 2. API PARA CALCULAR HORARIOS DISPONIBLES (ESTA ES LA QUE FALTA)
+# 2. API PARA CALCULAR HORARIOS DISPONIBLES (ESTA ES LA QUE FALTABA)
 def obtener_horas_disponibles(request):
     try:
         empleado_id = request.GET.get('empleado_id')
@@ -188,3 +188,5 @@ def agendar_cita(request, slug):
 # Vista extra por si acaso
 def respuesta_bold(request):
     return render(request, 'confirmacion.html')
+
+# --- FORZAR ACTUALIZACIÓN GIT ---
