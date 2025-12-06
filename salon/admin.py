@@ -22,18 +22,18 @@ class SalonOwnerAdmin(admin.ModelAdmin):
             return qs.filter(peluqueria=request.user.perfil.peluqueria)
         return qs.none()
 
-    # 1. Al guardar el modelo PRINCIPAL (Ej: Empleado), le ponemos su peluquería
+    # 1. Al guardar el modelo PRINCIPAL (Ej: Empleado)
     def save_model(self, request, obj, form, change):
         if not request.user.is_superuser and not obj.pk:
             if hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
                 obj.peluqueria = request.user.perfil.peluqueria
         super().save_model(request, obj, form, change)
 
-    # 2. Al guardar los INLINES (Ej: Horarios), les inyectamos la peluquería a la fuerza
+    # 2. Al guardar los INLINES (Ej: Horarios), inyectamos la peluquería automáticamente
     def save_formset(self, request, form, formset, change):
         instances = formset.save(commit=False)
         for instance in instances:
-            # Si el usuario es dueño y el objeto necesita peluqueria
+            # Si el usuario es dueño y el objeto tiene el campo 'peluqueria'
             if not request.user.is_superuser:
                 if hasattr(instance, 'peluqueria') and hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
                     instance.peluqueria = request.user.perfil.peluqueria
@@ -49,7 +49,7 @@ class SalonOwnerAdmin(admin.ModelAdmin):
         return form
 
 class SuperuserOnlyAdmin(admin.ModelAdmin):
-    """Clase base que oculta el modelo completamente de la barra lateral."""
+    """Clase base para ocultar modelos a usuarios normales."""
     def has_module_permission(self, request):
         return request.user.is_superuser
     def has_view_permission(self, request, obj=None): return request.user.is_superuser
@@ -117,13 +117,13 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
 class HorarioSemanalInline(admin.TabularInline):
     """
     Inline para editar horarios dentro del Empleado.
-    IMPORTANTE: Excluimos 'peluqueria' para que no pida el dato en el formulario,
-    ya que lo rellenamos automáticamente en save_formset.
+    IMPORTANTE: 'exclude' evita que el formulario pida la peluquería obligatoriamente,
+    permitiendo que 'save_formset' la rellene después.
     """
     model = HorarioSemanal
     extra = 1
     max_num = 7
-    exclude = ('peluqueria',)  # <--- ¡ESTA LÍNEA EVITA EL ERROR 500!
+    exclude = ('peluqueria',)  # <--- ¡ESTA ES LA LÍNEA MÁGICA QUE EVITA EL ERROR 500!
 
 @admin.register(Servicio)
 class ServicioAdmin(SalonOwnerAdmin):
@@ -142,7 +142,7 @@ class CitaAdmin(SalonOwnerAdmin):
         return ", ".join([s.nombre for s in obj.servicios.all()])
     servicios_listados.short_description = 'Servicios'
 
-# Desregistramos HorarioSemanal suelto para evitar confusiones
+# Desregistramos HorarioSemanal para que no aparezca suelto en el menú
 try:
     admin.site.unregister(HorarioSemanal)
 except admin.sites.NotRegistered:
