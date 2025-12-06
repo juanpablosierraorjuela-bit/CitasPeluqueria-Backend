@@ -9,7 +9,7 @@ def inicio(request):
     peluquerias = Peluqueria.objects.all()
     return render(request, 'salon/index.html', {'peluquerias': peluquerias})
 
-# 2. API PARA CALCULAR HORARIOS DISPONIBLES (ESTA ES LA QUE FALTABA)
+# 2. API PARA CALCULAR HORARIOS DISPONIBLES
 def obtener_horas_disponibles(request):
     try:
         empleado_id = request.GET.get('empleado_id')
@@ -65,7 +65,6 @@ def obtener_horas_disponibles(request):
             if not ocupado:
                 for c in citas_existentes:
                     # Lógica de colisión de rangos
-                    # inicio_cita < fin_estimado Y fin_cita > hora_actual
                     c_inicio = c.fecha_hora_inicio.replace(tzinfo=None)
                     c_fin = c.fecha_hora_fin.replace(tzinfo=None)
                     
@@ -185,8 +184,14 @@ def agendar_cita(request, slug):
         'empleados': empleados
     })
 
-# Vista extra por si acaso
+# 5. VISTAS EXTRA (LAS QUE FALTABAN)
 def respuesta_bold(request):
     return render(request, 'confirmacion.html')
 
-# --- FORZAR ACTUALIZACIÓN GIT ---
+def cita_confirmada(request):
+    """
+    Esta vista faltaba y causaba el error de 'no attribute cita_confirmada'.
+    """
+    return render(request, 'confirmacion.html')
+
+# --- CAMBIO FORZADO PARA RENDER FINAL V2 ---

@@ -8,17 +8,11 @@ from .models import (
     Peluqueria, Servicio, Empleado, HorarioSemanal, Cita, PerfilUsuario
 )
 
-# =============================================================
-# 1. CLASES BASE DE SEGURIDAD
-# =============================================================
-
+# CLASES BASE DE SEGURIDAD
 class SalonOwnerAdmin(admin.ModelAdmin):
-    """Clase base para modelos que el Dueño SÍ debe ver y gestionar."""
-    
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        if request.user.is_superuser:
-            return qs
+        if request.user.is_superuser: return qs
         if hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
             return qs.filter(peluqueria=request.user.perfil.peluqueria)
         return qs.none()
@@ -26,8 +20,7 @@ class SalonOwnerAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         if not request.user.is_superuser:
-            if 'peluqueria' in form.base_fields:
-                del form.base_fields['peluqueria'] 
+            if 'peluqueria' in form.base_fields: del form.base_fields['peluqueria'] 
         return form
 
     def save_model(self, request, obj, form, change):
@@ -36,28 +29,14 @@ class SalonOwnerAdmin(admin.ModelAdmin):
                 obj.peluqueria = request.user.perfil.peluqueria
         super().save_model(request, obj, form, change)
 
-    def save_formset(self, request, form, formset, change):
-        instances = formset.save(commit=False)
-        for instance in instances:
-            if not request.user.is_superuser:
-                if hasattr(instance, 'peluqueria') and hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
-                    instance.peluqueria = request.user.perfil.peluqueria
-            instance.save()
-        formset.save_m2m()
-
 class SuperuserOnlyAdmin(admin.ModelAdmin):
-    def has_module_permission(self, request):
-        return request.user.is_superuser
+    def has_module_permission(self, request): return request.user.is_superuser
     def has_view_permission(self, request, obj=None): return request.user.is_superuser
     def has_add_permission(self, request): return request.user.is_superuser
     def has_change_permission(self, request, obj=None): return request.user.is_superuser
     def has_delete_permission(self, request, obj=None): return request.user.is_superuser
 
-
-# =============================================================
-# 2. PELUQUERIA ADMIN (Corrección Telegram Integrada)
-# =============================================================
-
+# PELUQUERIA ADMIN (TELEGRAM AUTONOMO)
 @admin.register(Peluqueria)
 class PeluqueriaAdmin(SuperuserOnlyAdmin):
     list_display = ('nombre', 'slug', 'nombre_visible', 'boton_prueba_telegram')
@@ -80,47 +59,30 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
         return extra_urls + urls
 
     def test_telegram_view(self, request, object_id):
-        # Lógica de envío AUTÓNOMA (No depende de models.py ni views.py)
         try:
             peluqueria = self.get_object(request, object_id)
             url_retorno = reverse('admin:salon_peluqueria_change', args=[peluqueria.pk])
-
-            # 1. Validar datos
             token = str(peluqueria.telegram_token).strip() if peluqueria.telegram_token else None
             chat_id = str(peluqueria.telegram_chat_id).strip() if peluqueria.telegram_chat_id else None
 
             if not token or not chat_id:
-                self.message_user(request, "⚠️ Faltan Token o ID en la configuración.", level=messages.WARNING)
+                self.message_user(request, "⚠️ Faltan Token o ID.", level=messages.WARNING)
                 return HttpResponseRedirect(url_retorno)
             
-            # 2. Enviar mensaje
             url_api = f"https://api.telegram.org/bot{token}/sendMessage"
-            data = {
-                "chat_id": chat_id,
-                "text": "✅ *CONEXIÓN EXITOSA*\nHola, tu bot de PASO está funcionando correctamente.",
-                "parse_mode": "Markdown"
-            }
+            data = {"chat_id": chat_id, "text": "✅ *CONEXIÓN EXITOSA*\nBot activo.", "parse_mode": "Markdown"}
             
             resp = requests.post(url_api, data=data, timeout=5)
-            res_json = resp.json()
-            
-            if resp.status_code == 200 and res_json.get('ok'):
-                self.message_user(request, f"✅ Mensaje enviado con éxito a {peluqueria.nombre_visible}.", level=messages.SUCCESS)
+            if resp.status_code == 200 and resp.json().get('ok'):
+                self.message_user(request, f"✅ Mensaje enviado a {peluqueria.nombre_visible}.", level=messages.SUCCESS)
             else:
-                desc = res_json.get('description', 'Error desconocido')
-                self.message_user(request, f"❌ Error de Telegram: {desc}", level=messages.ERROR)
-            
+                self.message_user(request, f"❌ Error Telegram: {resp.json()}", level=messages.ERROR)
             return HttpResponseRedirect(url_retorno)
-
         except Exception as e:
             self.message_user(request, f"❌ Error interno: {str(e)}", level=messages.ERROR)
             return HttpResponseRedirect("../")
 
-
-# =============================================================
-# 3. OTROS ADMINS
-# =============================================================
-
+# OTROS ADMINS
 class HorarioSemanalInline(admin.TabularInline):
     model = HorarioSemanal
     extra = 1
@@ -148,11 +110,8 @@ class CitaAdmin(SalonOwnerAdmin):
         return ", ".join([s.nombre for s in obj.servicios.all()])
     servicios_listados.short_description = 'Servicios'
 
-# Limpieza del menú
-try:
-    admin.site.unregister(HorarioSemanal)
-except admin.sites.NotRegistered:
-    pass
+try: admin.site.unregister(HorarioSemanal)
+except: pass
 
 @admin.register(PerfilUsuario)
 class PerfilUsuarioAdmin(SuperuserOnlyAdmin):
@@ -160,10 +119,7 @@ class PerfilUsuarioAdmin(SuperuserOnlyAdmin):
 
 admin.site.unregister(User)
 admin.site.unregister(Group)
-
 class GlobalAdminUser(admin.ModelAdmin):
-    def has_module_permission(self, request):
-        return request.user.is_superuser
-
+    def has_module_permission(self, request): return request.user.is_superuser
 admin.site.register(User, GlobalAdminUser)
 admin.site.register(Group, GlobalAdminUser)
