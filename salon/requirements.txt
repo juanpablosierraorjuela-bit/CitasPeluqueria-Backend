@@ -1,4 +1,3 @@
-# Contenido del archivo requirements.txt
 Django==5.2.8
 asgiref==3.11.0
 sqlparse==0.5.4
@@ -14,7 +13,6 @@ dj-database-url==3.0.1
 python-dateutil==2.9.0.post0
 pytz==2025.2
 six==1.17.0
-typing_extensions==4.15.0  # <--- Esta línea es la clave del FIX
+typing_extensions==4.15.0
 tzdata==2025.2
-requests
 django-jazzmin
