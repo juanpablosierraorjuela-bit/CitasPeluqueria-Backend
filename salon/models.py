@@ -1,42 +1,9 @@
-import requests
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 from django.utils.text import slugify
-from datetime import timedelta, datetime
-
-# =============================================================
-# 0. FUNCIONES REUTILIZABLES (Diagnóstico de Telegram)
-# =============================================================
-
-def enviar_mensaje_telegram(token, chat_id, mensaje):
-    """Función central para enviar cualquier mensaje a Telegram."""
-    if not token or not chat_id:
-        return False, "Token o Chat ID no configurados."
-
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    data = {
-        "chat_id": chat_id,
-        "text": mensaje,
-        "parse_mode": "Markdown"
-    }
-
-    try:
-        response = requests.post(url, data=data, timeout=5)
-        response_data = response.json()
-        
-        if response.status_code == 200 and response_data.get('ok'):
-            return True, "Mensaje enviado con éxito."
-        else:
-            error_msg = response_data.get('description', 'Error desconocido de la API.')
-            # Aquí imprimimos el error de la API para el diagnóstico
-            print(f"❌ ERROR TELEGRAM (API): {error_msg}. Respuesta: {response.text}")
-            return False, f"Error de la API: {error_msg}"
-
-    except requests.exceptions.RequestException as e:
-        return False, f"Error de conexión de red: {e}"
-
+from datetime import timedelta
 
 # =============================================================
 # 1. MODELOS BASE
@@ -47,7 +14,7 @@ class Peluqueria(models.Model):
     slug = models.SlugField(unique=True, blank=True, null=True) 
     nombre_visible = models.CharField(max_length=100, default="Mi Salón")
     
-    # --- CONFIGURACIÓN TELEGRAM AUTÓNOMA ---
+    # --- CREDENCIALES TELEGRAM ---
     telegram_token = models.CharField(
         max_length=100, 
         blank=True, 
@@ -150,24 +117,21 @@ class PerfilUsuario(models.Model):
         return f"{self.user.username} - {self.peluqueria}"
 
 # =============================================================
-# 4. SEÑALES (Automatización y Telegram)
+# 4. SEÑALES
 # =============================================================
 
 @receiver(post_save, sender=User)
 def crear_perfil(sender, instance, created, **kwargs):
     if created:
         PerfilUsuario.objects.create(user=instance)
-    # FIX: Se guarda el perfil para reflejar cambios en el usuario (ej: password)
-    instance.perfil.save()
+    if hasattr(instance, 'perfil'):
+        instance.perfil.save()
 
 @receiver(post_save, sender=Empleado)
 def crear_horario_por_defecto(sender, instance, created, **kwargs):
-    """Crea un horario de Lunes a Domingo por defecto al añadir un nuevo empleado."""
     if created:
         peluqueria = instance.peluqueria
-        
         for dia_num, _ in DIAS_SEMANA:
-            # FIX: Aseguramos que solo se creen si no existen, para evitar conflictos
             if not HorarioSemanal.objects.filter(empleado=instance, dia_semana=dia_num).exists():
                 HorarioSemanal.objects.create(
                     peluqueria=peluqueria, 
@@ -177,31 +141,4 @@ def crear_horario_por_defecto(sender, instance, created, **kwargs):
                     hora_fin="18:00", 
                     descanso_inicio="12:00", 
                     descanso_fin="13:00"
-                )
-
-@receiver(m2m_changed, sender=Cita.servicios)
-def notificar_nueva_cita(sender, instance, action, **kwargs):
-    """Dispara la notificación de Telegram usando la configuración de la Peluquería."""
-    if action == 'post_add': 
-        peluqueria = instance.peluqueria
-        token = peluqueria.telegram_token
-        chat_id = peluqueria.telegram_chat_id
-        
-        if token and chat_id:
-            servicios_nombres = ", ".join([s.nombre for s in instance.servicios.all()])
-            
-            mensaje = (
-                f"💈 *NUEVA CITA EN {peluqueria.nombre_visible.upper()}*\n\n"
-                f"👤 *Cliente:* {instance.cliente_nombre}\n"
-                f"📱 *Tel:* {instance.cliente_telefono or 'No proporcionado'}\n"
-                f"💇 *Servicios:* {servicios_nombres}\n"
-                f"💰 *Total:* ${instance.precio_total}\n"
-                f"✂️ *Estilista:* {instance.empleado.nombre}\n"
-                f"📅 *Fecha:* {instance.fecha_hora_inicio.strftime('%d/%m/%Y %H:%M')}"
-            )
-            
-            # Llamamos a la función central y diagnosticamos el error si falla
-            exito, mensaje_resultado = enviar_mensaje_telegram(token, chat_id, mensaje)
-            
-            if not exito:
-                print(f"❌ FALLO DE NOTIFICACIÓN para {peluqueria.nombre}: {mensaje_resultado}")
+                ) # <--- ¡ESTE PARÉNTESIS ERA EL QUE FALTABA!
