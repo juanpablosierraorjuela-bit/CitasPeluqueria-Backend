@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from datetime import datetime, timedelta
 from .models import Cita, Peluqueria, Servicio, Empleado, HorarioSemanal
 
-# 1. VISTA DE INICIO (PORTADA)
+# 1. VISTA DE INICIO
 def inicio(request):
     peluquerias = Peluqueria.objects.all()
     return render(request, 'salon/index.html', {'peluquerias': peluquerias})
@@ -22,7 +22,6 @@ def obtener_horas_disponibles(request):
         fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
         empleado = get_object_or_404(Empleado, id=empleado_id)
         
-        # Calcular duración total de los servicios
         duracion_total = timedelta(minutes=0)
         for sid in servicios_ids:
             if sid:
@@ -31,43 +30,35 @@ def obtener_horas_disponibles(request):
                     duracion_total += s.duracion
                 except: pass
 
-        # Buscar el horario del empleado para ese día (0=Lunes, 6=Domingo)
         dia_semana = fecha.weekday()
         horario = HorarioSemanal.objects.filter(empleado=empleado, dia_semana=dia_semana).first()
         
         if not horario:
-            return JsonResponse({'horas': []}) # No trabaja ese día
+            return JsonResponse({'horas': []}) 
 
-        # Generar bloques de tiempo
         horas_disponibles = []
         hora_actual = datetime.combine(fecha, horario.hora_inicio)
         fin_jornada = datetime.combine(fecha, horario.hora_fin)
         
-        # Buscar citas existentes para no chocar
         citas_existentes = Cita.objects.filter(
             empleado=empleado, 
             fecha_hora_inicio__date=fecha
-        ).exclude(estado='A') # Ignoramos anuladas
+        ).exclude(estado='A')
 
         while hora_actual + duracion_total <= fin_jornada:
             fin_estimado = hora_actual + duracion_total
             ocupado = False
 
-            # Verificar descanso
             if horario.descanso_inicio and horario.descanso_fin:
                 ini_desc = datetime.combine(fecha, horario.descanso_inicio)
                 fin_desc = datetime.combine(fecha, horario.descanso_fin)
-                # Si el bloque choca con el descanso
                 if hora_actual < fin_desc and fin_estimado > ini_desc:
                     ocupado = True
 
-            # Verificar citas existentes
             if not ocupado:
                 for c in citas_existentes:
-                    # Lógica de colisión de rangos
                     c_inicio = c.fecha_hora_inicio.replace(tzinfo=None)
                     c_fin = c.fecha_hora_fin.replace(tzinfo=None)
-                    
                     if c_inicio < fin_estimado and c_fin > hora_actual:
                         ocupado = True
                         break
@@ -75,7 +66,6 @@ def obtener_horas_disponibles(request):
             if not ocupado:
                 horas_disponibles.append(hora_actual.strftime("%H:%M"))
             
-            # Saltos de 30 minutos
             hora_actual += timedelta(minutes=30)
 
         return JsonResponse({'horas': horas_disponibles})
@@ -121,12 +111,13 @@ def enviar_notificacion_telegram(cita):
         print(f"❌ TELEGRAM ERROR: {str(e)}")
         return False
 
-# 4. AGENDAR CITA (LÓGICA PRINCIPAL)
-def agendar_cita(request, slug):
-    print(f"🌟 Iniciando Agendar: {slug}")
-    peluqueria = get_object_or_404(Peluqueria, slug=slug)
+# 4. AGENDAR CITA (CORREGIDO EL ARGUMENTO)
+def agendar_cita(request, slug_peluqueria): # <--- AQUÍ ESTABA EL ERROR (antes decía 'slug')
+    print(f"🌟 Iniciando Agendar: {slug_peluqueria}")
     
-    # Variables iniciales para el GET
+    # Usamos el nombre correcto 'slug_peluqueria'
+    peluqueria = get_object_or_404(Peluqueria, slug=slug_peluqueria)
+    
     servicios = peluqueria.servicios.all()
     empleados = peluqueria.empleados.all()
 
@@ -145,7 +136,6 @@ def agendar_cita(request, slug):
             empleado = get_object_or_404(Empleado, id=empleado_id)
             inicio_cita = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
             
-            # Calcular fin de cita real
             servicios_objs = Servicio.objects.filter(id__in=servicios_ids)
             duracion_total = sum([s.duracion for s in servicios_objs], timedelta())
             fin_cita = inicio_cita + duracion_total
@@ -163,35 +153,28 @@ def agendar_cita(request, slug):
             )
             cita.servicios.set(servicios_objs)
             
-            # Disparar Telegram
             enviar_notificacion_telegram(cita)
             
-            return render(request, 'confirmacion.html')
+            return render(request, 'salon/confirmacion.html') # Aseguramos ruta correcta
             
         except Exception as e:
             print(f"Error al agendar: {e}")
-            # Volver a cargar formulario con error
-            return render(request, 'agendar.html', {
+            return render(request, 'salon/agendar.html', {
                 'peluqueria': peluqueria, 
                 'servicios': servicios,
                 'empleados': empleados,
-                'error': 'Error al procesar la cita. Verifique los datos.'
+                'error': 'Error al procesar la cita.'
             })
 
-    return render(request, 'agendar.html', {
+    return render(request, 'salon/agendar.html', {
         'peluqueria': peluqueria, 
         'servicios': servicios,
         'empleados': empleados
     })
 
-# 5. VISTAS EXTRA (LAS QUE FALTABAN)
+# 5. VISTAS EXTRA
 def respuesta_bold(request):
-    return render(request, 'confirmacion.html')
+    return render(request, 'salon/confirmacion.html')
 
 def cita_confirmada(request):
-    """
-    Esta vista faltaba y causaba el error de 'no attribute cita_confirmada'.
-    """
-    return render(request, 'confirmacion.html')
-
-# --- CAMBIO FORZADO PARA RENDER FINAL V2 ---
+    return render(request, 'salon/confirmacion.html')
