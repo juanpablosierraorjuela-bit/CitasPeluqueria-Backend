@@ -55,7 +55,7 @@ def obtener_horas_disponibles(request):
         print(f"Error API: {e}")
         return JsonResponse({'horas': []})
 
-# 3. AGENDAR CITA (MODIFICADO PARA OPCIÓN DE ABONO 50%)
+# 3. AGENDAR CITA
 def agendar_cita(request, slug_peluqueria):
     peluqueria = get_object_or_404(Peluqueria, slug=slug_peluqueria)
     servicios = peluqueria.servicios.all()
@@ -70,7 +70,7 @@ def agendar_cita(request, slug_peluqueria):
             hora_str = request.POST.get('hora_seleccionada')
             servicios_ids = request.POST.getlist('servicios')
             
-            # Nuevo campo: tipo de pago (completo o mitad)
+            # Nuevo campo: tipo de pago
             tipo_pago = request.POST.get('tipo_pago', 'completo') 
 
             if not (nombre and empleado_id and fecha_str and hora_str):
@@ -85,7 +85,7 @@ def agendar_cita(request, slug_peluqueria):
             duracion_total = sum([s.duracion for s in servicios_objs], timedelta())
             fin_cita = inicio_cita + duracion_total
             
-            # Precio Total (Decimal)
+            # Precio Total
             total_precio = sum([s.precio for s in servicios_objs])
 
             usa_bold = bool(peluqueria.bold_api_key and peluqueria.bold_integrity_key)
@@ -111,17 +111,21 @@ def agendar_cita(request, slug_peluqueria):
                 cita.servicios.set(servicios_objs)
 
             if usa_bold:
-                # --- LÓGICA DE COBRO VARIABLE ---
+                # --- CALCULAMOS EL MONTO REAL A PAGAR ---
                 if tipo_pago == 'mitad':
-                    monto_anticipo = int(total_precio / 2) # Cobra el 50%
+                    monto_anticipo = int(total_precio / 2)
                 else:
-                    monto_anticipo = int(total_precio) # Cobra el 100%
+                    monto_anticipo = int(total_precio)
+                
+                # --- GUARDAMOS ESTE DATO AHORA MISMO ---
+                # Así, si Bold aprueba, ya sabemos cuánto pagó.
+                cita.abono_pagado = monto_anticipo 
                 
                 referencia = f"CITA-{cita.id}-{int(datetime.now().timestamp())}"
                 cita.referencia_pago_bold = referencia
                 cita.save()
 
-                # Firma de seguridad con el MONTO SELECCIONADO
+                # Firma de seguridad
                 cadena_concatenada = f"{referencia}{monto_anticipo}COP{peluqueria.bold_integrity_key}"
                 signature = hashlib.sha256(cadena_concatenada.encode('utf-8')).hexdigest()
 
@@ -134,6 +138,7 @@ def agendar_cita(request, slug_peluqueria):
                 })
 
             else:
+                # Si no usa Bold, es pago en local (Abono 0)
                 cita.enviar_notificacion_telegram()
                 return redirect('cita_confirmada')
             
@@ -145,7 +150,7 @@ def agendar_cita(request, slug_peluqueria):
         'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados
     })
 
-# 4. RESPUESTA DE BOLD (Confirmación)
+# 4. RESPUESTA DE BOLD
 @csrf_exempt 
 def retorno_bold(request):
     status = request.GET.get('tx_status')
@@ -156,21 +161,7 @@ def retorno_bold(request):
         cita = Cita.objects.get(referencia_pago_bold=referencia)
         if status == 'approved':
             cita.estado = 'C'
-            
-            # --- GUARDAR LO QUE PAGÓ REALMENTE ---
-            # Como no sabemos si eligió 50% o 100% solo viendo la referencia,
-            # podríamos deducirlo, pero Bold no nos devuelve el monto en el GET simple.
-            # TRUCO: Si ya estaba guardado como 0, y pagó, asumimos que pagó el monto que se envió.
-            # Para simplificar y que funcione Telegram: 
-            # (En un futuro ideal, deberíamos guardar 'monto_esperado' en la BD, pero por ahora esto sirve)
-            # Asumiremos que si se aprobó, pagó AL MENOS el abono.
-            
-            # Dejaremos registrado el precio total como pagado si el dueño no usa abonos, 
-            # pero como estamos implementando abonos, lo mejor es dejar el campo 'abono_pagado' 
-            # con un valor simbólico o el real si tuvieramos la info de vuelta.
-            # Para que el mensaje de Telegram diga "PAGADO", basta que sea mayor a 0.
-            cita.abono_pagado = cita.precio_total # O un valor > 0
-            
+            # NO TOCAMOS cita.abono_pagado PORQUE YA LO GUARDAMOS EN EL PASO ANTERIOR
             cita.save()
             
             cita.enviar_notificacion_telegram()
