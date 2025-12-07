@@ -33,14 +33,15 @@ class SuperuserOnlyAdmin(admin.ModelAdmin):
     
 @admin.register(Peluqueria)
 class PeluqueriaAdmin(SuperuserOnlyAdmin):
-    list_display = ('nombre', 'slug', 'bold_status')
+    # AHORA MOSTRAMOS LA CIUDAD EN EL ADMIN
+    list_display = ('nombre', 'ciudad', 'slug', 'bold_status')
+    list_filter = ('ciudad',) # FILTRO LATERAL POR CIUDAD
     prepopulated_fields = {'slug': ('nombre',)}
     
     @admin.display(description='Bold')
     def bold_status(self, obj):
         return "✅ Activa" if obj.bold_api_key else "❌ Inactiva"
 
-    # AGREGAMOS EL BOTÓN DE PRUEBA DE TELEGRAM
     readonly_fields = ('boton_prueba_telegram',) 
     @admin.display(description='Telegram') 
     def boton_prueba_telegram(self, obj):
@@ -55,7 +56,6 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
         return [path('<path:object_id>/test_telegram/', self.admin_site.admin_view(self.test_telegram_view), name='%s_%s_test_telegram' % info)] + urls
 
     def test_telegram_view(self, request, object_id):
-        # (Lógica de prueba Telegram igual que antes)
         try:
             peluqueria = self.get_object(request, str(object_id).split('/')[0])
             if not peluqueria: return HttpResponseRedirect("../")
