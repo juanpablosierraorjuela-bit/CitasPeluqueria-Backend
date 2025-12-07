@@ -131,6 +131,10 @@ JAZZMIN_SETTINGS = {
     # Título en la barra superior (Brand)
     "site_brand": "Mi Peluquería",
     
+    # === AQUÍ ESTÁ EL ARREGLO PARA TU CSS PERSONALIZADO ===
+    "custom_css": "css/admin_custom.css",
+    # =======================================================
+    
     # Logo (pon tu logo en static/img/logo.png o usa una URL externa temporalmente)
     # "site_logo": "img/logo.png",
     
