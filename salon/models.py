@@ -179,7 +179,6 @@ class PerfilUsuario(models.Model):
 @receiver(post_save, sender=User)
 def crear_perfil(sender, instance, created, **kwargs):
     if created: PerfilUsuario.objects.create(user=instance)
-# ... (todo tu código anterior) ...
 
 # =============================================================
 # 4. MODELO SAAS (LEADS DE NEGOCIO)
