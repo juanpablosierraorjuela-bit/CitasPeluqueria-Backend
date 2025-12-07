@@ -12,12 +12,10 @@ import traceback
 from .models import Peluqueria, Servicio, Empleado, Cita
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
 
-# 1. VISTA DE INICIO (Igual)
 def inicio(request):
     peluquerias = Peluqueria.objects.all()
     return render(request, 'salon/index.html', {'peluquerias': peluquerias})
 
-# 2. API HORARIOS (Igual)
 def obtener_horas_disponibles(request):
     try:
         empleado_id = request.GET.get('empleado_id')
@@ -40,12 +38,10 @@ def obtener_horas_disponibles(request):
         
         horas = obtener_bloques_disponibles(empleado, fecha, duracion_total)
         return JsonResponse({'horas': horas})
-
     except Exception as e:
-        print(f"Error API Horarios: {e}")
+        print(f"Error API: {e}")
         return JsonResponse({'horas': []})
 
-# 3. AGENDAR CITA (MODIFICADA CON BOLD)
 def agendar_cita(request, slug_peluqueria):
     peluqueria = get_object_or_404(Peluqueria, slug=slug_peluqueria)
     servicios = peluqueria.servicios.all()
@@ -61,7 +57,7 @@ def agendar_cita(request, slug_peluqueria):
             servicios_ids = request.POST.getlist('servicios')
 
             if not (nombre and empleado_id and fecha_str and hora_str):
-                raise ValueError("Faltan datos obligatorios")
+                raise ValueError("Faltan datos")
 
             empleado = get_object_or_404(Empleado, id=empleado_id)
             fecha_naive = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
@@ -73,15 +69,15 @@ def agendar_cita(request, slug_peluqueria):
             fin_cita = inicio_cita + duracion_total
             total_precio = sum([s.precio for s in servicios_objs])
 
-            # --- LÓGICA HÍBRIDA: ¿COBRAR O NO COBRAR? ---
+            # ¿Tiene configurado Bold?
             usa_bold = bool(peluqueria.bold_api_key and peluqueria.bold_integrity_key)
-            estado_inicial = 'P' if usa_bold else 'C' # P=Pendiente Pago, C=Confirmada
+            estado_inicial = 'P' if usa_bold else 'C'
 
             with transaction.atomic():
                 if verificar_conflicto_atomic(empleado, inicio_cita, fin_cita):
                     return render(request, 'salon/agendar.html', {
                         'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados,
-                        'error_mensaje': f"⚠️ El horario de las {hora_str} ya no está disponible."
+                        'error_mensaje': f"⚠️ Horario no disponible."
                     })
                 
                 cita = Cita.objects.create(
@@ -94,89 +90,71 @@ def agendar_cita(request, slug_peluqueria):
                     precio_total=total_precio,
                     estado=estado_inicial
                 )
+                # GUARDAMOS LOS SERVICIOS AQUÍ
                 cita.servicios.set(servicios_objs)
 
-            # --- FLUJO DE DECISIÓN ---
             if usa_bold:
-                # CASO 1: TIENE BOLD -> Redirigir a pago del 50%
+                # Flujo Bold: Calcular 50% y redirigir
                 monto_anticipo = int(total_precio * 0.5)
-                # Referencia única: CITA-{ID}-{TIMESTAMP}
                 referencia = f"CITA-{cita.id}-{int(datetime.now().timestamp())}"
                 cita.referencia_pago_bold = referencia
                 cita.save()
 
-                # Generar Firma de Integridad (SHA256)
-                # Formato Bold: referencia + monto + moneda + secret
                 cadena_concatenada = f"{referencia}{monto_anticipo}COP{peluqueria.bold_integrity_key}"
                 signature = hashlib.sha256(cadena_concatenada.encode('utf-8')).hexdigest()
 
                 return render(request, 'salon/pago_bold.html', {
-                    'cita': cita,
-                    'monto_anticipo': monto_anticipo,
-                    'signature': signature,
-                    'peluqueria': peluqueria,
-                    'referencia': referencia
+                    'cita': cita, 'monto_anticipo': monto_anticipo,
+                    'signature': signature, 'peluqueria': peluqueria, 'referencia': referencia
                 })
 
             else:
-                # CASO 2: NO TIENE BOLD -> Confirmar directo
-                # Importante: Llamamos a Telegram AQUÍ, ya con los servicios guardados.
+                # Flujo Normal: ¡NOTIFICAR AHORA! (Ya tiene servicios guardados)
                 cita.enviar_notificacion_telegram()
                 return redirect('cita_confirmada')
             
         except Exception as e:
             traceback.print_exc()
-            return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados, 'error_mensaje': f"Error técnico: {str(e)}"})
+            return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados, 'error_mensaje': str(e)})
 
     return render(request, 'salon/agendar.html', {
         'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados
     })
 
-def cita_confirmada(request):
-    return render(request, 'salon/confirmacion.html')
-
-# 4. RETORNO BOLD (NUEVO)
 @csrf_exempt 
 def retorno_bold(request):
-    """Aquí llega el usuario después de pagar en Bold"""
-    status = request.GET.get('tx_status') # approved, rejected, failed
+    status = request.GET.get('tx_status')
     referencia = request.GET.get('reference')
-
     if not referencia: return redirect('inicio')
 
     try:
         cita = Cita.objects.get(referencia_pago_bold=referencia)
-        
         if status == 'approved':
-            cita.estado = 'C' # Confirmada
-            cita.abono_pagado = cita.precio_total * 0.5 
-            cita.save() 
-            
-            # ¡PAGO EXITOSO! AHORA SÍ ENVIAMOS LA NOTIFICACIÓN COMPLETA
-            cita.enviar_notificacion_telegram()
-            
-            return redirect('cita_confirmada')
-        
-        elif status == 'rejected' or status == 'failed':
-            cita.estado = 'A' # Anulada (libera el horario)
+            cita.estado = 'C'
+            cita.abono_pagado = cita.precio_total * 0.5
             cita.save()
-            return HttpResponse("<h1>Pago Rechazado o Fallido</h1><a href='/'>Volver al inicio</a>")
-        
+            # Pago exitoso: Notificar Telegram ahora
+            cita.enviar_notificacion_telegram()
+            return redirect('cita_confirmada')
+        elif status in ['rejected', 'failed']:
+            cita.estado = 'A'
+            cita.save()
+            return HttpResponse("Pago rechazado. <a href='/'>Volver</a>")
         else:
-            return HttpResponse("<h1>Estado del pago pendiente...</h1>")
-
+            return HttpResponse("Pago pendiente...")
     except Cita.DoesNotExist:
         return redirect('inicio')
 
-# 5. DASHBOARD Y MANIFEST (Igual)
+def cita_confirmada(request):
+    return render(request, 'salon/confirmacion.html')
+
 @login_required(login_url='/admin/login/')
 def dashboard_dueño(request):
     try: peluqueria = request.user.perfil.peluqueria
     except: peluqueria = None
-
     if not peluqueria:
         if request.user.is_superuser: peluqueria = Peluqueria.objects.first()
-        if not peluqueria: return render(request, 'salon/error_dashboard.html', {'mensaje': 'Sin peluquería'})
+        if not peluqueria: return render(request, 'salon/error_dashboard.html')
 
     hoy = now().date()
     citas_hoy = Cita.objects.filter(peluqueria=peluqueria, fecha_hora_inicio__date=hoy).count()
@@ -187,17 +165,7 @@ def dashboard_dueño(request):
     return render(request, 'salon/dashboard.html', context)
 
 def manifest_view(request):
-    manifest_data = {
-        "name": "Citas Peluquería",
-        "short_name": "Mi Salón",
-        "start_url": "/",
-        "display": "standalone",
-        "background_color": "#ffffff",
-        "theme_color": "#ec4899",
-        "orientation": "portrait",
-        "icons": [
-            {"src": "https://cdn-icons-png.flaticon.com/512/3899/3899618.png", "sizes": "192x192", "type": "image/png"},
-            {"src": "https://cdn-icons-png.flaticon.com/512/3899/3899618.png", "sizes": "512x512", "type": "image/png"}
-        ]
-    }
-    return JsonResponse(manifest_data)
+    return JsonResponse({
+        "name": "Citas Peluquería", "short_name": "Mi Salón", "start_url": "/", "display": "standalone",
+        "background_color": "#ffffff", "theme_color": "#ec4899", "icons": []
+    })
