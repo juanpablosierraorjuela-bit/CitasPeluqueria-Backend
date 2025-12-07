@@ -5,7 +5,7 @@ from django.http import HttpResponseRedirect
 from django.utils.safestring import mark_safe 
 import requests 
 from .models import (
-    Peluqueria, Servicio, Empleado, HorarioSemanal, Cita, PerfilUsuario, Ausencia
+    Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, Ausencia, SolicitudSaaS
 )
 
 # --- 1. ADMIN PARA DUEÑOS DE SALÓN ---
@@ -63,9 +63,7 @@ class PeluqueriaAdmin(admin.ModelAdmin):
     # --- GUÍA VISUAL PARA BOLD ---
     @admin.display(description='📖 ¿Cómo configurar Bold?')
     def guia_bold(self, obj):
-        # NOTA: Cambia esta URL si tienes un dominio propio (ej: https://citas.pasotunja.com/retorno-bold/)
         url_webhook = "https://citaspeluqueria-backend.onrender.com/retorno-bold/"
-        
         return mark_safe(f"""
             <div style="background-color: #fdf2f8; border-left: 5px solid #ec4899; padding: 15px; border-radius: 4px; color: #333;">
                 <h4 style="margin-top:0; color: #be185d;">🚀 Pasos para activar pagos:</h4>
@@ -155,16 +153,14 @@ class AusenciaAdmin(SalonOwnerAdmin):
 class PerfilUsuarioAdmin(SuperuserOnlyAdmin):
     list_display = ('user', 'peluqueria')
 
-admin.site.unregister(User)
-admin.site.unregister(Group)
-admin.site.register(User)
-admin.site.register(Group)
-# ... (todo tu código anterior) ...
-from .models import SolicitudSaaS # <--- Asegúrate de importar esto arriba o aquí
-
 @admin.register(SolicitudSaaS)
 class SolicitudSaaSAdmin(admin.ModelAdmin):
     list_display = ('nombre_empresa', 'nicho', 'cantidad_empleados', 'telefono', 'fecha_solicitud', 'atendido')
     list_filter = ('nicho', 'cantidad_empleados', 'atendido')
     search_fields = ('nombre_empresa', 'nombre_contacto', 'telefono')
     list_editable = ('atendido',)
+
+admin.site.unregister(User)
+admin.site.unregister(Group)
+admin.site.register(User)
+admin.site.register(Group)
