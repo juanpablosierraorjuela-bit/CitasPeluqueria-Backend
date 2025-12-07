@@ -169,4 +169,4 @@ def dashboard_dueño(request):
 def manifest_view(request):
     return JsonResponse({"name": "Citas Peluquería", "short_name": "Mi Salón", "start_url": "/", "display": "standalone", "background_color": "#ffffff", "theme_color": "#ec4899", "icons": []})
 def landing_saas(request):
-    return render(request, 'salon/landing_saas.html')
+    return render(request, 'salon/landing_saas.html') 
