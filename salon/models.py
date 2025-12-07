@@ -179,3 +179,40 @@ class PerfilUsuario(models.Model):
 @receiver(post_save, sender=User)
 def crear_perfil(sender, instance, created, **kwargs):
     if created: PerfilUsuario.objects.create(user=instance)
+# ... (todo tu código anterior) ...
+
+# =============================================================
+# 4. MODELO SAAS (LEADS DE NEGOCIO)
+# =============================================================
+
+class SolicitudSaaS(models.Model):
+    nombre_contacto = models.CharField(max_length=100)
+    nombre_empresa = models.CharField(max_length=100)
+    telefono = models.CharField(max_length=20)
+    
+    NICHO_CHOICES = [
+        ('barberia', 'Barbería'),
+        ('salon_belleza', 'Salón de Belleza / Peluquería'),
+        ('spa', 'Spa / Estética'),
+        ('unas', 'Estudio de Uñas'),
+        ('otro', 'Otro'),
+    ]
+    nicho = models.CharField(max_length=20, choices=NICHO_CHOICES)
+    
+    CANTIDAD_EMPLEADOS = [
+        ('1-2', 'Soy solo yo / 2 personas'),
+        ('3-5', 'Pequeño (3 a 5 empleados)'),
+        ('6-10', 'Mediano (6 a 10 empleados)'),
+        ('10+', 'Grande (Más de 10 empleados)'),
+    ]
+    cantidad_empleados = models.CharField(max_length=10, choices=CANTIDAD_EMPLEADOS)
+    
+    fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    atendido = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Lead: {self.nombre_empresa} ({self.nombre_contacto})"
+
+    class Meta:
+        verbose_name = "Solicitud de Software"
+        verbose_name_plural = "Solicitudes SaaS"
