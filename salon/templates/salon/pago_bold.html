@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pago Anticipo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; background: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .card { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 500px; width: 100%; text-align: center; }
+        h1 { color: #0f172a; margin-bottom: 10px; }
+        .monto { font-size: 2.5rem; font-weight: 700; color: #ec4899; margin: 20px 0; }
+        .info { color: #64748b; margin-bottom: 30px; font-size: 0.95rem; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Pago de Anticipo</h1>
+        <p class="info">Confirma tu cita en <strong>{{ peluqueria.nombre_visible }}</strong>.</p>
+        <div class="monto">${{ monto_anticipo }} COP</div>
+        <form>
+            <script
+              src="https://checkout.bold.co/library/boldPaymentButton.js"
+              data-bold-button="dark" 
+              data-order-id="{{ referencia }}"
+              data-currency="COP"
+              data-amount="{{ monto_anticipo }}"
+              data-api-key="{{ peluqueria.bold_api_key }}"
+              data-integrity-signature="{{ signature }}"
+              data-redirection-url="https://citaspeluqueria-backend.onrender.com/retorno-bold/"
+              >
+            </script>
+        </form>
+    </div>
+</body>
+</html>
