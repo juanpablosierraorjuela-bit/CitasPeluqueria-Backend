@@ -14,21 +14,20 @@ class Peluqueria(models.Model):
     nombre = models.CharField(max_length=100)
     slug = models.SlugField(unique=True, blank=True, null=True) 
     nombre_visible = models.CharField(max_length=100, default="Mi Salón")
-    
-    # UBICACIÓN GLOBAL
     ciudad = models.CharField(max_length=100, default="Tunja", help_text="Ciudad para filtrar en la App Global")
-    
-    # TELEGRAM
-    telegram_token = models.CharField(max_length=100, blank=True, null=True)
-    telegram_chat_id = models.CharField(max_length=100, blank=True, null=True)
     
     # DATOS DE CONTACTO
     direccion = models.CharField(max_length=200, blank=True, null=True)
     telefono = models.CharField(max_length=50, blank=True, null=True)
-    hora_apertura = models.TimeField(default="08:00")
-    hora_cierre = models.TimeField(default="20:00")
-
-    # BOLD
+    
+    # CONFIGURACIÓN DEL NEGOCIO (NUEVO)
+    porcentaje_abono = models.IntegerField(default=50, help_text="Porcentaje que debe pagar el cliente para reservar (Ej: 20, 30, 50).")
+    
+    # INTEGRACIÓN TELEGRAM (Individual por Salón)
+    telegram_token = models.CharField(max_length=100, blank=True, null=True, help_text="Token del Bot de Telegram propio")
+    telegram_chat_id = models.CharField(max_length=100, blank=True, null=True, help_text="ID del Chat donde llegarán las notificaciones")
+    
+    # INTEGRACIÓN BOLD (Individual por Salón)
     bold_api_key = models.CharField(max_length=200, blank=True, null=True, help_text="Llave pública de Bold (PK-...)")
     bold_integrity_key = models.CharField(max_length=200, blank=True, null=True, help_text="Llave de integridad para firmar transacciones")
     
@@ -138,21 +137,16 @@ class Cita(models.Model):
             
             if not lista_servicios: lista_servicios = "(Sin servicios especificados)"
 
-            # --- LÓGICA DE COBRO INTELIGENTE ---
             saldo_pendiente = self.precio_total - self.abono_pagado
             
-            # 1. Determinamos el texto del estado
             if self.estado == 'C':
                 if saldo_pendiente <= 0:
-                    # Pagó todo
                     estado_texto = "✅ PAGADO TOTAL (ONLINE)"
                     alerta_cobro = ""
                 elif self.abono_pagado > 0:
-                    # Pagó una parte (Abono)
-                    estado_texto = "⚠️ ABONO 50% RECIBIDO"
+                    estado_texto = f"⚠️ ABONO PARCIAL RECIBIDO"
                     alerta_cobro = f"\n❗ OJO: FALTA COBRAR ${saldo_pendiente:,.0f} EN EL LOCAL"
                 else:
-                    # No ha pagado nada (Pago en sitio)
                     estado_texto = "✅ CONFIRMADA (PAGO EN LOCAL)"
                     alerta_cobro = f"\n❗ COBRAR TOTAL: ${self.precio_total:,.0f}"
             else:
@@ -162,7 +156,7 @@ class Cita(models.Model):
             mensaje = (
                 f"🔔 *NUEVA CITA - {self.peluqueria.nombre_visible}*\n\n"
                 f"💰 *ESTADO:* {estado_texto}"
-                f"{alerta_cobro}\n"  # <--- AQUÍ SALE LA ALERTA DE DEUDA
+                f"{alerta_cobro}\n"
                 f"👤 *Cliente:* {self.cliente_nombre}\n"
                 f"📞 *Tel:* {self.cliente_telefono}\n"
                 f"📅 *Fecha:* {self.fecha_hora_inicio.strftime('%d/%m/%Y')}\n"
