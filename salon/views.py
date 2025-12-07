@@ -6,16 +6,39 @@ from django.utils.timezone import make_aware, now
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime, timedelta
-from decimal import Decimal # <--- 1. IMPORTANTE: Agregamos esto
+from decimal import Decimal
 import hashlib
 import traceback
 
 from .models import Peluqueria, Servicio, Empleado, Cita
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
 
+# 1. VISTA DE INICIO (GLOBAL & FILTRADA)
 def inicio(request):
+    # Obtenemos el parámetro de ciudad de la URL (si existe)
+    ciudad_seleccionada = request.GET.get('ciudad')
+    
+    # Obtenemos lista de ciudades únicas para el menú desplegable
+    ciudades_disponibles = Peluqueria.objects.values_list('ciudad', flat=True).distinct().order_by('ciudad')
+    
+    # Base query
     peluquerias = Peluqueria.objects.all()
-    return render(request, 'salon/index.html', {'peluquerias': peluquerias})
+    
+    # Filtramos si hay selección
+    if ciudad_seleccionada and ciudad_seleccionada != 'Todas':
+        peluquerias = peluquerias.filter(ciudad__iexact=ciudad_seleccionada)
+        
+    context = {
+        'peluquerias': peluquerias,
+        'ciudades': ciudades_disponibles,
+        'ciudad_actual': ciudad_seleccionada
+    }
+    return render(request, 'salon/index.html', context)
+
+# ... (MANTÉN TODO EL RESTO DE VISTAS IGUAL DESDE AQUÍ) ...
+# (Copia y pega las funciones obtener_horas_disponibles, agendar_cita, retorno_bold, etc. del archivo anterior)
+# Para ahorrar espacio aquí, solo pongo el inicio que es lo que cambió, 
+# PERO EN GITHUB DEBES PEGAR EL ARCHIVO COMPLETO CON LAS OTRAS FUNCIONES.
 
 def obtener_horas_disponibles(request):
     try:
@@ -70,7 +93,6 @@ def agendar_cita(request, slug_peluqueria):
             fin_cita = inicio_cita + duracion_total
             total_precio = sum([s.precio for s in servicios_objs])
 
-            # ¿Tiene configurado Bold?
             usa_bold = bool(peluqueria.bold_api_key and peluqueria.bold_integrity_key)
             estado_inicial = 'P' if usa_bold else 'C'
 
@@ -91,14 +113,10 @@ def agendar_cita(request, slug_peluqueria):
                     precio_total=total_precio,
                     estado=estado_inicial
                 )
-                # GUARDAMOS LOS SERVICIOS AQUÍ
                 cita.servicios.set(servicios_objs)
 
             if usa_bold:
-                # Flujo Bold: Calcular 50% y redirigir
-                # 2. CORREGIDO: Usamos Decimal("0.5") para evitar el error con float
                 monto_anticipo = int(total_precio * Decimal("0.5"))
-                
                 referencia = f"CITA-{cita.id}-{int(datetime.now().timestamp())}"
                 cita.referencia_pago_bold = referencia
                 cita.save()
@@ -112,7 +130,6 @@ def agendar_cita(request, slug_peluqueria):
                 })
 
             else:
-                # Flujo Normal: ¡NOTIFICAR AHORA! (Ya tiene servicios guardados)
                 cita.enviar_notificacion_telegram()
                 return redirect('cita_confirmada')
             
@@ -134,10 +151,8 @@ def retorno_bold(request):
         cita = Cita.objects.get(referencia_pago_bold=referencia)
         if status == 'approved':
             cita.estado = 'C'
-            # 3. CORREGIDO: También aquí usamos Decimal
             cita.abono_pagado = cita.precio_total * Decimal("0.5")
             cita.save()
-            # Pago exitoso: Notificar Telegram ahora
             cita.enviar_notificacion_telegram()
             return redirect('cita_confirmada')
         elif status in ['rejected', 'failed']:
