@@ -159,3 +159,12 @@ admin.site.unregister(User)
 admin.site.unregister(Group)
 admin.site.register(User)
 admin.site.register(Group)
+# ... (todo tu código anterior) ...
+from .models import SolicitudSaaS # <--- Asegúrate de importar esto arriba o aquí
+
+@admin.register(SolicitudSaaS)
+class SolicitudSaaSAdmin(admin.ModelAdmin):
+    list_display = ('nombre_empresa', 'nicho', 'cantidad_empleados', 'telefono', 'fecha_solicitud', 'atendido')
+    list_filter = ('nicho', 'cantidad_empleados', 'atendido')
+    search_fields = ('nombre_empresa', 'nombre_contacto', 'telefono')
+    list_editable = ('atendido',)
