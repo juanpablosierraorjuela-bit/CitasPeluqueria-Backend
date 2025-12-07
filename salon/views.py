@@ -1,21 +1,23 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.db import transaction
-from django.db.models import Sum, Count
+from django.db.models import Sum
 from django.utils.timezone import make_aware, now
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime, timedelta
+import hashlib
 import traceback
 
 from .models import Peluqueria, Servicio, Empleado, Cita
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
 
-# 1. VISTA DE INICIO
+# 1. VISTA DE INICIO (Igual)
 def inicio(request):
     peluquerias = Peluqueria.objects.all()
     return render(request, 'salon/index.html', {'peluquerias': peluquerias})
 
-# 2. API PARA CALCULAR HORARIOS DISPONIBLES
+# 2. API HORARIOS (Igual)
 def obtener_horas_disponibles(request):
     try:
         empleado_id = request.GET.get('empleado_id')
@@ -43,7 +45,7 @@ def obtener_horas_disponibles(request):
         print(f"Error API Horarios: {e}")
         return JsonResponse({'horas': []})
 
-# 3. AGENDAR CITA
+# 3. AGENDAR CITA (MODIFICADA CON BOLD)
 def agendar_cita(request, slug_peluqueria):
     peluqueria = get_object_or_404(Peluqueria, slug=slug_peluqueria)
     servicios = peluqueria.servicios.all()
@@ -58,30 +60,28 @@ def agendar_cita(request, slug_peluqueria):
             hora_str = request.POST.get('hora_seleccionada')
             servicios_ids = request.POST.getlist('servicios')
 
-            print(f"INTENTO AGENDAR: {nombre} | {fecha_str} {hora_str}")
-
             if not (nombre and empleado_id and fecha_str and hora_str):
-                raise ValueError("Faltan datos obligatorios (fecha u hora vacía)")
+                raise ValueError("Faltan datos obligatorios")
 
             empleado = get_object_or_404(Empleado, id=empleado_id)
-            
             fecha_naive = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
-            try:
-                inicio_cita = make_aware(fecha_naive) 
-            except ValueError:
-                inicio_cita = fecha_naive
+            try: inicio_cita = make_aware(fecha_naive) 
+            except ValueError: inicio_cita = fecha_naive
 
             servicios_objs = Servicio.objects.filter(id__in=servicios_ids)
             duracion_total = sum([s.duracion for s in servicios_objs], timedelta())
             fin_cita = inicio_cita + duracion_total
             total_precio = sum([s.precio for s in servicios_objs])
 
+            # --- LÓGICA HÍBRIDA: ¿COBRAR O NO COBRAR? ---
+            usa_bold = bool(peluqueria.bold_api_key and peluqueria.bold_integrity_key)
+            estado_inicial = 'P' if usa_bold else 'C' # P=Pendiente Pago, C=Confirmada
+
             with transaction.atomic():
                 if verificar_conflicto_atomic(empleado, inicio_cita, fin_cita):
-                    print("CONFLICTO: Horario ocupado o Ausencia")
                     return render(request, 'salon/agendar.html', {
                         'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados,
-                        'error_mensaje': f"⚠️ Lo sentimos, las {hora_str} ya no está disponible (ocupado o día libre)."
+                        'error_mensaje': f"⚠️ El horario de las {hora_str} ya no está disponible."
                     })
                 
                 cita = Cita.objects.create(
@@ -92,19 +92,41 @@ def agendar_cita(request, slug_peluqueria):
                     fecha_hora_inicio=inicio_cita,
                     fecha_hora_fin=fin_cita,
                     precio_total=total_precio,
-                    estado='C'
+                    estado=estado_inicial
                 )
                 cita.servicios.set(servicios_objs)
-            
-            print("EXITO: Redirigiendo...")
-            return redirect('cita_confirmada')
+
+            # --- FLUJO DE DECISIÓN ---
+            if usa_bold:
+                # CASO 1: TIENE BOLD -> Redirigir a pago del 50%
+                monto_anticipo = int(total_precio * 0.5)
+                # Referencia única: CITA-{ID}-{TIMESTAMP}
+                referencia = f"CITA-{cita.id}-{int(datetime.now().timestamp())}"
+                cita.referencia_pago_bold = referencia
+                cita.save()
+
+                # Generar Firma de Integridad (SHA256)
+                # Formato Bold: referencia + monto + moneda + secret
+                cadena_concatenada = f"{referencia}{monto_anticipo}COP{peluqueria.bold_integrity_key}"
+                signature = hashlib.sha256(cadena_concatenada.encode('utf-8')).hexdigest()
+
+                return render(request, 'salon/pago_bold.html', {
+                    'cita': cita,
+                    'monto_anticipo': monto_anticipo,
+                    'signature': signature,
+                    'peluqueria': peluqueria,
+                    'referencia': referencia
+                })
+
+            else:
+                # CASO 2: NO TIENE BOLD -> Confirmar directo
+                # Importante: Llamamos a Telegram AQUÍ, ya con los servicios guardados.
+                cita.enviar_notificacion_telegram()
+                return redirect('cita_confirmada')
             
         except Exception as e:
-            traceback.print_exc() 
-            return render(request, 'salon/agendar.html', {
-                'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados,
-                'error_mensaje': f"Ocurrió un error técnico: {str(e)}"
-            })
+            traceback.print_exc()
+            return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados, 'error_mensaje': f"Error técnico: {str(e)}"})
 
     return render(request, 'salon/agendar.html', {
         'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados
@@ -113,82 +135,69 @@ def agendar_cita(request, slug_peluqueria):
 def cita_confirmada(request):
     return render(request, 'salon/confirmacion.html')
 
-# --- 4. NUEVA VISTA DE DASHBOARD ---
+# 4. RETORNO BOLD (NUEVO)
+@csrf_exempt 
+def retorno_bold(request):
+    """Aquí llega el usuario después de pagar en Bold"""
+    status = request.GET.get('tx_status') # approved, rejected, failed
+    referencia = request.GET.get('reference')
+
+    if not referencia: return redirect('inicio')
+
+    try:
+        cita = Cita.objects.get(referencia_pago_bold=referencia)
+        
+        if status == 'approved':
+            cita.estado = 'C' # Confirmada
+            cita.abono_pagado = cita.precio_total * 0.5 
+            cita.save() 
+            
+            # ¡PAGO EXITOSO! AHORA SÍ ENVIAMOS LA NOTIFICACIÓN COMPLETA
+            cita.enviar_notificacion_telegram()
+            
+            return redirect('cita_confirmada')
+        
+        elif status == 'rejected' or status == 'failed':
+            cita.estado = 'A' # Anulada (libera el horario)
+            cita.save()
+            return HttpResponse("<h1>Pago Rechazado o Fallido</h1><a href='/'>Volver al inicio</a>")
+        
+        else:
+            return HttpResponse("<h1>Estado del pago pendiente...</h1>")
+
+    except Cita.DoesNotExist:
+        return redirect('inicio')
+
+# 5. DASHBOARD Y MANIFEST (Igual)
 @login_required(login_url='/admin/login/')
 def dashboard_dueño(request):
-    # Intentar obtener la peluquería del usuario logueado
-    try:
-        # Asumiendo que usas PerfilUsuario vinculado al User
-        peluqueria = request.user.perfil.peluqueria
-    except:
-        peluqueria = None
+    try: peluqueria = request.user.perfil.peluqueria
+    except: peluqueria = None
 
     if not peluqueria:
-        # Si es superusuario sin peluquería, mostramos la primera para demo
-        if request.user.is_superuser:
-            peluqueria = Peluqueria.objects.first()
-        
-        if not peluqueria:
-             return render(request, 'salon/error_dashboard.html', {'mensaje': 'No tienes una peluquería asignada.'})
+        if request.user.is_superuser: peluqueria = Peluqueria.objects.first()
+        if not peluqueria: return render(request, 'salon/error_dashboard.html', {'mensaje': 'Sin peluquería'})
 
-    # Estadísticas
     hoy = now().date()
-    mes_actual = hoy.month
-    
-    # Citas de hoy
     citas_hoy = Cita.objects.filter(peluqueria=peluqueria, fecha_hora_inicio__date=hoy).count()
-    
-    # Ingresos del mes
-    ingresos_mes = Cita.objects.filter(
-        peluqueria=peluqueria, 
-        fecha_hora_inicio__month=mes_actual, 
-        estado='C'
-    ).aggregate(Sum('precio_total'))['precio_total__sum'] or 0
+    ingresos_mes = Cita.objects.filter(peluqueria=peluqueria, fecha_hora_inicio__month=hoy.month, estado='C').aggregate(Sum('precio_total'))['precio_total__sum'] or 0
+    proximas_citas = Cita.objects.filter(peluqueria=peluqueria, fecha_hora_inicio__gte=now(), estado='C').order_by('fecha_hora_inicio')[:5]
 
-    # Próximas 5 citas
-    proximas_citas = Cita.objects.filter(
-        peluqueria=peluqueria, 
-        fecha_hora_inicio__gte=now(),
-        estado='C'
-    ).order_by('fecha_hora_inicio')[:5]
-
-    context = {
-        'peluqueria': peluqueria,
-        'citas_hoy': citas_hoy,
-        'ingresos_mes': ingresos_mes,
-        'proximas_citas': proximas_citas,
-    }
+    context = {'peluqueria': peluqueria, 'citas_hoy': citas_hoy, 'ingresos_mes': ingresos_mes, 'proximas_citas': proximas_citas}
     return render(request, 'salon/dashboard.html', context)
 
-# ... (MANTÉN TODO EL CÓDIGO ANTERIOR IGUAL) ...
-
-# AL FINAL DEL ARCHIVO AGREGA ESTO:
-
 def manifest_view(request):
-    """
-    Devuelve el archivo manifest.json para que el celular reconozca la web como App.
-    """
     manifest_data = {
         "name": "Citas Peluquería",
         "short_name": "Mi Salón",
         "start_url": "/",
-        "display": "standalone", # Pantalla completa (sin barra de navegador)
+        "display": "standalone",
         "background_color": "#ffffff",
-        "theme_color": "#ec4899", # Color rosado de tu marca
+        "theme_color": "#ec4899",
         "orientation": "portrait",
         "icons": [
-            {
-                # Usaremos un icono genérico de CDN por ahora. 
-                # IDEAL: Sube tu propio logo a static/img/icon-192.png
-                "src": "https://cdn-icons-png.flaticon.com/512/3899/3899618.png",
-                "sizes": "192x192",
-                "type": "image/png"
-            },
-            {
-                "src": "https://cdn-icons-png.flaticon.com/512/3899/3899618.png",
-                "sizes": "512x512",
-                "type": "image/png"
-            }
+            {"src": "https://cdn-icons-png.flaticon.com/512/3899/3899618.png", "sizes": "192x192", "type": "image/png"},
+            {"src": "https://cdn-icons-png.flaticon.com/512/3899/3899618.png", "sizes": "512x512", "type": "image/png"}
         ]
     }
     return JsonResponse(manifest_data)
