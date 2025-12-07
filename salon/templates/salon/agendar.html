@@ -49,46 +49,81 @@
         .pago-input { display: none; }
         .pago-input:checked + .pago-label { background: #fdf2f8; border-color: var(--accent-color); color: var(--accent-color); font-weight: 600; }
 
-        /* --- ESTILOS EXCLUSIVOS PARA DUEÑOS (Smart Access) --- */
-        
-        /* 1. Botón Flotante para Dueños Logueados */
-        .admin-floating-btn {
+        /* --- BOTÓN JOYA (DISEÑO SORPRESA) --- */
+        .admin-jewel-btn {
             position: fixed;
             bottom: 30px;
             right: 30px;
-            background: #0f172a;
-            color: white;
-            padding: 15px 25px;
-            border-radius: 50px;
-            text-decoration: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            font-weight: 600;
+            width: 55px; /* Tamaño compacto */
+            height: 55px;
+            border-radius: 50%;
+            
+            /* Fondo elegante oscuro */
+            background: #0f172a; 
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            
+            /* Sombra suave inicial */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            
             display: flex;
             align-items: center;
-            gap: 10px;
-            z-index: 100;
-            transition: transform 0.2s;
-            border: 2px solid rgba(255,255,255,0.2);
-        }
-        .admin-floating-btn:hover { transform: translateY(-3px); background: black; }
-        
-        /* 2. Footer Discreto para Acceso */
-        .site-footer {
-            margin-top: auto;
-            padding: 20px;
-            text-align: center;
-            font-size: 0.8rem;
-            color: #94a3b8;
-        }
-        .owner-link {
-            color: #cbd5e1;
+            justify-content: center;
             text-decoration: none;
-            transition: color 0.3s;
-            margin-left: 10px;
-            border: 1px solid #e2e8f0;
-            padding: 5px 12px;
-            border-radius: 20px;
+            z-index: 1000;
+            
+            /* Animación suave */
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+
+        /* El ícono de la corona */
+        .admin-jewel-btn .icon {
+            font-size: 1.6rem;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+            transition: transform 0.4s ease;
+        }
+
+        /* EFECTO AL PASAR EL MOUSE (LA MAGIA) */
+        .admin-jewel-btn:hover {
+            /* Se transforma en el gradiente de la marca */
+            background: var(--accent-gradient);
+            transform: scale(1.1) rotate(-10deg); /* Crece y gira un poquito */
+            border-color: transparent;
+            
+            /* Sombra de neón brillante */
+            box-shadow: 0 0 25px rgba(236, 72, 153, 0.6), 
+                        0 0 10px rgba(139, 92, 246, 0.4);
+        }
+
+        .admin-jewel-btn:hover .icon {
+            transform: scale(1.2); /* El icono salta hacia ti */
+        }
+        
+        /* Tooltip (Texto que aparece al pasar el mouse) */
+        .admin-jewel-btn::after {
+            content: "Panel de Dueño";
+            position: absolute;
+            right: 70px; /* A la izquierda del botón */
+            background: #0f172a;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateX(10px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .admin-jewel-btn:hover::after {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Footer estilos */
+        .site-footer { margin-top: auto; padding: 20px; text-align: center; font-size: 0.8rem; color: #94a3b8; }
+        .owner-link { color: #cbd5e1; text-decoration: none; transition: color 0.3s; margin-left: 10px; border: 1px solid #e2e8f0; padding: 5px 12px; border-radius: 20px; }
         .owner-link:hover { color: #ec4899; border-color: #ec4899; background: white; }
 
     </style>
@@ -96,9 +131,8 @@
 <body>
 
     {% if request.user.is_authenticated and request.user.is_staff %}
-        <a href="{% url 'admin:index' %}" class="admin-floating-btn">
-            ⚙️ Gestionar mi Peluquería
-        </a>
+        <a href="{% url 'admin:index' %}" class="admin-jewel-btn" title="Gestionar mi Salón">
+            <span class="icon">👑</span> </a>
     {% endif %}
 
 <div class="container">
