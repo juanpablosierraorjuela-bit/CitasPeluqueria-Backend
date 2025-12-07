@@ -30,13 +30,12 @@
         .servicio-card { padding: 15px; border: 1px solid var(--border-light); border-radius: 12px; display: flex; justify-content: space-between; margin-bottom: 10px; cursor: pointer; transition: 0.2s; align-items: center; }
         .servicio-option input:checked + .servicio-card { border-color: var(--accent-color); background: #fdf2f8; }
         
-        /* NUEVO ESTILO PARA DURACIÓN */
         .badge-duracion {
             font-size: 0.75rem; color: #64748b; background: #e2e8f0; 
             padding: 3px 8px; border-radius: 10px; margin-left: 8px; font-weight: 500;
         }
 
-        select, input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border-light); margin-bottom: 10px; font-family: inherit; }
+        select, input[type="text"], input[type="tel"], input[type="date"] { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border-light); margin-bottom: 10px; font-family: inherit; }
         #contenedor-horas { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 15px; }
         .btn-hora { padding: 10px; border: 1px solid var(--border-light); border-radius: 8px; text-align: center; cursor: pointer; background: white; }
         .btn-hora:hover { background: #f1f5f9; }
@@ -45,6 +44,13 @@
         #btn-confirmar:not(:disabled) { opacity: 1; pointer-events: all; }
         .hidden { display: none; }
         input[type="checkbox"] { display: none; }
+
+        /* NUEVOS ESTILOS PARA OPCIÓN DE PAGO */
+        .pago-options { display: flex; gap: 10px; margin-bottom: 15px; }
+        .pago-label { flex: 1; border: 1px solid var(--border-light); padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; font-size: 0.9rem; }
+        .pago-input { display: none; }
+        .pago-input:checked + .pago-label { background: #fdf2f8; border-color: var(--accent-color); color: var(--accent-color); font-weight: 600; }
+
     </style>
 </head>
 <body>
@@ -71,7 +77,6 @@
                 <div class="servicio-card">
                     <div>
                         <span>{{ s.nombre }}</span>
-                        <!-- AQUÍ MOSTRAMOS LA DURACIÓN -->
                         <span class="badge-duracion">⏱️ {{ s.str_duracion }}</span>
                     </div>
                     <strong>${{ s.precio }}</strong>
@@ -99,6 +104,22 @@
             <div class="step-label"><span class="step-number">4</span> Tus Datos</div>
             <input type="text" name="nombre_cliente" placeholder="Nombre completo" required>
             <input type="tel" name="telefono_cliente" placeholder="Celular" required>
+
+            {% if peluqueria.bold_api_key %}
+                <div style="margin-top: 15px;">
+                    <label style="font-size: 0.9rem; color: #64748b; display:block; margin-bottom:8px;">¿Cómo deseas pagar?</label>
+                    <div class="pago-options">
+                        <label>
+                            <input type="radio" name="tipo_pago" value="completo" class="pago-input" checked>
+                            <div class="pago-label">Pago Total (100%)</div>
+                        </label>
+                        <label>
+                            <input type="radio" name="tipo_pago" value="mitad" class="pago-input">
+                            <div class="pago-label">Abonar el 50%</div>
+                        </label>
+                    </div>
+                </div>
+            {% endif %}
         </div>
 
         <button type="submit" id="btn-confirmar" disabled>Confirmar Reserva</button>
