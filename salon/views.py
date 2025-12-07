@@ -6,6 +6,7 @@ from django.utils.timezone import make_aware, now
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime, timedelta
+from decimal import Decimal # <--- 1. IMPORTANTE: Agregamos esto
 import hashlib
 import traceback
 
@@ -95,7 +96,9 @@ def agendar_cita(request, slug_peluqueria):
 
             if usa_bold:
                 # Flujo Bold: Calcular 50% y redirigir
-                monto_anticipo = int(total_precio * 0.5)
+                # 2. CORREGIDO: Usamos Decimal("0.5") para evitar el error con float
+                monto_anticipo = int(total_precio * Decimal("0.5"))
+                
                 referencia = f"CITA-{cita.id}-{int(datetime.now().timestamp())}"
                 cita.referencia_pago_bold = referencia
                 cita.save()
@@ -131,7 +134,8 @@ def retorno_bold(request):
         cita = Cita.objects.get(referencia_pago_bold=referencia)
         if status == 'approved':
             cita.estado = 'C'
-            cita.abono_pagado = cita.precio_total * 0.5
+            # 3. CORREGIDO: También aquí usamos Decimal
+            cita.abono_pagado = cita.precio_total * Decimal("0.5")
             cita.save()
             # Pago exitoso: Notificar Telegram ahora
             cita.enviar_notificacion_telegram()
