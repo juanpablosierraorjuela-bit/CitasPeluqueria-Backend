@@ -166,5 +166,3 @@ class PerfilUsuario(models.Model):
 @receiver(post_save, sender=User)
 def crear_perfil(sender, instance, created, **kwargs):
     if created: PerfilUsuario.objects.create(user=instance)
-
-# NOTA: NO HAY SEÑAL AUTOMÁTICA DE CITA AQUÍ. SE LLAMA EN LAS VISTAS.
