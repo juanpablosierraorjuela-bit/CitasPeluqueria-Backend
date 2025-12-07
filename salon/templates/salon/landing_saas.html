@@ -1,0 +1,125 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PASO Business | Digitaliza tu Salón</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --text-white: #f8fafc;
+            --accent-pink: #ec4899;
+            --accent-purple: #8b5cf6;
+            --gradient: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+        }
+        body { margin: 0; font-family: 'Outfit', sans-serif; background: var(--bg-dark); color: var(--text-white); overflow-x: hidden; }
+        
+        /* HERO SECTION */
+        .hero {
+            min-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
+        }
+        
+        h1 {
+            font-size: 4rem;
+            line-height: 1;
+            margin-bottom: 20px;
+            font-weight: 800;
+        }
+        
+        .gradient-text {
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        p.subtitle {
+            font-size: 1.2rem;
+            color: #94a3b8;
+            max-width: 600px;
+            margin-bottom: 40px;
+        }
+        
+        /* BOTONES */
+        .cta-btn {
+            background: var(--gradient);
+            color: white;
+            padding: 18px 40px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            box-shadow: 0 10px 30px rgba(236, 72, 153, 0.4);
+            transition: transform 0.3s;
+            display: inline-block;
+        }
+        .cta-btn:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(236, 72, 153, 0.6); }
+
+        /* CARACTERÍSTICAS (GRID) */
+        .features { padding: 80px 20px; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            transition: 0.3s;
+        }
+        .feature-card:hover { border-color: var(--accent-pink); background: rgba(255, 255, 255, 0.05); }
+        
+        .icon { font-size: 2.5rem; margin-bottom: 20px; display: block; }
+        h3 { font-size: 1.5rem; margin-bottom: 10px; }
+        p { color: #94a3b8; line-height: 1.6; }
+
+        /* FOOTER */
+        footer { text-align: center; padding: 50px; border-top: 1px solid rgba(255,255,255,0.1); color: #64748b; }
+
+        @media(max-width:768px) { h1 { font-size: 2.5rem; } }
+    </style>
+</head>
+<body>
+
+    <nav style="padding: 20px; display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto;">
+        <span style="font-weight: 800; letter-spacing: 1px;">PASO BUSINESS</span>
+        <a href="{% url 'inicio' %}" style="color: white; text-decoration: none; font-size: 0.9rem;">Volver al Directorio</a>
+    </nav>
+
+    <section class="hero">
+        <h1>Tu Salón,<br><span class="gradient-text">En Piloto Automático</span></h1>
+        <p class="subtitle">Deja de usar WhatsApp y papel. Obtén tu propia App de reservas, cobros con Bold y recordatorios automáticos por Telegram.</p>
+        <a href="https://wa.me/573000000000?text=Hola,%20quiero%20digitalizar%20mi%20negocio%20con%20PASO" class="cta-btn">🚀 Quiero mi Demo Gratis</a>
+        <p style="margin-top: 15px; font-size: 0.8rem; color: #64748b;">*Oferta exclusiva de lanzamiento</p>
+    </section>
+
+    <section class="features">
+        <div class="feature-card">
+            <span class="icon">🤖</span>
+            <h3>Adiós a las llamadas</h3>
+            <p>Tus clientes reservan solos las 24/7. Tú recibes la notificación lista en tu celular.</p>
+        </div>
+        <div class="feature-card">
+            <span class="icon">💳</span>
+            <h3>Cobros Seguros</h3>
+            <p>Integramos Bold para que recibas anticipos y evites a los clientes que nunca llegan.</p>
+        </div>
+        <div class="feature-card">
+            <span class="icon">📊</span>
+            <h3>Control Total</h3>
+            <p>Panel administrativo para ver tus ganancias diarias, agenda de empleados y estadísticas.</p>
+        </div>
+    </section>
+
+    <footer>
+        <p>© 2025 PASO Technology. Hecho para emprendedores.</p>
+    </footer>
+
+</body>
+</html>
