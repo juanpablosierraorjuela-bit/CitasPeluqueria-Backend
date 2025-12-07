@@ -4,32 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PASO | Colección de Estilos</title>
-    <!-- Fuente 'Outfit' para un look moderno y geométrico -->
+    <title>PASO | Reserva tu Estilo</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
-    
     <style>
         :root {
-            /* Paleta de Colores Exclusiva */
             --bg-color: #f8fafc;
             --text-dark: #0f172a;
             --text-gray: #64748b;
             --card-bg: #ffffff;
-            
-            /* Degradados sutiles y modernos */
             --primary-gradient: linear-gradient(135deg, #0f172a 0%, #334155 100%);
-            --accent-gradient: linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%); /* Rosa a Violeta */
-            
-            /* Sombras sofisticadas */
+            --accent-gradient: linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%);
             --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Outfit', sans-serif;
@@ -41,26 +30,12 @@
             align-items: center;
         }
 
-        /* --- HERO SECTION (ENCABEZADO) --- */
+        /* --- HERO SECTION --- */
         header {
             text-align: center;
-            padding: 100px 20px 60px;
+            padding: 80px 20px 40px;
             max-width: 900px;
-            position: relative;
-        }
-
-        /* Fondo decorativo muy sutil (Glow) */
-        header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(236, 72, 153, 0.08) 0%, rgba(248, 250, 252, 0) 70%);
-            z-index: -1;
-            pointer-events: none;
+            width: 100%;
         }
 
         .brand-badge {
@@ -77,7 +52,7 @@
         }
 
         .header-title {
-            font-size: 4rem; /* Título grande e impactante */
+            font-size: 3.5rem;
             font-weight: 700;
             line-height: 1.1;
             margin-bottom: 20px;
@@ -87,20 +62,55 @@
             letter-spacing: -1.5px;
         }
 
-        .header-subtitle {
-            font-size: 1.25rem;
-            color: var(--text-gray);
-            font-weight: 300;
+        /* --- BARRAS DE BÚSQUEDA Y FILTRO --- */
+        .search-container {
+            background: white;
+            padding: 10px;
+            border-radius: 50px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            gap: 10px;
             max-width: 500px;
-            margin: 0 auto;
-            line-height: 1.6;
+            margin: 30px auto 50px;
+            border: 1px solid #e2e8f0;
+            align-items: center;
         }
 
-        /* --- GRID & CARDS --- */
+        .city-select {
+            flex: 1;
+            border: none;
+            padding: 12px 20px;
+            font-size: 1rem;
+            border-radius: 40px;
+            font-family: inherit;
+            color: var(--text-dark);
+            background: transparent;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .btn-geo {
+            background: #f1f5f9;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: 0.2s;
+            color: var(--text-dark);
+        }
+
+        .btn-geo:hover { background: #e2e8f0; color: #ec4899; }
+
+        /* --- GRID --- */
         .salon-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 40px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
             max-width: 1200px;
             width: 100%;
             padding: 0 40px 100px;
@@ -109,88 +119,60 @@
         .salon-card {
             background: var(--card-bg);
             border-radius: 24px;
-            padding: 35px;
+            padding: 30px;
             text-decoration: none;
             color: inherit;
             position: relative;
             overflow: hidden;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.3s ease;
             border: 1px solid rgba(255, 255, 255, 0.8);
             box-shadow: var(--shadow-sm);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            min-height: 220px;
+            min-height: 200px;
         }
 
-        /* Efecto Hover: Elevación */
         .salon-card:hover {
-            transform: translateY(-10px);
+            transform: translateY(-5px);
             box-shadow: var(--shadow-hover);
-            border-color: rgba(236, 72, 153, 0.15);
+            border-color: rgba(236, 72, 153, 0.2);
         }
 
-        /* Línea de gradiente animada en la parte inferior */
         .salon-card::after {
             content: '';
             position: absolute;
-            left: 0;
-            bottom: 0;
-            height: 4px;
-            width: 0%;
+            left: 0; bottom: 0; height: 4px; width: 0%;
             background: var(--accent-gradient);
-            transition: width 0.4s ease;
+            transition: width 0.3s ease;
+        }
+        .salon-card:hover::after { width: 100%; }
+
+        .salon-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+        .salon-city { 
+            display: inline-block; 
+            font-size: 0.75rem; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            color: #ec4899; 
+            background: #fdf2f8; 
+            padding: 4px 10px; 
+            border-radius: 20px; 
+            margin-bottom: 15px;
         }
 
-        .salon-card:hover::after {
-            width: 100%;
-        }
-
-        .salon-content {
-            margin-bottom: 20px;
-        }
-
-        .salon-name {
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-bottom: 12px;
-            color: var(--text-dark);
-            letter-spacing: -0.5px;
-        }
-
-        .info-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.95rem;
-            color: var(--text-gray);
-            margin-bottom: 6px;
-            font-weight: 400;
-        }
-
-        /* Texto de acción sutil en lugar de botón grande */
+        .info-row { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-gray); margin-bottom: 5px; }
+        
         .action-link {
-            font-weight: 600;
-            font-size: 0.95rem;
-            color: #db2777; /* Rosa oscuro */
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            opacity: 0.7;
-            transition: all 0.3s;
-            margin-top: auto;
+            font-weight: 600; font-size: 0.9rem; color: var(--text-dark);
+            display: flex; align-items: center; gap: 5px; margin-top: 20px;
+            opacity: 0.7; transition: 0.3s;
         }
+        .salon-card:hover .action-link { opacity: 1; gap: 10px; }
 
-        .salon-card:hover .action-link {
-            opacity: 1;
-            transform: translateX(5px);
-        }
-
-        /* --- RESPONSIVE --- */
         @media (max-width: 768px) {
-            .header-title { font-size: 2.8rem; }
-            .salon-grid { padding: 0 20px 80px; grid-template-columns: 1fr; }
-            .salon-card { min-height: auto; }
+            .header-title { font-size: 2.5rem; }
+            .salon-grid { padding: 0 20px 80px; }
         }
     </style>
 </head>
@@ -198,44 +180,96 @@
 
     <header>
         <span class="brand-badge">PASO APP</span>
-        <h1 class="header-title">Encuentra tu<br>lugar ideal</h1>
-        <p class="header-subtitle">Una selección curada de espacios dedicados a tu estilo y bienestar.</p>
+        <h1 class="header-title">Encuentra tu estilo<br>cerca de ti</h1>
+        
+        <!-- BUSCADOR INTELIGENTE -->
+        <div class="search-container">
+            <select id="city-selector" class="city-select" onchange="filtrarCiudad(this.value)">
+                <option value="">🌎 Ver todas las ciudades</option>
+                {% for c in ciudades %}
+                    <option value="{{ c }}" {% if c == ciudad_actual %}selected{% endif %}>📍 {{ c }}</option>
+                {% endfor %}
+            </select>
+            
+            <button class="btn-geo" onclick="usarMiUbicacion()" title="Usar mi ubicación actual">
+                🎯
+            </button>
+        </div>
     </header>
 
     <div class="salon-grid">
         {% for p in peluquerias %}
             <a href="{% url 'agendar_cita' p.slug %}" class="salon-card">
                 <div class="salon-content">
+                    <span class="salon-city">{{ p.ciudad }}</span>
                     <h2 class="salon-name">{{ p.nombre_visible }}</h2>
                     
                     {% if p.direccion %}
-                        <div class="info-row">
-                            <!-- Símbolo de texto limpio en lugar de icono FontAwesome -->
-                            <span>📍</span> {{ p.direccion }}
-                        </div>
-                    {% else %}
-                         <div class="info-row">
-                            <span>📍</span> Ubicación exclusiva
-                        </div>
-                    {% endif %}
-
-                    {% if p.telefono %}
-                        <div class="info-row">
-                            <span>📞</span> {{ p.telefono }}
-                        </div>
+                        <div class="info-row"><span>📍</span> {{ p.direccion }}</div>
                     {% endif %}
                 </div>
                 
                 <div class="action-link">
-                    Reservar Cita <span>&rarr;</span>
+                    Reservar <span>&rarr;</span>
                 </div>
             </a>
         {% empty %}
             <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
-                <p style="color: var(--text-gray); font-size: 1.2rem;">Estamos actualizando nuestra lista de salones exclusivos.</p>
+                <p style="color: var(--text-gray);">No encontramos salones en esta ciudad todavía.</p>
+                <a href="/" style="color: #ec4899; text-decoration: none; font-weight: 600;">Ver todos</a>
             </div>
         {% endfor %}
     </div>
+
+    <script>
+        function filtrarCiudad(ciudad) {
+            if (ciudad) {
+                window.location.href = `/?ciudad=${ciudad}`;
+            } else {
+                window.location.href = `/`;
+            }
+        }
+
+        function usarMiUbicacion() {
+            const btn = document.querySelector('.btn-geo');
+            btn.innerHTML = '⏳'; // Indicador de carga
+            
+            if (!navigator.geolocation) {
+                alert("Tu navegador no soporta geolocalización.");
+                btn.innerHTML = '🎯';
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+
+                try {
+                    // Usamos la API gratuita de OpenStreetMap para saber la ciudad
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                    const data = await response.json();
+                    
+                    // Buscamos el nombre de la ciudad/municipio en la respuesta
+                    const ciudadDetectada = data.address.city || data.address.town || data.address.village;
+
+                    if (ciudadDetectada) {
+                        // Redirigimos al filtro con la ciudad detectada
+                        window.location.href = `/?ciudad=${ciudadDetectada}`;
+                    } else {
+                        alert("No pudimos detectar tu ciudad exacta.");
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert("Error al obtener tu ubicación.");
+                } finally {
+                    btn.innerHTML = '🎯';
+                }
+            }, () => {
+                alert("No pudimos acceder a tu ubicación. Verifica los permisos.");
+                btn.innerHTML = '🎯';
+            });
+        }
+    </script>
 
 </body>
 </html>
