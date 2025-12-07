@@ -1,17 +1,21 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.db import transaction
-from django.utils.timezone import make_aware # IMPORTANTE
+from django.db.models import Sum, Count
+from django.utils.timezone import make_aware, now
+from django.contrib.auth.decorators import login_required
 from datetime import datetime, timedelta
 import traceback
 
 from .models import Peluqueria, Servicio, Empleado, Cita
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
 
+# 1. VISTA DE INICIO
 def inicio(request):
     peluquerias = Peluqueria.objects.all()
     return render(request, 'salon/index.html', {'peluquerias': peluquerias})
 
+# 2. API PARA CALCULAR HORARIOS DISPONIBLES
 def obtener_horas_disponibles(request):
     try:
         empleado_id = request.GET.get('empleado_id')
@@ -39,6 +43,7 @@ def obtener_horas_disponibles(request):
         print(f"Error API Horarios: {e}")
         return JsonResponse({'horas': []})
 
+# 3. AGENDAR CITA
 def agendar_cita(request, slug_peluqueria):
     peluqueria = get_object_or_404(Peluqueria, slug=slug_peluqueria)
     servicios = peluqueria.servicios.all()
@@ -60,26 +65,23 @@ def agendar_cita(request, slug_peluqueria):
 
             empleado = get_object_or_404(Empleado, id=empleado_id)
             
-            # --- CORRECCIÓN DE ZONA HORARIA ---
             fecha_naive = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
             try:
-                inicio_cita = make_aware(fecha_naive) # La convertimos a 'consciente'
+                inicio_cita = make_aware(fecha_naive) 
             except ValueError:
-                inicio_cita = fecha_naive # Si ya lo era, lo dejamos así
+                inicio_cita = fecha_naive
 
             servicios_objs = Servicio.objects.filter(id__in=servicios_ids)
             duracion_total = sum([s.duracion for s in servicios_objs], timedelta())
             fin_cita = inicio_cita + duracion_total
             total_precio = sum([s.precio for s in servicios_objs])
 
-            # BLINDAJE
             with transaction.atomic():
-                # Ahora verificamos con fechas AWARE, por lo que no debería fallar
                 if verificar_conflicto_atomic(empleado, inicio_cita, fin_cita):
-                    print("CONFLICTO: Horario ocupado")
+                    print("CONFLICTO: Horario ocupado o Ausencia")
                     return render(request, 'salon/agendar.html', {
                         'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados,
-                        'error_mensaje': f"⚠️ Lo sentimos, las {hora_str} ya no está disponible."
+                        'error_mensaje': f"⚠️ Lo sentimos, las {hora_str} ya no está disponible (ocupado o día libre)."
                     })
                 
                 cita = Cita.objects.create(
@@ -94,12 +96,11 @@ def agendar_cita(request, slug_peluqueria):
                 )
                 cita.servicios.set(servicios_objs)
             
-            # Telegram es automático gracias a models.py
             print("EXITO: Redirigiendo...")
             return redirect('cita_confirmada')
             
         except Exception as e:
-            traceback.print_exc() # Ver error en consola
+            traceback.print_exc() 
             return render(request, 'salon/agendar.html', {
                 'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados,
                 'error_mensaje': f"Ocurrió un error técnico: {str(e)}"
@@ -111,3 +112,50 @@ def agendar_cita(request, slug_peluqueria):
 
 def cita_confirmada(request):
     return render(request, 'salon/confirmacion.html')
+
+# --- 4. NUEVA VISTA DE DASHBOARD ---
+@login_required(login_url='/admin/login/')
+def dashboard_dueño(request):
+    # Intentar obtener la peluquería del usuario logueado
+    try:
+        # Asumiendo que usas PerfilUsuario vinculado al User
+        peluqueria = request.user.perfil.peluqueria
+    except:
+        peluqueria = None
+
+    if not peluqueria:
+        # Si es superusuario sin peluquería, mostramos la primera para demo
+        if request.user.is_superuser:
+            peluqueria = Peluqueria.objects.first()
+        
+        if not peluqueria:
+             return render(request, 'salon/error_dashboard.html', {'mensaje': 'No tienes una peluquería asignada.'})
+
+    # Estadísticas
+    hoy = now().date()
+    mes_actual = hoy.month
+    
+    # Citas de hoy
+    citas_hoy = Cita.objects.filter(peluqueria=peluqueria, fecha_hora_inicio__date=hoy).count()
+    
+    # Ingresos del mes
+    ingresos_mes = Cita.objects.filter(
+        peluqueria=peluqueria, 
+        fecha_hora_inicio__month=mes_actual, 
+        estado='C'
+    ).aggregate(Sum('precio_total'))['precio_total__sum'] or 0
+
+    # Próximas 5 citas
+    proximas_citas = Cita.objects.filter(
+        peluqueria=peluqueria, 
+        fecha_hora_inicio__gte=now(),
+        estado='C'
+    ).order_by('fecha_hora_inicio')[:5]
+
+    context = {
+        'peluqueria': peluqueria,
+        'citas_hoy': citas_hoy,
+        'ingresos_mes': ingresos_mes,
+        'proximas_citas': proximas_citas,
+    }
+    return render(request, 'salon/dashboard.html', context)
