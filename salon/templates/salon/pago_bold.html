@@ -40,7 +40,6 @@
             overflow: hidden;
         }
 
-        /* Barra superior decorativa */
         .payment-card::before {
             content: '';
             position: absolute;
@@ -49,25 +48,11 @@
             background: linear-gradient(90deg, #ec4899, #8b5cf6);
         }
 
-        .header-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            display: block;
-        }
+        .header-icon { font-size: 3rem; margin-bottom: 15px; display: block; }
 
-        h1 { 
-            font-size: 1.5rem; 
-            font-weight: 700; 
-            margin: 0 0 10px 0;
-            letter-spacing: -0.5px;
-        }
+        h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 10px 0; letter-spacing: -0.5px; }
 
-        .subtitle { 
-            color: #64748b; 
-            font-size: 0.95rem; 
-            margin-bottom: 30px;
-            line-height: 1.5;
-        }
+        .subtitle { color: #64748b; font-size: 0.95rem; margin-bottom: 30px; line-height: 1.5; }
 
         .amount-box {
             background: #f8fafc;
@@ -77,62 +62,20 @@
             margin-bottom: 30px;
         }
 
-        .amount-label {
-            display: block;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: #94a3b8;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
+        .amount-label { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; color: #94a3b8; font-weight: 600; margin-bottom: 5px; }
 
-        .amount-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--primary);
-            letter-spacing: -1px;
-        }
+        .amount-value { font-size: 2.5rem; font-weight: 700; color: var(--primary); letter-spacing: -1px; }
 
-        .details {
-            text-align: left;
-            margin-bottom: 30px;
-            font-size: 0.9rem;
-            color: #475569;
-        }
+        .details { text-align: left; margin-bottom: 30px; font-size: 0.9rem; color: #475569; }
 
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-        .detail-row:last-child {
-            border-bottom: none;
-        }
+        .detail-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
+        .detail-row:last-child { border-bottom: none; }
 
-        /* Centrado del botón Bold */
-        .bold-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            margin-top: 20px;
-        }
+        .bold-container { display: flex; justify-content: center; align-items: center; width: 100%; margin-top: 20px; }
         
         form { width: 100%; display: flex; justify-content: center; }
 
-        .secure-badge {
-            margin-top: 25px;
-            font-size: 0.75rem;
-            color: #10b981; /* Verde éxito */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            font-weight: 500;
-        }
+        .secure-badge { margin-top: 25px; font-size: 0.75rem; color: #10b981; display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -146,7 +89,7 @@
         </p>
         
         <div class="amount-box">
-            <span class="amount-label">Valor Total a Pagar</span>
+            <span class="amount-label">Valor a Pagar Ahora</span>
             <div class="amount-value">${{ monto_anticipo }}</div>
         </div>
 
@@ -156,12 +99,21 @@
                 <strong>{{ cita.servicios.first.nombre }}...</strong>
             </div>
             <div class="detail-row">
+                <span>Total Cita:</span>
+                <strong>${{ cita.precio_total }}</strong>
+            </div>
+            <div class="detail-row">
                 <span>Estado:</span>
-                <strong style="color: #ec4899;">Pago anticipado 100%</strong>
+                <strong style="color: #ec4899;">
+                    {% if monto_anticipo < cita.precio_total %}
+                        Abono 50%
+                    {% else %}
+                        Pago Total
+                    {% endif %}
+                </strong>
             </div>
         </div>
 
-        <!-- BOTÓN BOLD CENTRADO -->
         <div class="bold-container">
             <form>
                 <script
@@ -172,7 +124,7 @@
                   data-amount="{{ monto_anticipo }}"
                   data-api-key="{{ peluqueria.bold_api_key }}"
                   data-integrity-signature="{{ signature }}"
-                  data-redirection-url="https://citaspeluqueria-backend.onrender.com/retorno-bold/"
+                  data-redirection-url="{{ request.scheme }}://{{ request.get_host }}{% url 'retorno_bold' %}"
                   >
                 </script>
             </form>
