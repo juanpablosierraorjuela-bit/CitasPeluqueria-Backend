@@ -13,19 +13,12 @@ import traceback
 from .models import Peluqueria, Servicio, Empleado, Cita
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
 
-# 1. VISTA DE INICIO (GLOBAL & FILTRADA POR CIUDAD)
+# 1. VISTA DE INICIO
 def inicio(request):
-    # Obtenemos el parámetro de ciudad de la URL (si existe)
     ciudad_seleccionada = request.GET.get('ciudad')
-    
-    # Obtenemos lista de ciudades únicas para el menú desplegable
-    # distinct() asegura que no salgan ciudades repetidas
     ciudades_disponibles = Peluqueria.objects.values_list('ciudad', flat=True).distinct().order_by('ciudad')
-    
-    # Base query
     peluquerias = Peluqueria.objects.all()
     
-    # Filtramos si hay selección y no es "Todas"
     if ciudad_seleccionada and ciudad_seleccionada != 'Todas':
         peluquerias = peluquerias.filter(ciudad__iexact=ciudad_seleccionada)
         
@@ -62,6 +55,7 @@ def obtener_horas_disponibles(request):
         print(f"Error API: {e}")
         return JsonResponse({'horas': []})
 
+# 3. AGENDAR CITA (MODIFICADO PARA COBRO 100%)
 def agendar_cita(request, slug_peluqueria):
     peluqueria = get_object_or_404(Peluqueria, slug=slug_peluqueria)
     servicios = peluqueria.servicios.all()
@@ -77,7 +71,7 @@ def agendar_cita(request, slug_peluqueria):
             servicios_ids = request.POST.getlist('servicios')
 
             if not (nombre and empleado_id and fecha_str and hora_str):
-                raise ValueError("Faltan datos")
+                raise ValueError("Faltan datos obligatorios")
 
             empleado = get_object_or_404(Empleado, id=empleado_id)
             fecha_naive = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
@@ -87,6 +81,8 @@ def agendar_cita(request, slug_peluqueria):
             servicios_objs = Servicio.objects.filter(id__in=servicios_ids)
             duracion_total = sum([s.duracion for s in servicios_objs], timedelta())
             fin_cita = inicio_cita + duracion_total
+            
+            # Precio Total (Decimal)
             total_precio = sum([s.precio for s in servicios_objs])
 
             usa_bold = bool(peluqueria.bold_api_key and peluqueria.bold_integrity_key)
@@ -112,17 +108,24 @@ def agendar_cita(request, slug_peluqueria):
                 cita.servicios.set(servicios_objs)
 
             if usa_bold:
-                monto_anticipo = int(total_precio * Decimal("0.5"))
+                # --- CAMBIO CLAVE: PAGO DEL 100% ---
+                # Ya no multiplicamos por 0.5. Cobramos el total exacto.
+                monto_anticipo = int(total_precio) 
+                
                 referencia = f"CITA-{cita.id}-{int(datetime.now().timestamp())}"
                 cita.referencia_pago_bold = referencia
                 cita.save()
 
+                # Firma de seguridad
                 cadena_concatenada = f"{referencia}{monto_anticipo}COP{peluqueria.bold_integrity_key}"
                 signature = hashlib.sha256(cadena_concatenada.encode('utf-8')).hexdigest()
 
                 return render(request, 'salon/pago_bold.html', {
-                    'cita': cita, 'monto_anticipo': monto_anticipo,
-                    'signature': signature, 'peluqueria': peluqueria, 'referencia': referencia
+                    'cita': cita, 
+                    'monto_anticipo': monto_anticipo,
+                    'signature': signature, 
+                    'peluqueria': peluqueria, 
+                    'referencia': referencia
                 })
 
             else:
@@ -131,12 +134,13 @@ def agendar_cita(request, slug_peluqueria):
             
         except Exception as e:
             traceback.print_exc()
-            return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados, 'error_mensaje': str(e)})
+            return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados, 'error_mensaje': f"Error técnico: {str(e)}"})
 
     return render(request, 'salon/agendar.html', {
         'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados
     })
 
+# 4. RESPUESTA DE BOLD (Confirmación)
 @csrf_exempt 
 def retorno_bold(request):
     status = request.GET.get('tx_status')
@@ -147,16 +151,18 @@ def retorno_bold(request):
         cita = Cita.objects.get(referencia_pago_bold=referencia)
         if status == 'approved':
             cita.estado = 'C'
-            cita.abono_pagado = cita.precio_total * Decimal("0.5")
+            # --- CAMBIO: Registramos que pagó TODO el precio ---
+            cita.abono_pagado = cita.precio_total 
             cita.save()
+            
             cita.enviar_notificacion_telegram()
             return redirect('cita_confirmada')
         elif status in ['rejected', 'failed']:
             cita.estado = 'A'
             cita.save()
-            return HttpResponse("Pago rechazado. <a href='/'>Volver</a>")
+            return HttpResponse("<h1>Pago rechazado o fallido.</h1><a href='/'>Volver al inicio</a>")
         else:
-            return HttpResponse("Pago pendiente...")
+            return HttpResponse("<h1>Pago pendiente...</h1>")
     except Cita.DoesNotExist:
         return redirect('inicio')
 
