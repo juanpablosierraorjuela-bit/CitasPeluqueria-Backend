@@ -16,6 +16,7 @@ class Peluqueria(models.Model):
     nombre_visible = models.CharField(max_length=100, default="Mi Salón")
     
     # UBICACIÓN GLOBAL (NUEVO)
+    # Este campo es el que está causando el error 500 si no migras la BD
     ciudad = models.CharField(max_length=100, default="Tunja", help_text="Ciudad para filtrar en la App Global")
     
     # TELEGRAM
@@ -35,7 +36,7 @@ class Peluqueria(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.nombre)
-        # Normalizamos la ciudad (Primera mayúscula) para evitar "tunja" y "Tunja"
+        # Normalizamos la ciudad (Primera mayúscula)
         if self.ciudad:
             self.ciudad = self.ciudad.title().strip()
         super().save(*args, **kwargs)
