@@ -40,17 +40,23 @@
         .btn-hora { padding: 10px; border: 1px solid var(--border-light); border-radius: 8px; text-align: center; cursor: pointer; background: white; }
         .btn-hora:hover { background: #f1f5f9; }
         .btn-hora.seleccionado { background: var(--text-dark); color: white; border-color: var(--text-dark); }
-        #btn-confirmar { width: 100%; padding: 15px; background: var(--accent-gradient); color: white; border: none; border-radius: 50px; font-weight: 600; margin-top: 30px; cursor: pointer; opacity: 0.5; pointer-events: none; transition: 0.3s; }
-        #btn-confirmar:not(:disabled) { opacity: 1; pointer-events: all; }
-        .hidden { display: none; }
-        input[type="checkbox"] { display: none; }
+        
+        /* ESTILO BOTÓN DESACTIVADO/ACTIVADO */
+        #btn-confirmar { 
+            width: 100%; padding: 15px; background: var(--accent-gradient); color: white; border: none; border-radius: 50px; font-weight: 600; margin-top: 20px; cursor: pointer; 
+            opacity: 0.5; pointer-events: none; transition: 0.3s; 
+        }
+        /* Clase para activar el botón */
+        #btn-confirmar.activo { opacity: 1; pointer-events: all; }
 
-        /* NUEVOS ESTILOS PARA OPCIÓN DE PAGO */
+        .hidden { display: none; }
+        input[type="checkbox"].check-servicio { display: none; }
+
+        /* ESTILOS OPCIÓN PAGO */
         .pago-options { display: flex; gap: 10px; margin-bottom: 15px; }
         .pago-label { flex: 1; border: 1px solid var(--border-light); padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; font-size: 0.9rem; }
         .pago-input { display: none; }
         .pago-input:checked + .pago-label { background: #fdf2f8; border-color: var(--accent-color); color: var(--accent-color); font-weight: 600; }
-
     </style>
 </head>
 <body>
@@ -102,8 +108,8 @@
 
         <div id="step-datos" class="hidden">
             <div class="step-label"><span class="step-number">4</span> Tus Datos</div>
-            <input type="text" name="nombre_cliente" placeholder="Nombre completo" required>
-            <input type="tel" name="telefono_cliente" placeholder="Celular" required>
+            <input type="text" name="nombre_cliente" id="input_nombre" placeholder="Nombre completo" required>
+            <input type="tel" name="telefono_cliente" id="input_telefono" placeholder="Celular" required>
 
             {% if peluqueria.bold_api_key %}
                 <div style="margin-top: 15px;">
@@ -120,6 +126,22 @@
                     </div>
                 </div>
             {% endif %}
+
+            <div style="background: #fff1f2; border: 1px solid #fda4af; padding: 15px; border-radius: 12px; margin: 20px 0; font-size: 0.85rem; color: #9f1239;">
+                <strong style="display:block; margin-bottom: 5px;">⚠️ Política de Cancelación:</strong>
+                <ul style="padding-left: 20px; margin: 0; line-height: 1.4;">
+                    <li>Si no asistes a tu cita, <b>el dinero no será reembolsado</b>.</li>
+                    <li>Puedes reprogramar sin costo avisando con <b>4 horas de anticipación</b>.</li>
+                    <li>Por favor llega 5 minutos antes. Pasados 15 minutos, se considera inasistencia.</li>
+                </ul>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: start; margin-bottom: 10px; font-size: 0.9rem;">
+                <input type="checkbox" id="check_terminos" style="width: 20px; height: 20px; display: block; margin-top: 2px; cursor: pointer;" required>
+                <label for="check_terminos" style="cursor: pointer; color: #475569;">
+                    He leído y acepto las políticas de cancelación y asistencia.
+                </label>
+            </div>
         </div>
 
         <button type="submit" id="btn-confirmar" disabled>Confirmar Reserva</button>
@@ -131,10 +153,17 @@
     const selEmpleado = document.getElementById('empleado');
     const pickerFecha = document.getElementById('picker-fecha');
     const divHoras = document.getElementById('contenedor-horas');
-    const btnConfirmar = document.getElementById('btn-confirmar');
     
+    // Elementos para validación final
+    const btnConfirmar = document.getElementById('btn-confirmar');
+    const inputNombre = document.getElementById('input_nombre');
+    const inputTelefono = document.getElementById('input_telefono');
+    const checkTerminos = document.getElementById('check_terminos');
+    const inputHora = document.getElementById('input_hora');
+
     pickerFecha.min = new Date().toISOString().split('T')[0];
 
+    // --- LÓGICA DE PASOS ---
     checks.forEach(c => c.addEventListener('change', () => {
         const hay = Array.from(checks).some(x => x.checked);
         document.getElementById('step-empleado').classList.toggle('hidden', !hay);
@@ -177,18 +206,51 @@
         } catch(e) { console.error(e); }
     });
 
+    // --- SELECCIÓN DE HORA Y VALIDACIÓN ---
     function selectHora(elem, hora) {
         document.querySelectorAll('.btn-hora').forEach(b => b.classList.remove('seleccionado'));
         elem.classList.add('seleccionado');
-        document.getElementById('input_hora').value = hora;
+        inputHora.value = hora;
+        
         document.getElementById('step-datos').classList.remove('hidden');
-        btnConfirmar.disabled = false;
-        btnConfirmar.scrollIntoView({behavior: "smooth"});
+        
+        // Intentar validar de una vez por si ya llenó datos y cambió la hora
+        validarFormulario();
+
+        // Scroll suave
+        document.getElementById('step-datos').scrollIntoView({behavior: "smooth"});
     }
 
+    // --- VALIDACIÓN FINAL DEL FORMULARIO ---
+    function validarFormulario() {
+        const hora = inputHora.value;
+        const nombre = inputNombre.value.trim();
+        const telefono = inputTelefono.value.trim();
+        const acepto = checkTerminos.checked;
+
+        if (hora && nombre && telefono && acepto) {
+            btnConfirmar.disabled = false;
+            btnConfirmar.classList.add('activo');
+        } else {
+            btnConfirmar.disabled = true;
+            btnConfirmar.classList.remove('activo');
+        }
+    }
+
+    // Escuchar cambios en los inputs finales
+    inputNombre.addEventListener('input', validarFormulario);
+    inputTelefono.addEventListener('input', validarFormulario);
+    checkTerminos.addEventListener('change', validarFormulario);
+
+    // --- RESET ---
     function reset(nivel) {
         if(nivel <= 2) { selEmpleado.value=""; document.getElementById('step-fecha').classList.add('hidden'); }
-        if(nivel <= 3) { document.getElementById('step-datos').classList.add('hidden'); btnConfirmar.disabled=true; }
+        if(nivel <= 3) { 
+            document.getElementById('step-datos').classList.add('hidden'); 
+            inputHora.value = "";
+            btnConfirmar.disabled=true; 
+            btnConfirmar.classList.remove('activo');
+        }
     }
 </script>
 </body>
