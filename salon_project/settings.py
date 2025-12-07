@@ -9,8 +9,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-tu-clave-secreta-aqui')
 
 # ------------------------------------------------------------------------------
-# 🛡️ SEGURIDAD DE LA API (NUEVO)
-# Esta clave debe coincidir con la que pongas en tu App de Flet (API_KEY)
+# 🔑 CLAVE DE API (INDISPENSABLE)
+# NO BORRES ESTO. Tu archivo api.py la necesita para funcionar.
 # ------------------------------------------------------------------------------
 API_SECRET_KEY = os.environ.get('API_SECRET_KEY', 'mi-clave-super-secreta-cambiame')
 
@@ -18,11 +18,11 @@ API_SECRET_KEY = os.environ.get('API_SECRET_KEY', 'mi-clave-super-secreta-cambia
 DEBUG = 'RENDER' not in os.environ
 
 # ------------------------------------------------------------------------------
-# 🛡️ HOSTS PERMITIDOS (CORREGIDO)
-# Lee la lista de dominios permitidos del entorno (separados por coma)
-# Si no encuentra nada, permite localhost por defecto para desarrollo.
+# 🚑 CORRECCIÓN DE EMERGENCIA (ALLOWED_HOSTS)
+# Lo dejamos en ['*'] para que no te bloquee, sin importar si entras
+# por localhost, 127.0.0.1 o una IP de red.
 # ------------------------------------------------------------------------------
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+ALLOWED_HOSTS = ['*'] 
 
 
 # Application definition
