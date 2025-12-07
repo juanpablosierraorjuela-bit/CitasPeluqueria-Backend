@@ -8,6 +8,7 @@ from .models import (
     Peluqueria, Servicio, Empleado, HorarioSemanal, Cita, PerfilUsuario, Ausencia
 )
 
+# --- 1. ADMIN PARA DUEÑOS DE SALÓN ---
 class SalonOwnerAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -30,24 +31,40 @@ class SalonOwnerAdmin(admin.ModelAdmin):
 
 class SuperuserOnlyAdmin(admin.ModelAdmin):
     def has_module_permission(self, request): return request.user.is_superuser
-    
+
+# --- 2. CONFIGURACIÓN DE PELUQUERÍA (Aquí está la magia SaaS) ---
 @admin.register(Peluqueria)
-class PeluqueriaAdmin(SuperuserOnlyAdmin):
-    # AHORA MOSTRAMOS LA CIUDAD EN EL ADMIN
-    list_display = ('nombre', 'ciudad', 'slug', 'bold_status')
-    list_filter = ('ciudad',) # FILTRO LATERAL POR CIUDAD
-    prepopulated_fields = {'slug': ('nombre',)}
-    
-    @admin.display(description='Bold')
-    def bold_status(self, obj):
-        return "✅ Activa" if obj.bold_api_key else "❌ Inactiva"
+class PeluqueriaAdmin(admin.ModelAdmin):
+    # Esto asegura que el dueño solo vea SU peluquería
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser: return qs
+        if hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
+            return qs.filter(id=request.user.perfil.peluqueria.id)
+        return qs.none()
+
+    # Campos organizados por secciones
+    fieldsets = (
+        ('Información del Negocio', {
+            'fields': ('nombre', 'nombre_visible', 'ciudad', 'direccion', 'telefono')
+        }),
+        ('💳 Configuración de Pagos (Bold)', {
+            'fields': ('porcentaje_abono', 'bold_api_key', 'bold_integrity_key'),
+            'description': 'Configure aquí sus llaves de Bold para recibir dinero directamente.'
+        }),
+        ('🔔 Notificaciones (Telegram)', {
+            'fields': ('telegram_token', 'telegram_chat_id', 'boton_prueba_telegram'),
+            'description': 'Configure aquí su Bot para recibir alertas de nuevas citas.'
+        }),
+    )
 
     readonly_fields = ('boton_prueba_telegram',) 
+    
     @admin.display(description='Telegram') 
     def boton_prueba_telegram(self, obj):
         if obj.pk: 
             url = reverse('admin:salon_peluqueria_test_telegram', args=[obj.pk])
-            return mark_safe(f'<a class="button" href="{url}" style="background-color: #007bff; color: white; padding: 5px;">🔔 Probar</a>')
+            return mark_safe(f'<a class="button" href="{url}" style="background-color: #007bff; color: white; padding: 5px; border-radius: 5px;">🔔 Enviar Mensaje de Prueba</a>')
         return "-"
     
     def get_urls(self):
@@ -64,11 +81,11 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
             token = peluqueria.telegram_token
             chat_id = peluqueria.telegram_chat_id
             if not token or not chat_id:
-                self.message_user(request, "⚠️ Faltan datos.", level=messages.WARNING)
+                self.message_user(request, "⚠️ Faltan datos de Telegram.", level=messages.WARNING)
                 return HttpResponseRedirect(url_retorno)
             
             url = f"https://api.telegram.org/bot{token}/sendMessage"
-            requests.post(url, data={"chat_id": chat_id, "text": "✅ Prueba Exitosa"}, timeout=3)
+            requests.post(url, data={"chat_id": chat_id, "text": "✅ ¡Conexión Exitosa con PASO!"}, timeout=3)
             self.message_user(request, "✅ Mensaje enviado.", level=messages.SUCCESS)
             return HttpResponseRedirect(url_retorno)
         except: return HttpResponseRedirect("../")
@@ -85,12 +102,9 @@ class EmpleadoAdmin(SalonOwnerAdmin):
 
 @admin.register(Cita)
 class CitaAdmin(SalonOwnerAdmin):
-    list_display = ('cliente_nombre', 'empleado', 'fecha_hora_inicio', 'servicios_listados', 'estado') 
+    list_display = ('cliente_nombre', 'empleado', 'fecha_hora_inicio', 'estado', 'precio_total', 'abono_pagado') 
     filter_horizontal = ('servicios',) 
     exclude = ('peluqueria',) 
-    
-    def servicios_listados(self, obj):
-        return ", ".join([s.nombre for s in obj.servicios.all()])
 
 @admin.register(Ausencia)
 class AusenciaAdmin(SalonOwnerAdmin): 
