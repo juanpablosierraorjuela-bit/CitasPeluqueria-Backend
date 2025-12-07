@@ -1,22 +1,20 @@
 from django.urls import path
 from . import views
+from . import api  # <--- IMPORTANTE: Importamos el archivo api.py que creamos en el Paso 2
 
 urlpatterns = [
-    # 1. RUTA DE INICIO (La Portada General)
-    # Esta ruta vacía '' atrapa cuando entras a http://127.0.0.1:8000/
+    # VISTAS WEB (Para humanos)
     path('', views.inicio, name='inicio'),
-
-    # 2. API DE HORARIOS (¡NUEVA E IMPORTANTE!)
-    # Esta es la ruta oculta que usa el JavaScript para preguntar qué horas están libres.
-    # Sin esto, el calendario no cargará los botones de hora.
-    path('api/horarios/', views.obtener_horas_disponibles, name='api_horarios'),
-
-    # 3. RUTA DE ÉXITO
-    # A donde llega el usuario después de pedir la cita exitosamente
     path('cita-confirmada/', views.cita_confirmada, name='cita_confirmada'),
-
-    # 4. RUTA DINÁMICA POR PELUQUERÍA
-    # Detecta el nombre (slug) de la peluquería en la URL
-    # Ejemplo: /mi-salon/agendar/ o /tierradereina/agendar/
     path('<slug:slug_peluqueria>/agendar/', views.agendar_cita, name='agendar_cita'),
+    
+    # API INTERNA (Para el JavaScript del sitio web)
+    path('api/horarios/', views.obtener_horas_disponibles, name='api_horarios_web'),
+
+    # API EXTERNA (Para tu App Flet / Celulares)
+    # Fíjate que ahora todas incluyen <slug_peluqueria> para saber a qué negocio preguntar
+    path('api/v1/<slug:slug_peluqueria>/servicios/', api.listar_servicios, name='api_servicios'),
+    path('api/v1/<slug:slug_peluqueria>/empleados/', api.listar_empleados, name='api_empleados'),
+    path('api/v1/<slug:slug_peluqueria>/disponibilidad/', api.consultar_disponibilidad, name='api_disponibilidad'),
+    path('api/v1/<slug:slug_peluqueria>/citas/crear/', api.crear_cita_api, name='api_crear_cita'),
 ]
