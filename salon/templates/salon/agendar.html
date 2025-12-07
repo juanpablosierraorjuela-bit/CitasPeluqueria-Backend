@@ -5,54 +5,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reserva en {{ peluqueria.nombre_visible }}</title>
-    
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#ec4899">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-color: #f8fafc;
-            --text-dark: #0f172a;
-            --accent-color: #ec4899;
-            --card-bg: #ffffff;
-            --border-light: #e2e8f0;
-            --primary-gradient: linear-gradient(135deg, #0f172a 0%, #334155 100%);
-            --accent-gradient: linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%);
-        }
+        :root { --bg-color: #f8fafc; --text-dark: #0f172a; --accent-color: #ec4899; --card-bg: #ffffff; --border-light: #e2e8f0; --primary-gradient: linear-gradient(135deg, #0f172a 0%, #334155 100%); --accent-gradient: linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%); }
         body { font-family: 'Outfit', sans-serif; background-color: var(--bg-color); display: flex; justify-content: center; padding: 20px; color: var(--text-dark); }
         .container { background: var(--card-bg); padding: 40px; border-radius: 24px; width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-        
         .error-alert { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; }
-
         .step-label { font-weight: 700; margin: 20px 0 10px; display: flex; gap: 10px; align-items: center; }
         .step-number { background: #f1f5f9; width: 25px; height: 25px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.8rem; }
-        
         .servicio-card { padding: 15px; border: 1px solid var(--border-light); border-radius: 12px; display: flex; justify-content: space-between; margin-bottom: 10px; cursor: pointer; transition: 0.2s; align-items: center; }
         .servicio-option input:checked + .servicio-card { border-color: var(--accent-color); background: #fdf2f8; }
-        
-        .badge-duracion {
-            font-size: 0.75rem; color: #64748b; background: #e2e8f0; 
-            padding: 3px 8px; border-radius: 10px; margin-left: 8px; font-weight: 500;
-        }
-
+        .badge-duracion { font-size: 0.75rem; color: #64748b; background: #e2e8f0; padding: 3px 8px; border-radius: 10px; margin-left: 8px; font-weight: 500; }
         select, input[type="text"], input[type="tel"], input[type="date"] { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border-light); margin-bottom: 10px; font-family: inherit; }
         #contenedor-horas { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 15px; }
         .btn-hora { padding: 10px; border: 1px solid var(--border-light); border-radius: 8px; text-align: center; cursor: pointer; background: white; }
         .btn-hora:hover { background: #f1f5f9; }
         .btn-hora.seleccionado { background: var(--text-dark); color: white; border-color: var(--text-dark); }
-        
-        /* ESTILO BOTÓN DESACTIVADO/ACTIVADO */
-        #btn-confirmar { 
-            width: 100%; padding: 15px; background: var(--accent-gradient); color: white; border: none; border-radius: 50px; font-weight: 600; margin-top: 20px; cursor: pointer; 
-            opacity: 0.5; pointer-events: none; transition: 0.3s; 
-        }
-        /* Clase para activar el botón */
+        #btn-confirmar { width: 100%; padding: 15px; background: var(--accent-gradient); color: white; border: none; border-radius: 50px; font-weight: 600; margin-top: 20px; cursor: pointer; opacity: 0.5; pointer-events: none; transition: 0.3s; }
         #btn-confirmar.activo { opacity: 1; pointer-events: all; }
-
         .hidden { display: none; }
         input[type="checkbox"].check-servicio { display: none; }
-
-        /* ESTILOS OPCIÓN PAGO */
         .pago-options { display: flex; gap: 10px; margin-bottom: 15px; }
         .pago-label { flex: 1; border: 1px solid var(--border-light); padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; font-size: 0.9rem; }
         .pago-input { display: none; }
@@ -81,10 +55,7 @@
             <label class="servicio-option">
                 <input type="checkbox" name="servicios" value="{{ s.id }}" class="check-servicio">
                 <div class="servicio-card">
-                    <div>
-                        <span>{{ s.nombre }}</span>
-                        <span class="badge-duracion">⏱️ {{ s.str_duracion }}</span>
-                    </div>
+                    <div><span>{{ s.nombre }}</span><span class="badge-duracion">⏱️ {{ s.str_duracion }}</span></div>
                     <strong>${{ s.precio }}</strong>
                 </div>
             </label>
@@ -120,8 +91,10 @@
                             <div class="pago-label">Pago Total (100%)</div>
                         </label>
                         <label>
-                            <input type="radio" name="tipo_pago" value="mitad" class="pago-input">
-                            <div class="pago-label">Abonar el 50%</div>
+                            <input type="radio" name="tipo_pago" value="abono" class="pago-input">
+                            <div class="pago-label">
+                                Abonar el {{ peluqueria.porcentaje_abono }}%
+                            </div>
                         </label>
                     </div>
                 </div>
@@ -132,7 +105,7 @@
                 <ul style="padding-left: 20px; margin: 0; line-height: 1.4;">
                     <li>Si no asistes a tu cita, <b>el dinero no será reembolsado</b>.</li>
                     <li>Puedes reprogramar sin costo avisando con <b>4 horas de anticipación</b>.</li>
-                    <li>Por favor llega 5 minutos antes. Pasados 15 minutos, se considera inasistencia.</li>
+                    <li>Por favor llega 5 minutos antes.</li>
                 </ul>
             </div>
 
@@ -154,7 +127,6 @@
     const pickerFecha = document.getElementById('picker-fecha');
     const divHoras = document.getElementById('contenedor-horas');
     
-    // Elementos para validación final
     const btnConfirmar = document.getElementById('btn-confirmar');
     const inputNombre = document.getElementById('input_nombre');
     const inputTelefono = document.getElementById('input_telefono');
@@ -163,7 +135,6 @@
 
     pickerFecha.min = new Date().toISOString().split('T')[0];
 
-    // --- LÓGICA DE PASOS ---
     checks.forEach(c => c.addEventListener('change', () => {
         const hay = Array.from(checks).some(x => x.checked);
         document.getElementById('step-empleado').classList.toggle('hidden', !hay);
@@ -206,29 +177,17 @@
         } catch(e) { console.error(e); }
     });
 
-    // --- SELECCIÓN DE HORA Y VALIDACIÓN ---
     function selectHora(elem, hora) {
         document.querySelectorAll('.btn-hora').forEach(b => b.classList.remove('seleccionado'));
         elem.classList.add('seleccionado');
         inputHora.value = hora;
-        
         document.getElementById('step-datos').classList.remove('hidden');
-        
-        // Intentar validar de una vez por si ya llenó datos y cambió la hora
         validarFormulario();
-
-        // Scroll suave
         document.getElementById('step-datos').scrollIntoView({behavior: "smooth"});
     }
 
-    // --- VALIDACIÓN FINAL DEL FORMULARIO ---
     function validarFormulario() {
-        const hora = inputHora.value;
-        const nombre = inputNombre.value.trim();
-        const telefono = inputTelefono.value.trim();
-        const acepto = checkTerminos.checked;
-
-        if (hora && nombre && telefono && acepto) {
+        if (inputHora.value && inputNombre.value.trim() && inputTelefono.value.trim() && checkTerminos.checked) {
             btnConfirmar.disabled = false;
             btnConfirmar.classList.add('activo');
         } else {
@@ -237,20 +196,13 @@
         }
     }
 
-    // Escuchar cambios en los inputs finales
     inputNombre.addEventListener('input', validarFormulario);
     inputTelefono.addEventListener('input', validarFormulario);
     checkTerminos.addEventListener('change', validarFormulario);
 
-    // --- RESET ---
     function reset(nivel) {
         if(nivel <= 2) { selEmpleado.value=""; document.getElementById('step-fecha').classList.add('hidden'); }
-        if(nivel <= 3) { 
-            document.getElementById('step-datos').classList.add('hidden'); 
-            inputHora.value = "";
-            btnConfirmar.disabled=true; 
-            btnConfirmar.classList.remove('activo');
-        }
+        if(nivel <= 3) { document.getElementById('step-datos').classList.add('hidden'); inputHora.value = ""; btnConfirmar.disabled=true; btnConfirmar.classList.remove('activo'); }
     }
 </script>
 </body>
