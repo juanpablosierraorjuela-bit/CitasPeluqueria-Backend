@@ -40,7 +40,7 @@
             overflow: hidden;
         }
 
-        /* Barra decorativa superior */
+        /* Barra superior decorativa */
         .payment-card::before {
             content: '';
             position: absolute;
@@ -112,60 +112,56 @@
             border-bottom: none;
         }
 
-        /* --- CENTRADO DEL BOTÓN BOLD --- */
+        /* Centrado del botón Bold */
         .bold-container {
             display: flex;
-            justify-content: center; /* Centra horizontalmente */
+            justify-content: center;
             align-items: center;
             width: 100%;
             margin-top: 20px;
         }
         
-        /* Asegura que el formulario no ocupe todo el ancho si no es necesario */
-        form {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-        }
+        form { width: 100%; display: flex; justify-content: center; }
 
         .secure-badge {
             margin-top: 25px;
             font-size: 0.75rem;
-            color: #94a3b8;
+            color: #10b981; /* Verde éxito */
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 5px;
+            font-weight: 500;
         }
     </style>
 </head>
 <body>
 
     <div class="payment-card">
-        <span class="header-icon">🔒</span>
-        <h1>Pago de Anticipo</h1>
+        <span class="header-icon">💎</span>
+        <h1>Pago de Reserva</h1>
         <p class="subtitle">
-            Estás a un paso de confirmar tu cita en <br>
+            Asegura tu experiencia en <br>
             <strong>{{ peluqueria.nombre_visible }}</strong>
         </p>
         
         <div class="amount-box">
-            <span class="amount-label">Abono Requerido</span>
+            <span class="amount-label">Valor Total a Pagar</span>
             <div class="amount-value">${{ monto_anticipo }}</div>
         </div>
 
         <div class="details">
             <div class="detail-row">
-                <span>Total Servicio:</span>
-                <strong>${{ cita.precio_total }}</strong>
+                <span>Servicio:</span>
+                <strong>{{ cita.servicios.first.nombre }}...</strong>
             </div>
             <div class="detail-row">
-                <span>Pendiente en sitio:</span>
-                <strong>${{ cita.precio_total|add:"-"|add:monto_anticipo }}</strong>
+                <span>Estado:</span>
+                <strong style="color: #ec4899;">Pago anticipado 100%</strong>
             </div>
         </div>
 
-        <!-- CONTENEDOR CENTRADO PARA BOLD -->
+        <!-- BOTÓN BOLD CENTRADO -->
         <div class="bold-container">
             <form>
                 <script
@@ -183,7 +179,7 @@
         </div>
 
         <div class="secure-badge">
-            <span>🛡️</span> Transacción procesada de forma segura por Bold
+            <span>✨</span> Tu cita quedará confirmada al instante
         </div>
     </div>
 
