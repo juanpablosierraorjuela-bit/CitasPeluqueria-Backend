@@ -2,11 +2,12 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.db import transaction
 from datetime import datetime, timedelta
+import traceback # Para ver el error real en logs
 
 from .models import Peluqueria, Servicio, Empleado, Cita
-# IMPORTE CLAVE: Traemos la lógica del archivo services.py que creamos en el Paso 1
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
-# (Opcional) Si tienes el archivo de notificaciones
+
+# Intentamos importar la notificación, si falla no rompemos la app
 try:
     from .prueba_telegram import enviar_notificacion_telegram 
 except ImportError:
@@ -19,9 +20,6 @@ def inicio(request):
 
 # 2. API INTERNA (Para el HTML)
 def obtener_horas_disponibles(request):
-    """
-    Esta vista la usa el navegador web para mostrar los botones de hora.
-    """
     try:
         empleado_id = request.GET.get('empleado_id')
         fecha_str = request.GET.get('fecha')
@@ -33,7 +31,6 @@ def obtener_horas_disponibles(request):
         fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
         empleado = get_object_or_404(Empleado, id=empleado_id)
         
-        # Sumar duraciones
         duracion_total = timedelta(minutes=0)
         for sid in servicios_ids:
             if sid:
@@ -42,23 +39,22 @@ def obtener_horas_disponibles(request):
                     duracion_total += s.duracion
                 except: pass
         
-        # USAMOS EL CEREBRO (services.py) en lugar de recalcular todo aquí
         horas = obtener_bloques_disponibles(empleado, fecha, duracion_total)
-        
         return JsonResponse({'horas': horas})
 
-    except Exception as e:
+    except Exception:
         return JsonResponse({'horas': []})
 
-# 3. AGENDAR CITA (POST WEB - BLINDADO)
+# 3. AGENDAR CITA (POST WEB - DEPURADO)
 def agendar_cita(request, slug_peluqueria):
+    print(f"--- INICIO PROCESO AGENDAR: {slug_peluqueria} ---") # LOG 1
     peluqueria = get_object_or_404(Peluqueria, slug=slug_peluqueria)
     servicios = peluqueria.servicios.all()
     empleados = peluqueria.empleados.all()
 
     if request.method == 'POST':
         try:
-            # Recibir datos del formulario
+            # 1. Recibir datos
             nombre = request.POST.get('nombre_cliente')
             telefono = request.POST.get('telefono_cliente')
             empleado_id = request.POST.get('empleado')
@@ -66,30 +62,31 @@ def agendar_cita(request, slug_peluqueria):
             hora_str = request.POST.get('hora_seleccionada')
             servicios_ids = request.POST.getlist('servicios')
 
-            # Validar
+            print(f"Datos recibidos: {nombre}, {fecha_str}, {hora_str}, Servicios: {servicios_ids}") # LOG 2
+
             if not (nombre and empleado_id and fecha_str and hora_str):
-                raise ValueError("Faltan datos")
+                raise ValueError("Faltan datos obligatorios del formulario")
 
             empleado = get_object_or_404(Empleado, id=empleado_id)
             inicio_cita = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
             
-            # Calcular fin
             servicios_objs = Servicio.objects.filter(id__in=servicios_ids)
+            if not servicios_objs:
+                raise ValueError("No se seleccionaron servicios válidos")
+
             duracion_total = sum([s.duracion for s in servicios_objs], timedelta())
             fin_cita = inicio_cita + duracion_total
             total_precio = sum([s.precio for s in servicios_objs])
 
-            # 🛡️ AQUÍ ESTÁ EL BLINDAJE (Atomic Transaction)
+            # 2. BLINDAJE
             with transaction.atomic():
-                # El sistema se "congela" un instante para verificar
                 if verificar_conflicto_atomic(empleado, inicio_cita, fin_cita):
-                    # Si falla, devolvemos error visual
+                    print("!!! CONFLICTO DETECTADO EN ATOMIC !!!") # LOG 3
                     return render(request, 'salon/agendar.html', {
                         'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados,
                         'error_mensaje': f"⚠️ Lo sentimos, las {hora_str} ya no está disponible."
                     })
                 
-                # Si pasa, guardamos seguro
                 cita = Cita.objects.create(
                     peluqueria=peluqueria,
                     cliente_nombre=nombre,
@@ -101,17 +98,22 @@ def agendar_cita(request, slug_peluqueria):
                     estado='C'
                 )
                 cita.servicios.set(servicios_objs)
+                print(f"✅ Cita creada ID: {cita.id}") # LOG 4
             
-            # Notificar (fuera del bloqueo)
+            # 3. Notificación
             try: enviar_notificacion_telegram(cita)
-            except: pass
+            except Exception as e: print(f"Error Telegram: {e}")
             
+            # 4. REDIRECCIÓN EXPLÍCITA
+            print(">>> Redirigiendo a Confirmación") # LOG 5
             return redirect('cita_confirmada')
             
         except Exception as e:
+            print("❌ ERROR EN VISTA AGENDAR:")
+            traceback.print_exc() # Imprime el error completo en la consola
             return render(request, 'salon/agendar.html', {
                 'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados,
-                'error_mensaje': 'Error procesando solicitud.'
+                'error_mensaje': f"Ocurrió un error: {str(e)}" # Mostramos el error al usuario para saber qué pasa
             })
 
     return render(request, 'salon/agendar.html', {
