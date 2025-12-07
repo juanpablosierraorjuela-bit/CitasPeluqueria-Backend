@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 import hashlib
 import traceback
-import json  # Importamos json para mostrar los datos bonitos
 
 from .models import Peluqueria, Servicio, Empleado, Cita
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
@@ -144,52 +143,45 @@ def agendar_cita(request, slug_peluqueria):
         'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados
     })
 
-# 4. RESPUESTA DE BOLD (MODO DIAGNÓSTICO)
+# 4. RESPUESTA DE BOLD (CORREGIDA FINAL)
 @csrf_exempt 
 def retorno_bold(request):
-    # Capturamos TODOS los datos que llegan
-    datos_recibidos = request.GET.dict()
+    # 1. Buscamos el estado (prioridad al nombre con guiones que vimos en la foto)
+    status = request.GET.get('bold-tx-status') or request.GET.get('tx_status') or request.GET.get('transactionStatus')
     
-    # Intentamos buscar la referencia
-    referencia = datos_recibidos.get('orderId') or datos_recibidos.get('reference') or datos_recibidos.get('bold_order_id')
-    status = datos_recibidos.get('tx_status') or datos_recibidos.get('transactionStatus')
+    # 2. Buscamos la referencia (prioridad al nombre con guiones que vimos en la foto)
+    referencia = request.GET.get('bold-order-id') or request.GET.get('orderId') or request.GET.get('reference')
 
-    # --- SI NO ENCUENTRA LA REFERENCIA, MOSTRAMOS PANTALLA DE ERROR CON DATOS ---
     if not referencia:
-        return HttpResponse(f"""
-            <div style='font-family:sans-serif; padding:20px; text-align:center;'>
-                <h1 style='color:red;'>⚠️ DIAGNÓSTICO: DATOS NO ENCONTRADOS</h1>
-                <p>Bold regresó, pero no veo el ID de la orden.</p>
-                <hr>
-                <h3>Esto es lo que llegó exactamente:</h3>
-                <pre style='background:#f0f0f0; padding:15px; text-align:left;'>{json.dumps(datos_recibidos, indent=4)}</pre>
-                <hr>
-                <a href='/'>Volver al Inicio</a>
-            </div>
-        """)
+        print("❌ ERROR: No se encontró referencia (ni con guiones ni sin ellos)")
+        return redirect('inicio')
 
     try:
         cita = Cita.objects.get(referencia_pago_bold=referencia)
         
-        # SI TODO SALE BIEN, MOSTRAMOS PANTALLA DE ÉXITO MANUAL
+        # Si ya estaba confirmada, pasamos directo
+        if cita.estado == 'C':
+            return redirect('cita_confirmada')
+
         if status == 'approved':
             cita.estado = 'C'
+            # (El abono ya se guardó al crear la cita, no lo tocamos aquí)
             cita.save()
+            
+            # ¡BINGO! Enviamos la notificación
             cita.enviar_notificacion_telegram()
-            return redirect('cita_confirmada') # <--- Si funciona, esto te llevará a la confirmación
+            return redirect('cita_confirmada')
             
         elif status in ['rejected', 'failed']:
             cita.estado = 'A'
             cita.save()
-            return HttpResponse(f"<h1 style='color:red'>PAGO RECHAZADO (Estado: {status})</h1><a href='/'>Volver</a>")
+            return HttpResponse("<h1>Pago rechazado o fallido.</h1><a href='/'>Volver al inicio</a>")
         else:
-            return HttpResponse(f"<h1>Estado desconocido: {status}</h1>")
+            return HttpResponse(f"<h1>Estado del pago: {status}</h1><a href='/'>Volver</a>")
 
     except Cita.DoesNotExist:
-        return HttpResponse(f"""
-            <h1 style='color:red'>ERROR: Cita No Encontrada</h1>
-            <p>Recibí la referencia: <b>{referencia}</b>, pero no existe en la base de datos.</p>
-        """)
+        print(f"❌ ERROR: Referencia '{referencia}' no existe en BD.")
+        return redirect('inicio')
 
 def cita_confirmada(request):
     return render(request, 'salon/confirmacion.html')
