@@ -71,7 +71,7 @@
             display: flex;
             gap: 10px;
             max-width: 500px;
-            margin: 30px auto 50px;
+            margin: 30px auto 20px; /* Reduje el margen inferior para acercar el botón SaaS */
             border: 1px solid #e2e8f0;
             align-items: center;
         }
@@ -113,7 +113,7 @@
             gap: 30px;
             max-width: 1200px;
             width: 100%;
-            padding: 0 40px 100px;
+            padding: 40px 40px 100px;
         }
 
         .salon-card {
@@ -226,6 +226,26 @@
                 🎯
             </button>
         </div>
+
+        <div style="margin-top: 25px;">
+            <a href="{% url 'landing_saas' %}" style="
+                display: inline-flex; 
+                align-items: center; 
+                gap: 10px; 
+                background: white; 
+                color: #0f172a; 
+                padding: 10px 20px; 
+                border-radius: 30px; 
+                text-decoration: none; 
+                font-weight: 600; 
+                font-size: 0.9rem; 
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+                border: 1px solid #e2e8f0;
+                transition: transform 0.2s;">
+                ✂️ ¿Tienes una peluquería? <span style="color: #ec4899;">Usa nuestro software &rarr;</span>
+            </a>
+        </div>
+
     </header>
 
     <div class="salon-grid">
