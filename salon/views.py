@@ -13,18 +13,19 @@ import traceback
 from .models import Peluqueria, Servicio, Empleado, Cita
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
 
-# 1. VISTA DE INICIO (GLOBAL & FILTRADA)
+# 1. VISTA DE INICIO (GLOBAL & FILTRADA POR CIUDAD)
 def inicio(request):
     # Obtenemos el parámetro de ciudad de la URL (si existe)
     ciudad_seleccionada = request.GET.get('ciudad')
     
     # Obtenemos lista de ciudades únicas para el menú desplegable
+    # distinct() asegura que no salgan ciudades repetidas
     ciudades_disponibles = Peluqueria.objects.values_list('ciudad', flat=True).distinct().order_by('ciudad')
     
     # Base query
     peluquerias = Peluqueria.objects.all()
     
-    # Filtramos si hay selección
+    # Filtramos si hay selección y no es "Todas"
     if ciudad_seleccionada and ciudad_seleccionada != 'Todas':
         peluquerias = peluquerias.filter(ciudad__iexact=ciudad_seleccionada)
         
@@ -34,11 +35,6 @@ def inicio(request):
         'ciudad_actual': ciudad_seleccionada
     }
     return render(request, 'salon/index.html', context)
-
-# ... (MANTÉN TODO EL RESTO DE VISTAS IGUAL DESDE AQUÍ) ...
-# (Copia y pega las funciones obtener_horas_disponibles, agendar_cita, retorno_bold, etc. del archivo anterior)
-# Para ahorrar espacio aquí, solo pongo el inicio que es lo que cambió, 
-# PERO EN GITHUB DEBES PEGAR EL ARCHIVO COMPLETO CON LAS OTRAS FUNCIONES.
 
 def obtener_horas_disponibles(request):
     try:
