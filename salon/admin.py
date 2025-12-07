@@ -5,7 +5,7 @@ from django.http import HttpResponseRedirect
 from django.utils.safestring import mark_safe 
 import requests 
 from .models import (
-    Peluqueria, Servicio, Empleado, HorarioSemanal, Cita, PerfilUsuario
+    Peluqueria, Servicio, Empleado, HorarioSemanal, Cita, PerfilUsuario, Ausencia
 )
 
 # =============================================================
@@ -52,7 +52,7 @@ class SuperuserOnlyAdmin(admin.ModelAdmin):
 
 
 # =============================================================
-# 2. PELUQUERIA ADMIN (BOTÓN ARREGLADO)
+# 2. PELUQUERIA ADMIN
 # =============================================================
 
 @admin.register(Peluqueria)
@@ -64,8 +64,6 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
     @admin.display(description='Diagnóstico Telegram') 
     def boton_prueba_telegram(self, obj):
         if obj.pk: 
-            # --- CORRECCIÓN AQUÍ: Usamos reverse para obtener la URL exacta ---
-            # Esto evita el error "1/1" que salía antes
             try:
                 url = reverse('admin:salon_peluqueria_test_telegram', args=[obj.pk])
                 return mark_safe(f'<a class="button" href="{url}" style="background-color: #007bff; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none;">🔔 Probar Telegram</a>')
@@ -83,8 +81,6 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
 
     def test_telegram_view(self, request, object_id):
         try:
-            # Recuperamos la peluquería asegurándonos de limpiar el ID
-            # Esto nos protege si llega algo sucio
             clean_id = str(object_id).split('/')[0] 
             peluqueria = self.get_object(request, clean_id)
             
@@ -94,7 +90,6 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
 
             url_retorno = reverse('admin:salon_peluqueria_change', args=[peluqueria.pk])
 
-            # 1. Validar datos
             token = str(peluqueria.telegram_token).strip() if peluqueria.telegram_token else None
             chat_id = str(peluqueria.telegram_chat_id).strip() if peluqueria.telegram_chat_id else None
 
@@ -102,7 +97,6 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
                 self.message_user(request, "⚠️ Faltan Token o ID en la configuración.", level=messages.WARNING)
                 return HttpResponseRedirect(url_retorno)
             
-            # 2. Enviar mensaje
             url_api = f"https://api.telegram.org/bot{token}/sendMessage"
             data = {
                 "chat_id": chat_id,
@@ -156,6 +150,12 @@ class CitaAdmin(SalonOwnerAdmin):
     def servicios_listados(self, obj):
         return ", ".join([s.nombre for s in obj.servicios.all()])
     servicios_listados.short_description = 'Servicios'
+
+# REGISTRO DE AUSENCIAS (Nuevo)
+@admin.register(Ausencia)
+class AusenciaAdmin(SalonOwnerAdmin): # Hereda de SalonOwnerAdmin para seguridad
+    list_display = ('empleado', 'fecha_inicio', 'fecha_fin', 'motivo')
+    # Opcional: podrías filtrar por empleado si quieres
 
 try:
     admin.site.unregister(HorarioSemanal)

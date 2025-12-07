@@ -1,18 +1,32 @@
 from datetime import datetime, timedelta
 from django.db.models import Q
-from django.utils.timezone import make_aware # IMPORTANTE
-from .models import Cita, HorarioSemanal
+from django.utils.timezone import make_aware 
+from .models import Cita, HorarioSemanal, Ausencia
 
 # ================================================================
-# 🧠 CEREBRO DE DISPONIBILIDAD (Corregido: Zonas Horarias)
+# 🧠 CEREBRO DE DISPONIBILIDAD (Con soporte para Ausencias)
 # ================================================================
 
 def obtener_bloques_disponibles(empleado, fecha_consulta, duracion_total_servicios):
     """
-    Calcula los horarios disponibles, manejando correctamente las zonas horarias.
+    Calcula los horarios disponibles, manejando:
+    1. Horario Laboral
+    2. Citas existentes
+    3. Ausencias (Vacaciones/Enfermedad)
     """
     
-    # 1. ¿El empleado trabaja ese día?
+    # 0. VERIFICAR AUSENCIAS (NUEVO)
+    # Si hay una ausencia que cubra la fecha de consulta, no hay cupos.
+    esta_ausente = Ausencia.objects.filter(
+        empleado=empleado,
+        fecha_inicio__lte=fecha_consulta,
+        fecha_fin__gte=fecha_consulta
+    ).exists()
+
+    if esta_ausente:
+        return [] # El empleado está de vacaciones hoy
+
+    # 1. ¿El empleado trabaja ese día de la semana?
     dia_semana = fecha_consulta.weekday()
     horario = HorarioSemanal.objects.filter(empleado=empleado, dia_semana=dia_semana).first()
     
@@ -25,17 +39,15 @@ def obtener_bloques_disponibles(empleado, fecha_consulta, duracion_total_servici
     inicio_naive = datetime.combine(fecha_consulta, horario.hora_inicio)
     fin_naive = datetime.combine(fecha_consulta, horario.hora_fin)
 
-    # CONVERTIR A AWARE (Consciente de zona horaria) para comparar con DB
+    # CONVERTIR A AWARE (Manejo de zonas horarias)
     try:
         hora_actual = make_aware(inicio_naive)
         fin_jornada = make_aware(fin_naive)
     except ValueError:
-        # Si ya tienen zona horaria (raro, pero posible), las usamos tal cual
         hora_actual = inicio_naive
         fin_jornada = fin_naive
     
     # 2. Buscamos citas (La competencia)
-    # Traemos fechas que YA son aware desde Django
     citas_del_dia = Cita.objects.filter(
         empleado=empleado,
         fecha_hora_inicio__date=fecha_consulta
@@ -50,14 +62,17 @@ def obtener_bloques_disponibles(empleado, fecha_consulta, duracion_total_servici
         if horario.descanso_inicio and horario.descanso_fin:
             ini_desc_naive = datetime.combine(fecha_consulta, horario.descanso_inicio)
             fin_desc_naive = datetime.combine(fecha_consulta, horario.descanso_fin)
-            # Convertimos a aware para comparar con hora_actual
-            ini_desc = make_aware(ini_desc_naive)
-            fin_desc = make_aware(fin_desc_naive)
+            try:
+                ini_desc = make_aware(ini_desc_naive)
+                fin_desc = make_aware(fin_desc_naive)
+            except ValueError:
+                ini_desc = ini_desc_naive
+                fin_desc = fin_desc_naive
             
             if (hora_actual < fin_desc) and (fin_estimado > ini_desc):
                 esta_ocupado = True
 
-        # B) Citas Existentes (Comparación Aware vs Aware)
+        # B) Citas Existentes
         if not esta_ocupado:
             for cita in citas_del_dia:
                 c_inicio = cita['fecha_hora_inicio']
@@ -68,7 +83,6 @@ def obtener_bloques_disponibles(empleado, fecha_consulta, duracion_total_servici
                     break
         
         if not esta_ocupado:
-            # Guardamos solo la hora string (limpio)
             horas_disponibles.append(hora_actual.strftime("%H:%M"))
         
         hora_actual += timedelta(minutes=30)
@@ -77,11 +91,23 @@ def obtener_bloques_disponibles(empleado, fecha_consulta, duracion_total_servici
 
 def verificar_conflicto_atomic(empleado, inicio_nuevo, fin_nuevo):
     """
-    El Guardia de Seguridad. 
-    Recibe fechas 'inicio_nuevo' y 'fin_nuevo' que DEBEN ser Aware.
+    Guardia de Seguridad: Verifica citas y también ausencias de última hora.
     """
-    return Cita.objects.filter(
+    # 1. Verificar Citas
+    choque_cita = Cita.objects.filter(
         empleado=empleado,
         fecha_hora_inicio__lt=fin_nuevo,
         fecha_hora_fin__gt=inicio_nuevo
     ).exclude(estado='A').exists()
+
+    if choque_cita: return True
+
+    # 2. Verificar Ausencias (Por si el dueño le dio vacaciones hace 1 segundo)
+    fecha_dia = inicio_nuevo.date()
+    choque_ausencia = Ausencia.objects.filter(
+        empleado=empleado,
+        fecha_inicio__lte=fecha_dia,
+        fecha_fin__gte=fecha_dia
+    ).exists()
+
+    return choque_ausencia

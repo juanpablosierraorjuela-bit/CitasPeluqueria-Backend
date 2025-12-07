@@ -4,7 +4,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.text import slugify
 from datetime import timedelta
-import requests # Necesario para Telegram
+import requests
 
 # =============================================================
 # 1. MODELOS BASE
@@ -73,6 +73,16 @@ class HorarioSemanal(models.Model):
             self.peluqueria = self.empleado.peluqueria
         super().save(*args, **kwargs)
 
+# NUEVO MODELO: Ausencia (Vacaciones, Enfermedad, etc.)
+class Ausencia(models.Model):
+    empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, related_name='ausencias')
+    fecha_inicio = models.DateField()
+    fecha_fin = models.DateField()
+    motivo = models.CharField(max_length=200, blank=True, null=True)
+
+    def __str__(self):
+        return f"Ausencia {self.empleado} ({self.fecha_inicio} - {self.fecha_fin})"
+
 # =============================================================
 # 3. MODELOS DE CITA Y PERFIL
 # =============================================================
@@ -103,26 +113,16 @@ class PerfilUsuario(models.Model):
 def crear_perfil(sender, instance, created, **kwargs):
     if created: PerfilUsuario.objects.create(user=instance)
 
-# --- 🔥 NOTIFICACIÓN TELEGRAM AUTOMÁTICA 🔥 ---
+# NOTIFICACIÓN TELEGRAM AUTOMÁTICA
 @receiver(post_save, sender=Cita)
 def notificar_cita_telegram(sender, instance, created, **kwargs):
-    """
-    Cada vez que se guarda una cita (created=True), envía mensaje a Telegram.
-    Funciona desde Admin, App, Web, etc.
-    """
-    if created and instance.estado == 'C': # Solo si es nueva y confirmada
+    if created and instance.estado == 'C': 
         try:
             peluqueria = instance.peluqueria
             token = peluqueria.telegram_token
             chat_id = peluqueria.telegram_chat_id
             
             if not token or not chat_id: return
-
-            # Calculamos servicios (si es m2m, a veces requiere un pequeño delay o signal m2m_changed,
-            # pero para simplificar intentaremos leerlos, si no están vacíos)
-            # Nota: En many-to-many, los datos se guardan después del save(). 
-            # El mensaje saldrá básico y podríamos mejorarlo con m2m_changed, 
-            # pero esto asegura que AL MENOS avise.
             
             mensaje = (
                 f"🔔 *NUEVA CITA AGENDADA*\n\n"
