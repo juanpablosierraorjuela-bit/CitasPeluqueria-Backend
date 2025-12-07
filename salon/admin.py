@@ -36,14 +36,45 @@ class PeluqueriaAdmin(SuperuserOnlyAdmin):
     list_display = ('nombre', 'slug', 'bold_status')
     prepopulated_fields = {'slug': ('nombre',)}
     
-    @admin.display(description='Pasarela Bold')
+    @admin.display(description='Bold')
     def bold_status(self, obj):
-        if obj.bold_api_key: return "✅ Activa"
-        return "❌ Inactiva"
+        return "✅ Activa" if obj.bold_api_key else "❌ Inactiva"
+
+    # AGREGAMOS EL BOTÓN DE PRUEBA DE TELEGRAM
+    readonly_fields = ('boton_prueba_telegram',) 
+    @admin.display(description='Telegram') 
+    def boton_prueba_telegram(self, obj):
+        if obj.pk: 
+            url = reverse('admin:salon_peluqueria_test_telegram', args=[obj.pk])
+            return mark_safe(f'<a class="button" href="{url}" style="background-color: #007bff; color: white; padding: 5px;">🔔 Probar</a>')
+        return "-"
+    
+    def get_urls(self):
+        urls = super().get_urls()
+        info = self.model._meta.app_label, self.model._meta.model_name
+        return [path('<path:object_id>/test_telegram/', self.admin_site.admin_view(self.test_telegram_view), name='%s_%s_test_telegram' % info)] + urls
+
+    def test_telegram_view(self, request, object_id):
+        # (Lógica de prueba Telegram igual que antes)
+        try:
+            peluqueria = self.get_object(request, str(object_id).split('/')[0])
+            if not peluqueria: return HttpResponseRedirect("../")
+            url_retorno = reverse('admin:salon_peluqueria_change', args=[peluqueria.pk])
+            
+            token = peluqueria.telegram_token
+            chat_id = peluqueria.telegram_chat_id
+            if not token or not chat_id:
+                self.message_user(request, "⚠️ Faltan datos.", level=messages.WARNING)
+                return HttpResponseRedirect(url_retorno)
+            
+            url = f"https://api.telegram.org/bot{token}/sendMessage"
+            requests.post(url, data={"chat_id": chat_id, "text": "✅ Prueba Exitosa"}, timeout=3)
+            self.message_user(request, "✅ Mensaje enviado.", level=messages.SUCCESS)
+            return HttpResponseRedirect(url_retorno)
+        except: return HttpResponseRedirect("../")
 
 @admin.register(Servicio)
 class ServicioAdmin(SalonOwnerAdmin):
-    # AQUÍ MOSTRAMOS LA DURACIÓN FORMATEADA
     list_display = ('nombre', 'precio', 'str_duracion')
     exclude = ('peluqueria',)
 
@@ -54,18 +85,16 @@ class EmpleadoAdmin(SalonOwnerAdmin):
 
 @admin.register(Cita)
 class CitaAdmin(SalonOwnerAdmin):
-    list_display = ('cliente_nombre', 'empleado', 'fecha_hora_inicio', 'estado', 'pago_info') 
+    list_display = ('cliente_nombre', 'empleado', 'fecha_hora_inicio', 'servicios_listados', 'estado') 
     filter_horizontal = ('servicios',) 
     exclude = ('peluqueria',) 
     
-    @admin.display(description='Pago Bold')
-    def pago_info(self, obj):
-        if obj.abono_pagado > 0: return f"${obj.abono_pagado}"
-        return "-"
+    def servicios_listados(self, obj):
+        return ", ".join([s.nombre for s in obj.servicios.all()])
 
 @admin.register(Ausencia)
 class AusenciaAdmin(SalonOwnerAdmin): 
-    list_display = ('empleado', 'fecha_inicio', 'fecha_fin', 'motivo')
+    list_display = ('empleado', 'fecha_inicio', 'fecha_fin')
 
 @admin.register(PerfilUsuario)
 class PerfilUsuarioAdmin(SuperuserOnlyAdmin):
