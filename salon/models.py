@@ -25,7 +25,7 @@ class Peluqueria(models.Model):
     hora_apertura = models.TimeField(default="08:00")
     hora_cierre = models.TimeField(default="20:00")
 
-    # --- NUEVO: BOLD (PASARELA DE PAGO) ---
+    # --- BOLD (PASARELA DE PAGO) ---
     bold_api_key = models.CharField(max_length=200, blank=True, null=True, help_text="Llave pública de Bold (PK-...)")
     bold_integrity_key = models.CharField(max_length=200, blank=True, null=True, help_text="Llave de integridad para firmar transacciones")
     
@@ -40,14 +40,13 @@ class Peluqueria(models.Model):
 class Servicio(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='servicios')
     nombre = models.CharField(max_length=100)
-    # Agregamos help_text para que en el admin sepan el formato
     duracion = models.DurationField(default=timedelta(minutes=30), help_text="Formato HH:MM:SS (Ej: 00:30:00 para 30 min)") 
     precio = models.DecimalField(max_digits=8, decimal_places=2) 
     descripcion = models.TextField(blank=True, null=True)
 
     @property
     def str_duracion(self):
-        """Muestra la duración de forma amigable al cliente (Ej: 1h 30m)"""
+        """Muestra la duración amigable (ej: 30 min)"""
         total_seconds = int(self.duracion.total_seconds())
         hours = total_seconds // 3600
         minutes = (total_seconds % 3600) // 60
@@ -56,10 +55,10 @@ class Servicio(models.Model):
         return f"{minutes} min"
 
     def __str__(self):
-        return f"{self.nombre} ({self.str_duracion}) - ${self.precio:,.0f}"
+        return f"{self.nombre} - ${self.precio:,.0f}"
 
 # =============================================================
-# 2. MODELOS DE HORARIOS Y EMPLEADOS
+# 2. EMPLEADOS Y HORARIOS
 # =============================================================
 
 class Empleado(models.Model):
@@ -100,7 +99,7 @@ class Ausencia(models.Model):
         return f"Ausencia {self.empleado} ({self.fecha_inicio} - {self.fecha_fin})"
 
 # =============================================================
-# 3. MODELOS DE CITA Y PERFIL
+# 3. CITA Y PERFIL
 # =============================================================
 
 class Cita(models.Model):
@@ -110,7 +109,7 @@ class Cita(models.Model):
     servicios = models.ManyToManyField(Servicio) 
     precio_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
-    # --- NUEVOS CAMPOS PAGO ---
+    # PAGOS BOLD
     abono_pagado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     referencia_pago_bold = models.CharField(max_length=100, blank=True, null=True)
 
@@ -127,7 +126,7 @@ class Cita(models.Model):
     def enviar_notificacion_telegram(self):
         """
         Envía el mensaje a Telegram MANUALMENTE.
-        Esto soluciona el error de servicios vacíos.
+        Esto asegura que los servicios SÍ aparezcan en el mensaje.
         """
         try:
             token = self.peluqueria.telegram_token
@@ -135,7 +134,7 @@ class Cita(models.Model):
             
             if not token or not chat_id: return
 
-            # Construir lista de servicios CON DURACIÓN
+            # Construir lista de servicios bonita
             lista_servicios = ""
             for s in self.servicios.all():
                 lista_servicios += f"• {s.nombre} ({s.str_duracion})\n"
@@ -164,10 +163,8 @@ class PerfilUsuario(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.SET_NULL, null=True, blank=True)
 
-# =============================================================
-# 4. SEÑALES
-# =============================================================
-
 @receiver(post_save, sender=User)
 def crear_perfil(sender, instance, created, **kwargs):
     if created: PerfilUsuario.objects.create(user=instance)
+
+# NOTA: NO HAY SEÑAL AUTOMÁTICA DE CITA AQUÍ. SE LLAMA EN LAS VISTAS.
