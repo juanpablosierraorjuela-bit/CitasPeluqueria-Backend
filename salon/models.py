@@ -15,8 +15,7 @@ class Peluqueria(models.Model):
     slug = models.SlugField(unique=True, blank=True, null=True) 
     nombre_visible = models.CharField(max_length=100, default="Mi Salón")
     
-    # UBICACIÓN GLOBAL (NUEVO)
-    # Este campo es el que está causando el error 500 si no migras la BD
+    # UBICACIÓN GLOBAL
     ciudad = models.CharField(max_length=100, default="Tunja", help_text="Ciudad para filtrar en la App Global")
     
     # TELEGRAM
@@ -140,8 +139,17 @@ class Cita(models.Model):
             
             if not lista_servicios: lista_servicios = "(Sin servicios especificados)"
 
+            # --- NUEVA LÓGICA DE ESTADO ---
+            # Si el estado es Confirmado ('C') Y el abono cubre algo (usualmente el total en Bold)
+            if self.estado == 'C' and self.abono_pagado > 0:
+                estado_texto = "✅ PAGADO (ONLINE)"
+            else:
+                # Si es pendiente, o es Confirmada pero con abono 0 (ej. pago en efectivo manual)
+                estado_texto = "⏳ PENDIENTE DE PAGO / PAGO EN LOCAL"
+
             mensaje = (
-                f"🔔 *NUEVA CITA CONFIRMADA*\n\n"
+                f"🔔 *NUEVA CITA - {self.peluqueria.nombre_visible}*\n\n"
+                f"💰 *ESTADO:* {estado_texto}\n"
                 f"👤 *Cliente:* {self.cliente_nombre}\n"
                 f"📞 *Tel:* {self.cliente_telefono}\n"
                 f"📅 *Fecha:* {self.fecha_hora_inicio.strftime('%d/%m/%Y')}\n"
@@ -149,7 +157,6 @@ class Cita(models.Model):
                 f"💇 *Estilista:* {self.empleado.nombre}\n\n"
                 f"📋 *Servicios:*\n{lista_servicios}\n"
                 f"💰 *Total:* ${self.precio_total:,.0f}\n"
-                f"💳 *Abono:* ${self.abono_pagado:,.0f}"
             )
 
             url = f"https://api.telegram.org/bot{token}/sendMessage"
