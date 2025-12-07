@@ -184,4 +184,8 @@ JAZZMIN_UI_TWEAKS = {
         "danger": "btn-danger",
         "success": "btn-success"
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 085d418 (Guardando todo para sincronizar)

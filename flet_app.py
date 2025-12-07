@@ -1,163 +1,119 @@
 import flet as ft
 import requests
 
-# Configuración de URLs
-BASE_URL = "http://127.0.0.1:8000/api"
+# CONFIGURACIÓN
+HOST = "http://127.0.0.1:8000"
+PELUQUERIA_SLUG = "mi-salon"  # <--- ¡CAMBIA ESTO POR TU SLUG REAL!
+BASE_API = f"{HOST}/api/v1/{PELUQUERIA_SLUG}"
 
 def main(page: ft.Page):
-    page.title = "Sistema de Citas (Versión Blindada)"
-    page.theme_mode = ft.ThemeMode.DARK
-    page.scroll = ft.ScrollMode.AUTO
-    
-    # --- VARIABLES GLOBALES DE LA APP ---
-    lista_empleados_cache = [] # Guardaremos aquí los empleados para que no se pierdan
-    
-    # --- ELEMENTO VISUAL PARA VER ERRORES EN PANTALLA ---
-    estado_texto = ft.Text("Esperando acción...", color="grey", size=14)
+    page.title = f"Gestión: {PELUQUERIA_SLUG}"
+    page.window_width = 400
+    page.window_height = 700
+    page.padding = 20
 
-    # --- 1. FUNCIÓN PARA GUARDAR LA CITA ---
-    def guardar_cita_en_django(e, nombre_emp, id_emp, id_serv, hora_ini, hora_fin, fecha):
-        estado_texto.value = f"⏳ Procesando reserva para {nombre_emp}..."
-        estado_texto.color = "blue"
-        page.update()
+    lbl_status = ft.Text("Listo", color="grey")
+    dd_servicio = ft.Dropdown(label="Servicio", width=350)
+    dd_empleado = ft.Dropdown(label="Empleado (Opcional)", width=350)
+    txt_fecha = ft.TextField(label="Fecha (YYYY-MM-DD)", width=350, value="2025-12-06")
+    col_resultados = ft.Column(scroll=ft.ScrollMode.AUTO, height=400)
 
-        print(f"INTENTO DE RESERVA: EmpleadoID={id_emp}, ServicioID={id_serv}, Fecha={fecha}")
-
+    def cargar_inicio():
         try:
-            datos = {
-                "servicio_id": int(id_serv),
-                "empleado_id": int(id_emp),
-                "fecha": fecha,
-                "hora_inicio": hora_ini,
-                "hora_fin": hora_fin
+            # 1. Cargar Servicios
+            r = requests.get(f"{BASE_API}/servicios/")
+            if r.status_code == 200:
+                dd_servicio.options = [ft.dropdown.Option(key=str(s['id']), text=s['nombre']) for s in r.json()]
+            
+            # 2. Cargar Empleados
+            r = requests.get(f"{BASE_API}/empleados/")
+            if r.status_code == 200:
+                dd_empleado.options = [ft.dropdown.Option(key="todos", text="Cualquiera")]
+                for e in r.json():
+                    dd_empleado.options.append(ft.dropdown.Option(key=str(e['id']), text=e['nombre']))
+            
+            page.update()
+        except Exception as e:
+            lbl_status.value = f"Error conectando: {e}"
+            lbl_status.color = "red"
+            page.update()
+
+    def reservar(hora, emp_nombre, emp_id):
+        try:
+            payload = {
+                "empleado_id": emp_id, # La API ahora espera IDs reales, no nombres
+                "servicio_id": dd_servicio.value,
+                "fecha": txt_fecha.value,
+                "hora_inicio": hora,
+                "cliente_nombre": "Cliente Local"
             }
+            r = requests.post(f"{BASE_API}/citas/crear/", json=payload)
             
-            # Petición a Django
-            url = f"{BASE_URL}/citas/crear/"
-            respuesta = requests.post(url, json=datos)
-            
-            if respuesta.status_code == 201:
-                estado_texto.value = f"✅ ¡CITA CONFIRMADA CON {nombre_emp}!"
-                estado_texto.color = "green"
-                page.snack_bar = ft.SnackBar(ft.Text("¡Reserva Exitosa!"), bgcolor="green")
+            if r.status_code == 201:
+                page.snack_bar = ft.SnackBar(ft.Text(f"✅ Cita agendada: {hora}"), bgcolor="green")
+                col_resultados.controls.clear() # Limpiar para no duplicar
+            elif r.status_code == 409:
+                page.snack_bar = ft.SnackBar(ft.Text("⚠️ ¡Ese horario ya se ocupó!"), bgcolor="orange")
             else:
-                estado_texto.value = f"❌ Error del servidor: {respuesta.text}"
-                estado_texto.color = "red"
-                page.snack_bar = ft.SnackBar(ft.Text("Falló la reserva"), bgcolor="red")
-
-        except Exception as ex:
-            estado_texto.value = f"❌ Error de conexión: {str(ex)}"
-            estado_texto.color = "red"
-
-        page.snack_bar.open = True
-        page.update()
-
-    # --- 2. CARGAR DATOS INICIALES ---
-    dd_servicio = ft.Dropdown(label="Selecciona Servicio", width=300)
-    dd_empleado = ft.Dropdown(label="Empleado (Opcional)", width=300)
-    campo_fecha = ft.TextField(label="Fecha (YYYY-MM-DD)", hint_text="2025-11-29", width=300)
-    lista_resultados = ft.Column(spacing=10)
-
-    def cargar_datos_iniciales():
-        nonlocal lista_empleados_cache
-        try:
-            # Cargar Servicios
-            res_s = requests.get(f"{BASE_URL}/servicios/")
-            for s in res_s.json():
-                dd_servicio.options.append(ft.dropdown.Option(key=str(s['id']), text=s['nombre']))
+                page.snack_bar = ft.SnackBar(ft.Text("Error al agendar"), bgcolor="red")
             
-            # Cargar Empleados
-            res_e = requests.get(f"{BASE_URL}/empleados/")
-            lista_empleados_cache = res_e.json() # Guardamos en la variable global
-            
-            dd_empleado.options.append(ft.dropdown.Option(key="todos", text="Cualquiera"))
-            for emp in lista_empleados_cache:
-                dd_empleado.options.append(ft.dropdown.Option(key=str(emp['id']), text=emp['nombre']))
-            
-            estado_texto.value = "✅ Datos cargados correctamente. Listo para buscar."
-            estado_texto.color = "green"
+            page.snack_bar.open = True
+            page.update()
             
         except Exception as e:
-            estado_texto.value = f"⚠️ Error cargando datos: {e} (¿Django está corriendo?)"
-            estado_texto.color = "orange"
-        page.update()
+            print(e)
 
-  # --- 3. BOTÓN DE BÚSQUEDA CON FILTRO DE EMPLEADO ---
-    def buscar_horarios(e):
-        lista_resultados.controls.clear()
-        sid = dd_servicio.value
-        fecha = campo_fecha.value
-        id_empleado_seleccionado = dd_empleado.value # Obtenemos a quién eligió el usuario
+    def buscar(e):
+        if not dd_servicio.value: return
         
-        if not sid or not fecha:
-            estado_texto.value = "⚠️ Falta servicio o fecha"
-            estado_texto.color = "yellow"
-            page.update()
-            return
+        lbl_status.value = "Buscando..."
+        col_resultados.controls.clear()
+        page.update()
 
         try:
-            # Pedimos TODOS los horarios a Django
-            url = f"{BASE_URL}/disponibilidad/?service_id={sid}&fecha={fecha}"
-            resp = requests.get(url)
-            data = resp.json()
+            # Si seleccionó "todos", mandamos vacío o 'todos'
+            emp_val = dd_empleado.value if dd_empleado.value else "todos"
+            
+            url = f"{BASE_API}/disponibilidad/?fecha={txt_fecha.value}&service_id={dd_servicio.value}&empleado_id={emp_val}"
+            r = requests.get(url)
+            data = r.json()
 
             if not data:
-                lista_resultados.controls.append(ft.Text("No hay horarios libres."))
+                col_resultados.controls.append(ft.Text("No hay horarios libres."))
             
-            horarios_encontrados = False
-
-            for nombre_emp, horarios in data.items():
-                # Buscamos el objeto empleado para saber su ID real
-                emp_obj = next((emp for emp in lista_empleados_cache if emp['nombre'] == nombre_emp), None)
+            # Recorremos resultados { "Juan": [{"hora_inicio": "10:00"}], ... }
+            
+            for nombre_emp, bloques in data.items():
+                # Truco para encontrar ID
+                emp_id_real = None
+                for opt in dd_empleado.options:
+                    if opt.text in nombre_emp: emp_id_real = opt.key
                 
-                if emp_obj:
-                    # --- EL PORTERO (FILTRO) ---
-                    # Si el usuario eligió a alguien específico (no "todos") 
-                    # Y ese alguien NO es el empleado actual del bucle...
-                    # ¡SALTAMOS AL SIGUIENTE! (No creamos botón)
-                    if id_empleado_seleccionado != "todos" and str(id_empleado_seleccionado) != str(emp_obj['id']):
-                        continue 
-                    # ---------------------------
+                if not emp_id_real: continue # Si no hallamos ID, saltamos
 
-                    horarios_encontrados = True
-                    for h in horarios:
-                        btn = ft.ElevatedButton(
-                            text=f"Reservar {h['hora_inicio']} con {nombre_emp}",
-                            bgcolor="blue",
-                            color="white",
-                            on_click=lambda e, en=nombre_emp, eid=emp_obj['id'], s=sid, hi=h['hora_inicio'], hf=h['hora_fin'], f=fecha: guardar_cita_en_django(e, en, eid, s, hi, hf, f)
-                        )
-                        lista_resultados.controls.append(btn)
+                col_resultados.controls.append(ft.Text(f"Agenda de {nombre_emp}:", weight="bold"))
+                
+                row = ft.Row(wrap=True)
+                for b in bloques:
+                    h = b['hora_inicio']
+                    btn = ft.ElevatedButton(
+                        text=h, 
+                        on_click=lambda e, h=h, en=nombre_emp, eid=emp_id_real: reservar(h, en, eid)
+                    )
+                    row.controls.append(btn)
+                col_resultados.controls.append(row)
+                col_resultados.controls.append(ft.Divider())
+
+            lbl_status.value = "Actualizado"
             
-            if not horarios_encontrados:
-                 lista_resultados.controls.append(ft.Text(f"No hay horarios para ese empleado en esta fecha.", color="orange"))
-
-            estado_texto.value = "Resultados actualizados."
-            estado_texto.color = "white"
-
         except Exception as ex:
-            estado_texto.value = f"Error al buscar: {ex}"
-            estado_texto.color = "red"
+            lbl_status.value = f"Error: {ex}"
         
         page.update()
 
-    # --- 4. ARMADO DE LA PANTALLA ---
-    btn_buscar = ft.ElevatedButton("Buscar Disponibilidad", on_click=buscar_horarios, bgcolor="green", color="white")
+    btn_buscar = ft.ElevatedButton("Buscar", on_click=buscar, bgcolor="blue", color="white")
     
-    page.add(
-        ft.Text("Sistema de Agendamiento", size=30),
-        dd_servicio,
-        dd_empleado,
-        campo_fecha,
-        btn_buscar,
-        ft.Divider(),
-        ft.Text("Estado del Sistema:", size=12, weight="bold"),
-        estado_texto, # <--- AQUÍ VERÁS LOS MENSAJES
-        ft.Divider(),
-        ft.Text("Horarios:"),
-        lista_resultados
-    )
-    
-    cargar_datos_iniciales()
+    page.add(ft.Text("App Peluquería", size=20), dd_servicio, dd_empleado, txt_fecha, btn_buscar, lbl_status, col_resultados)
+    cargar_inicio()
 
 ft.app(target=main)
