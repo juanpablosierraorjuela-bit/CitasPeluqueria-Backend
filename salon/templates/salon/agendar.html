@@ -6,17 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reserva en {{ peluqueria.nombre_visible }}</title>
     
-    <!-- PWA CONFIGURACIÓN (NUEVO) -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#ec4899">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Mi Salón">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3899/3899618.png">
-
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* ... (MANTÉN TUS ESTILOS IGUALES, NO LOS BORRES) ... */
         :root {
             --bg-color: #f8fafc;
             --text-dark: #0f172a;
@@ -29,23 +22,20 @@
         body { font-family: 'Outfit', sans-serif; background-color: var(--bg-color); display: flex; justify-content: center; padding: 20px; color: var(--text-dark); }
         .container { background: var(--card-bg); padding: 40px; border-radius: 24px; width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
         
-        .error-alert {
-            background-color: #fee2e2;
-            border: 1px solid #ef4444;
-            color: #b91c1c;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-weight: 600;
-            animation: shake 0.5s;
-        }
-        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } 100% { transform: translateX(0); } }
+        .error-alert { background-color: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; }
 
         .step-label { font-weight: 700; margin: 20px 0 10px; display: flex; gap: 10px; align-items: center; }
         .step-number { background: #f1f5f9; width: 25px; height: 25px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.8rem; }
-        .servicio-card { padding: 15px; border: 1px solid var(--border-light); border-radius: 12px; display: flex; justify-content: space-between; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
+        
+        .servicio-card { padding: 15px; border: 1px solid var(--border-light); border-radius: 12px; display: flex; justify-content: space-between; margin-bottom: 10px; cursor: pointer; transition: 0.2s; align-items: center; }
         .servicio-option input:checked + .servicio-card { border-color: var(--accent-color); background: #fdf2f8; }
+        
+        /* NUEVO ESTILO PARA DURACIÓN */
+        .badge-duracion {
+            font-size: 0.75rem; color: #64748b; background: #e2e8f0; 
+            padding: 3px 8px; border-radius: 10px; margin-left: 8px; font-weight: 500;
+        }
+
         select, input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border-light); margin-bottom: 10px; font-family: inherit; }
         #contenedor-horas { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 15px; }
         .btn-hora { padding: 10px; border: 1px solid var(--border-light); border-radius: 8px; text-align: center; cursor: pointer; background: white; }
@@ -65,15 +55,8 @@
         <p style="color: #64748b;">{{ peluqueria.nombre_visible }}</p>
     </div>
 
-    <!-- PWA BOTÓN DE INSTALACIÓN (Opcional, para hacerlo explícito) -->
-    <button id="btn-install" class="hidden" style="width:100%; padding:10px; margin-bottom:20px; background:#e0e7ff; color:#4338ca; border:none; border-radius:8px; font-weight:600; cursor:pointer;">
-        📲 Instalar App en mi Celular
-    </button>
-
     {% if error_mensaje %}
-        <div class="error-alert">
-            {{ error_mensaje }}
-        </div>
+        <div class="error-alert">{{ error_mensaje }}</div>
     {% endif %}
 
     <form method="POST">
@@ -86,7 +69,11 @@
             <label class="servicio-option">
                 <input type="checkbox" name="servicios" value="{{ s.id }}" class="check-servicio">
                 <div class="servicio-card">
-                    <span>{{ s.nombre }}</span>
+                    <div>
+                        <span>{{ s.nombre }}</span>
+                        <!-- AQUÍ MOSTRAMOS LA DURACIÓN -->
+                        <span class="badge-duracion">⏱️ {{ s.str_duracion }}</span>
+                    </div>
                     <strong>${{ s.precio }}</strong>
                 </div>
             </label>
@@ -119,38 +106,12 @@
 </div>
 
 <script>
-    // --- LÓGICA DE INSTALACIÓN PWA ---
-    let deferredPrompt;
-    const btnInstall = document.getElementById('btn-install');
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-        // Previene que Chrome muestre el aviso automático (para controlarlo nosotros)
-        e.preventDefault();
-        deferredPrompt = e;
-        // Mostramos nuestro botón personalizado
-        btnInstall.classList.remove('hidden');
-    });
-
-    btnInstall.addEventListener('click', async () => {
-        if (deferredPrompt) {
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                console.log('Usuario instaló la app');
-            }
-            deferredPrompt = null;
-            btnInstall.classList.add('hidden');
-        }
-    });
-    // ---------------------------------
-
     const checks = document.querySelectorAll('.check-servicio');
     const selEmpleado = document.getElementById('empleado');
     const pickerFecha = document.getElementById('picker-fecha');
     const divHoras = document.getElementById('contenedor-horas');
     const btnConfirmar = document.getElementById('btn-confirmar');
     
-    // Mínimo hoy
     pickerFecha.min = new Date().toISOString().split('T')[0];
 
     checks.forEach(c => c.addEventListener('change', () => {
