@@ -3,34 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pago Anticipo</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <title>Pago Seguro | {{ peluqueria.nombre_visible }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Outfit', sans-serif; background: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
-        .card { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 500px; width: 100%; text-align: center; }
-        h1 { color: #0f172a; margin-bottom: 10px; }
-        .monto { font-size: 2.5rem; font-weight: 700; color: #ec4899; margin: 20px 0; }
-        .info { color: #64748b; margin-bottom: 30px; font-size: 0.95rem; }
+        :root {
+            --primary: #0f172a;
+            --accent: #ec4899;
+            --bg: #f8fafc;
+        }
+
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            background-color: var(--bg);
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 20px 20px;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            padding: 20px; 
+            margin: 0;
+            color: var(--primary);
+        }
+
+        .payment-card { 
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(10px);
+            padding: 40px; 
+            border-radius: 30px; 
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1); 
+            max-width: 400px; 
+            width: 100%; 
+            text-align: center; 
+            border: 1px solid white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Barra decorativa superior */
+        .payment-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #ec4899, #8b5cf6);
+        }
+
+        .header-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        h1 { 
+            font-size: 1.5rem; 
+            font-weight: 700; 
+            margin: 0 0 10px 0;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle { 
+            color: #64748b; 
+            font-size: 0.95rem; 
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .amount-box {
+            background: #f8fafc;
+            border: 2px dashed #e2e8f0;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .amount-label {
+            display: block;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #94a3b8;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .amount-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -1px;
+        }
+
+        .details {
+            text-align: left;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+            color: #475569;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        /* --- CENTRADO DEL BOTÓN BOLD --- */
+        .bold-container {
+            display: flex;
+            justify-content: center; /* Centra horizontalmente */
+            align-items: center;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        /* Asegura que el formulario no ocupe todo el ancho si no es necesario */
+        form {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .secure-badge {
+            margin-top: 25px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
     </style>
 </head>
 <body>
-    <div class="card">
+
+    <div class="payment-card">
+        <span class="header-icon">🔒</span>
         <h1>Pago de Anticipo</h1>
-        <p class="info">Confirma tu cita en <strong>{{ peluqueria.nombre_visible }}</strong>.</p>
-        <div class="monto">${{ monto_anticipo }} COP</div>
-        <form>
-            <script
-              src="https://checkout.bold.co/library/boldPaymentButton.js"
-              data-bold-button="dark" 
-              data-order-id="{{ referencia }}"
-              data-currency="COP"
-              data-amount="{{ monto_anticipo }}"
-              data-api-key="{{ peluqueria.bold_api_key }}"
-              data-integrity-signature="{{ signature }}"
-              data-redirection-url="https://citaspeluqueria-backend.onrender.com/retorno-bold/"
-              >
-            </script>
-        </form>
+        <p class="subtitle">
+            Estás a un paso de confirmar tu cita en <br>
+            <strong>{{ peluqueria.nombre_visible }}</strong>
+        </p>
+        
+        <div class="amount-box">
+            <span class="amount-label">Abono Requerido</span>
+            <div class="amount-value">${{ monto_anticipo }}</div>
+        </div>
+
+        <div class="details">
+            <div class="detail-row">
+                <span>Total Servicio:</span>
+                <strong>${{ cita.precio_total }}</strong>
+            </div>
+            <div class="detail-row">
+                <span>Pendiente en sitio:</span>
+                <strong>${{ cita.precio_total|add:"-"|add:monto_anticipo }}</strong>
+            </div>
+        </div>
+
+        <!-- CONTENEDOR CENTRADO PARA BOLD -->
+        <div class="bold-container">
+            <form>
+                <script
+                  src="https://checkout.bold.co/library/boldPaymentButton.js"
+                  data-bold-button="dark" 
+                  data-order-id="{{ referencia }}"
+                  data-currency="COP"
+                  data-amount="{{ monto_anticipo }}"
+                  data-api-key="{{ peluqueria.bold_api_key }}"
+                  data-integrity-signature="{{ signature }}"
+                  data-redirection-url="https://citaspeluqueria-backend.onrender.com/retorno-bold/"
+                  >
+                </script>
+            </form>
+        </div>
+
+        <div class="secure-badge">
+            <span>🛡️</span> Transacción procesada de forma segura por Bold
+        </div>
     </div>
+
 </body>
 </html>
