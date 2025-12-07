@@ -8,10 +8,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-tu-clave-secreta-aqui')
 
+# ------------------------------------------------------------------------------
+# 🛡️ SEGURIDAD DE LA API (NUEVO)
+# Esta clave debe coincidir con la que pongas en tu App de Flet (API_KEY)
+# ------------------------------------------------------------------------------
+API_SECRET_KEY = os.environ.get('API_SECRET_KEY', 'mi-clave-super-secreta-cambiame')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = 'RENDER' not in os.environ
 
-ALLOWED_HOSTS = ['*']
+# ------------------------------------------------------------------------------
+# 🛡️ HOSTS PERMITIDOS (CORREGIDO)
+# Lee la lista de dominios permitidos del entorno (separados por coma)
+# Si no encuentra nada, permite localhost por defecto para desarrollo.
+# ------------------------------------------------------------------------------
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+
 
 # Application definition
 
