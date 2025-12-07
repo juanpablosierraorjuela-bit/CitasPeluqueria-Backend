@@ -15,6 +15,9 @@ class Peluqueria(models.Model):
     slug = models.SlugField(unique=True, blank=True, null=True) 
     nombre_visible = models.CharField(max_length=100, default="Mi Salón")
     
+    # UBICACIÓN GLOBAL (NUEVO)
+    ciudad = models.CharField(max_length=100, default="Tunja", help_text="Ciudad para filtrar en la App Global")
+    
     # TELEGRAM
     telegram_token = models.CharField(max_length=100, blank=True, null=True)
     telegram_chat_id = models.CharField(max_length=100, blank=True, null=True)
@@ -25,17 +28,20 @@ class Peluqueria(models.Model):
     hora_apertura = models.TimeField(default="08:00")
     hora_cierre = models.TimeField(default="20:00")
 
-    # --- BOLD (PASARELA DE PAGO) ---
+    # BOLD
     bold_api_key = models.CharField(max_length=200, blank=True, null=True, help_text="Llave pública de Bold (PK-...)")
     bold_integrity_key = models.CharField(max_length=200, blank=True, null=True, help_text="Llave de integridad para firmar transacciones")
     
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.nombre)
+        # Normalizamos la ciudad (Primera mayúscula) para evitar "tunja" y "Tunja"
+        if self.ciudad:
+            self.ciudad = self.ciudad.title().strip()
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.nombre_visible
+        return f"{self.nombre_visible} ({self.ciudad})"
 
 class Servicio(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='servicios')
@@ -46,7 +52,6 @@ class Servicio(models.Model):
 
     @property
     def str_duracion(self):
-        """Muestra la duración amigable (ej: 30 min)"""
         total_seconds = int(self.duracion.total_seconds())
         hours = total_seconds // 3600
         minutes = (total_seconds % 3600) // 60
@@ -116,31 +121,23 @@ class Cita(models.Model):
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
     fecha_hora_inicio = models.DateTimeField()
     fecha_hora_fin = models.DateTimeField() 
-    
-    # Estados: P=Pendiente Pago, C=Confirmada, A=Anulada
     estado = models.CharField(max_length=1, choices=[('P','Pendiente Pago'),('C','Confirmada'),('A','Anulada')], default='P')
 
     def __str__(self):
         return f"Cita {self.cliente_nombre}"
     
     def enviar_notificacion_telegram(self):
-        """
-        Envía el mensaje a Telegram MANUALMENTE.
-        Esto asegura que los servicios SÍ aparezcan en el mensaje.
-        """
         try:
             token = self.peluqueria.telegram_token
             chat_id = self.peluqueria.telegram_chat_id
             
             if not token or not chat_id: return
 
-            # Construir lista de servicios bonita
             lista_servicios = ""
             for s in self.servicios.all():
                 lista_servicios += f"• {s.nombre} ({s.str_duracion})\n"
             
-            if not lista_servicios:
-                lista_servicios = "(Sin servicios especificados)"
+            if not lista_servicios: lista_servicios = "(Sin servicios especificados)"
 
             mensaje = (
                 f"🔔 *NUEVA CITA CONFIRMADA*\n\n"
