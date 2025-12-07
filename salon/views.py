@@ -10,8 +10,9 @@ from decimal import Decimal
 import hashlib
 import traceback
 import json
+import requests
 
-from .models import Peluqueria, Servicio, Empleado, Cita
+from .models import Peluqueria, Servicio, Empleado, Cita, SolicitudSaaS
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
 
 def inicio(request):
@@ -168,5 +169,41 @@ def dashboard_dueño(request):
 
 def manifest_view(request):
     return JsonResponse({"name": "Citas Peluquería", "short_name": "Mi Salón", "start_url": "/", "display": "standalone", "background_color": "#ffffff", "theme_color": "#ec4899", "icons": []})
+
 def landing_saas(request):
-    return render(request, 'salon/landing_saas.html') 
+    success = False
+    if request.method == 'POST':
+        try:
+            # 1. Recibir datos del formulario
+            nueva_solicitud = SolicitudSaaS.objects.create(
+                nombre_contacto=request.POST.get('nombre'),
+                nombre_empresa=request.POST.get('empresa'),
+                telefono=request.POST.get('telefono'),
+                nicho=request.POST.get('nicho'),
+                cantidad_empleados=request.POST.get('empleados')
+            )
+            success = True
+
+            # 2. Notificar al Dueño Supremo (Tú) vía Telegram
+            # Usaremos el token del primer salón que sea superusuario o el primero que encuentre
+            try:
+                config_bot = Peluqueria.objects.filter(telegram_token__isnull=False).first()
+                if config_bot:
+                    msg = (
+                        f"🚀 *NUEVO LEAD SAAS (INTERESADO)*\n\n"
+                        f"🏢 *Empresa:* {nueva_solicitud.nombre_empresa}\n"
+                        f"👤 *Contacto:* {nueva_solicitud.nombre_contacto}\n"
+                        f"✂️ *Nicho:* {nueva_solicitud.get_nicho_display()}\n"
+                        f"👥 *Tamaño:* {nueva_solicitud.get_cantidad_empleados_display()}\n"
+                        f"📞 *Tel:* {nueva_solicitud.telefono}\n\n"
+                        f"💡 *Acción:* ¡Llámalo ahora para cerrar la venta!"
+                    )
+                    url = f"https://api.telegram.org/bot{config_bot.telegram_token}/sendMessage"
+                    requests.post(url, data={"chat_id": config_bot.telegram_chat_id, "text": msg, "parse_mode": "Markdown"})
+            except Exception as e:
+                print(f"Error notificando telegram lead: {e}")
+
+        except Exception as e:
+            print(f"Error guardando lead: {e}")
+
+    return render(request, 'salon/landing_saas.html', {'success': success})
