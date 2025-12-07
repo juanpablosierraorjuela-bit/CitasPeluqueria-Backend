@@ -150,29 +150,52 @@ def agendar_cita(request, slug_peluqueria):
         'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados
     })
 
-# 4. RESPUESTA DE BOLD
+# 4. RESPUESTA DE BOLD (CORREGIDA Y ROBUSTA)
 @csrf_exempt 
 def retorno_bold(request):
-    status = request.GET.get('tx_status')
-    referencia = request.GET.get('reference')
-    if not referencia: return redirect('inicio')
+    # --- CHISMOSO DE DIAGNÓSTICO ---
+    print("🔔 BOLD REGRESÓ AL SITIO. Datos recibidos:")
+    print(request.GET) 
+    # -------------------------------
+
+    # 1. Intentamos obtener el estado con varios nombres posibles
+    status = request.GET.get('tx_status') or request.GET.get('transactionStatus')
+    
+    # 2. Intentamos obtener la referencia con varios nombres posibles (Bold suele mandar orderId)
+    referencia = request.GET.get('orderId') or request.GET.get('reference') or request.GET.get('bold_order_id')
+
+    if not referencia:
+        print("❌ ERROR: No encontré la referencia en la URL de retorno.")
+        # Opcional: Podrías redirigir a una página de error en vez del inicio
+        return redirect('inicio')
 
     try:
         cita = Cita.objects.get(referencia_pago_bold=referencia)
+        
+        # Si ya estaba confirmada, simplemente mostramos éxito para evitar re-procesar
+        if cita.estado == 'C':
+            return redirect('cita_confirmada')
+
         if status == 'approved':
+            print(f"✅ PAGO APROBADO para Cita ID: {cita.id}")
             cita.estado = 'C'
-            # NO TOCAMOS cita.abono_pagado PORQUE YA LO GUARDAMOS EN EL PASO ANTERIOR
+            # NO TOCAMOS cita.abono_pagado PORQUE YA LO GUARDAMOS EN agendar_cita
             cita.save()
             
             cita.enviar_notificacion_telegram()
             return redirect('cita_confirmada')
+            
         elif status in ['rejected', 'failed']:
+            print(f"⛔ PAGO RECHAZADO para Cita ID: {cita.id}")
             cita.estado = 'A'
             cita.save()
             return HttpResponse("<h1>Pago rechazado o fallido.</h1><a href='/'>Volver al inicio</a>")
         else:
-            return HttpResponse("<h1>Pago pendiente...</h1>")
+            print(f"⚠️ ESTADO DESCONOCIDO: {status}")
+            return HttpResponse(f"<h1>Estado del pago: {status}</h1><a href='/'>Actualizar</a>")
+
     except Cita.DoesNotExist:
+        print(f"❌ ERROR CRÍTICO: La referencia '{referencia}' no existe en la BD.")
         return redirect('inicio')
 
 def cita_confirmada(request):
