@@ -35,7 +35,6 @@ class Peluqueria(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.nombre)
-        # Normalizamos la ciudad (Primera mayúscula)
         if self.ciudad:
             self.ciudad = self.ciudad.title().strip()
         super().save(*args, **kwargs)
@@ -139,24 +138,39 @@ class Cita(models.Model):
             
             if not lista_servicios: lista_servicios = "(Sin servicios especificados)"
 
-            # --- NUEVA LÓGICA DE ESTADO ---
-            # Si el estado es Confirmado ('C') Y el abono cubre algo (usualmente el total en Bold)
-            if self.estado == 'C' and self.abono_pagado > 0:
-                estado_texto = "✅ PAGADO (ONLINE)"
+            # --- LÓGICA DE COBRO INTELIGENTE ---
+            saldo_pendiente = self.precio_total - self.abono_pagado
+            
+            # 1. Determinamos el texto del estado
+            if self.estado == 'C':
+                if saldo_pendiente <= 0:
+                    # Pagó todo
+                    estado_texto = "✅ PAGADO TOTAL (ONLINE)"
+                    alerta_cobro = ""
+                elif self.abono_pagado > 0:
+                    # Pagó una parte (Abono)
+                    estado_texto = "⚠️ ABONO 50% RECIBIDO"
+                    alerta_cobro = f"\n❗ OJO: FALTA COBRAR ${saldo_pendiente:,.0f} EN EL LOCAL"
+                else:
+                    # No ha pagado nada (Pago en sitio)
+                    estado_texto = "✅ CONFIRMADA (PAGO EN LOCAL)"
+                    alerta_cobro = f"\n❗ COBRAR TOTAL: ${self.precio_total:,.0f}"
             else:
-                # Si es pendiente, o es Confirmada pero con abono 0 (ej. pago en efectivo manual)
-                estado_texto = "⏳ PENDIENTE DE PAGO / PAGO EN LOCAL"
+                estado_texto = "⏳ PENDIENTE / SIN CONFIRMAR"
+                alerta_cobro = ""
 
             mensaje = (
                 f"🔔 *NUEVA CITA - {self.peluqueria.nombre_visible}*\n\n"
-                f"💰 *ESTADO:* {estado_texto}\n"
+                f"💰 *ESTADO:* {estado_texto}"
+                f"{alerta_cobro}\n"  # <--- AQUÍ SALE LA ALERTA DE DEUDA
                 f"👤 *Cliente:* {self.cliente_nombre}\n"
                 f"📞 *Tel:* {self.cliente_telefono}\n"
                 f"📅 *Fecha:* {self.fecha_hora_inicio.strftime('%d/%m/%Y')}\n"
                 f"⏰ *Hora:* {self.fecha_hora_inicio.strftime('%H:%M')}\n"
                 f"💇 *Estilista:* {self.empleado.nombre}\n\n"
                 f"📋 *Servicios:*\n{lista_servicios}\n"
-                f"💰 *Total:* ${self.precio_total:,.0f}\n"
+                f"💰 *Total Cita:* ${self.precio_total:,.0f}\n"
+                f"💳 *Abonado:* ${self.abono_pagado:,.0f}"
             )
 
             url = f"https://api.telegram.org/bot{token}/sendMessage"
