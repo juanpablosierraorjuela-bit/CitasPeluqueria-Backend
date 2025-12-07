@@ -5,10 +5,13 @@ from . import api
 urlpatterns = [
     # VISTAS WEB
     path('', views.inicio, name='inicio'),
-    path('dashboard/', views.dashboard_dueño, name='dashboard_dueño'), # <--- NUEVA RUTA
+    path('dashboard/', views.dashboard_dueño, name='dashboard_dueño'),
     path('cita-confirmada/', views.cita_confirmada, name='cita_confirmada'),
     path('<slug:slug_peluqueria>/agendar/', views.agendar_cita, name='agendar_cita'),
     
+    # PWA (NUEVO)
+    path('manifest.json', views.manifest_view, name='pwa_manifest'), # <--- ESTA LÍNEA
+
     # API INTERNA
     path('api/horarios/', views.obtener_horas_disponibles, name='api_horarios_web'),
 

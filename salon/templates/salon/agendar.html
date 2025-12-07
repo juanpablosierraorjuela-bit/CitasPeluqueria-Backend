@@ -5,9 +5,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reserva en {{ peluqueria.nombre_visible }}</title>
+    
+    <!-- PWA CONFIGURACIÓN (NUEVO) -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ec4899">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mi Salón">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3899/3899618.png">
+
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* ... Estilos existentes ... */
+        /* ... (MANTÉN TUS ESTILOS IGUALES, NO LOS BORRES) ... */
         :root {
             --bg-color: #f8fafc;
             --text-dark: #0f172a;
@@ -33,7 +42,6 @@
         }
         @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } 100% { transform: translateX(0); } }
 
-        /* Estilos CSS originales resumidos para no romper el layout */
         .step-label { font-weight: 700; margin: 20px 0 10px; display: flex; gap: 10px; align-items: center; }
         .step-number { background: #f1f5f9; width: 25px; height: 25px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.8rem; }
         .servicio-card { padding: 15px; border: 1px solid var(--border-light); border-radius: 12px; display: flex; justify-content: space-between; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
@@ -57,7 +65,11 @@
         <p style="color: #64748b;">{{ peluqueria.nombre_visible }}</p>
     </div>
 
-    <!-- 🔥 AQUÍ MOSTRAMOS EL ERROR SI EXISTE 🔥 -->
+    <!-- PWA BOTÓN DE INSTALACIÓN (Opcional, para hacerlo explícito) -->
+    <button id="btn-install" class="hidden" style="width:100%; padding:10px; margin-bottom:20px; background:#e0e7ff; color:#4338ca; border:none; border-radius:8px; font-weight:600; cursor:pointer;">
+        📲 Instalar App en mi Celular
+    </button>
+
     {% if error_mensaje %}
         <div class="error-alert">
             {{ error_mensaje }}
@@ -107,6 +119,31 @@
 </div>
 
 <script>
+    // --- LÓGICA DE INSTALACIÓN PWA ---
+    let deferredPrompt;
+    const btnInstall = document.getElementById('btn-install');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Previene que Chrome muestre el aviso automático (para controlarlo nosotros)
+        e.preventDefault();
+        deferredPrompt = e;
+        // Mostramos nuestro botón personalizado
+        btnInstall.classList.remove('hidden');
+    });
+
+    btnInstall.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                console.log('Usuario instaló la app');
+            }
+            deferredPrompt = null;
+            btnInstall.classList.add('hidden');
+        }
+    });
+    // ---------------------------------
+
     const checks = document.querySelectorAll('.check-servicio');
     const selEmpleado = document.getElementById('empleado');
     const pickerFecha = document.getElementById('picker-fecha');
@@ -173,4 +210,4 @@
     }
 </script>
 </body>
-</html> 
+</html>

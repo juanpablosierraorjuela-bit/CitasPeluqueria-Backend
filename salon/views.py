@@ -159,3 +159,36 @@ def dashboard_dueño(request):
         'proximas_citas': proximas_citas,
     }
     return render(request, 'salon/dashboard.html', context)
+
+# ... (MANTÉN TODO EL CÓDIGO ANTERIOR IGUAL) ...
+
+# AL FINAL DEL ARCHIVO AGREGA ESTO:
+
+def manifest_view(request):
+    """
+    Devuelve el archivo manifest.json para que el celular reconozca la web como App.
+    """
+    manifest_data = {
+        "name": "Citas Peluquería",
+        "short_name": "Mi Salón",
+        "start_url": "/",
+        "display": "standalone", # Pantalla completa (sin barra de navegador)
+        "background_color": "#ffffff",
+        "theme_color": "#ec4899", # Color rosado de tu marca
+        "orientation": "portrait",
+        "icons": [
+            {
+                # Usaremos un icono genérico de CDN por ahora. 
+                # IDEAL: Sube tu propio logo a static/img/icon-192.png
+                "src": "https://cdn-icons-png.flaticon.com/512/3899/3899618.png",
+                "sizes": "192x192",
+                "type": "image/png"
+            },
+            {
+                "src": "https://cdn-icons-png.flaticon.com/512/3899/3899618.png",
+                "sizes": "512x512",
+                "type": "image/png"
+            }
+        ]
+    }
+    return JsonResponse(manifest_data)
