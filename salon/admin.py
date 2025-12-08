@@ -13,6 +13,7 @@ class SalonOwnerAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser: return qs
+        # PROTECCIÓN: Solo filtramos si REALMENTE existe la peluquería
         if hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
             return qs.filter(peluqueria=request.user.perfil.peluqueria)
         return qs.none()
@@ -28,6 +29,9 @@ class SalonOwnerAdmin(admin.ModelAdmin):
             if hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
                 obj.peluqueria = request.user.perfil.peluqueria
         super().save_model(request, obj, form, change)
+
+class SuperuserOnlyAdmin(admin.ModelAdmin):
+    def has_module_permission(self, request): return request.user.is_superuser
 
 # --- 2. CONFIGURACIÓN DE PELUQUERÍA ---
 @admin.register(Peluqueria)
@@ -45,30 +49,30 @@ class PeluqueriaAdmin(admin.ModelAdmin):
         ('🏢 Información del Negocio', {
             'fields': ('nombre', 'nombre_visible', 'ciudad', 'direccion', 'telefono')
         }),
-        ('💳 Pagos con Bold', {
+        ('💳 Pagos con Bold (Configuración)', {
             'fields': ('guia_bold', 'porcentaje_abono', 'bold_api_key', 'bold_integrity_key'),
             'description': 'Configure aquí sus llaves de Bold.'
         }),
-        ('🔔 Notificaciones Telegram', {
+        ('🔔 Notificaciones Telegram (Configuración)', {
             'fields': ('guia_telegram', 'telegram_token', 'telegram_chat_id', 'boton_prueba_telegram'),
-            'description': 'Conecte su celular para recibir avisos inmediatos.'
+            'description': 'Conecte su celular para recibir avisos.'
         }),
     )
 
-    @admin.display(description='📖 Ayuda Bold')
+    @admin.display(description='📖 ¿Cómo configurar Bold?')
     def guia_bold(self, obj):
         url_webhook = "https://citaspeluqueria-backend.onrender.com/retorno-bold/"
-        return mark_safe(f'<div style="background:#fdf2f8; padding:10px; border-left:4px solid #ec4899;">Webhook: <b>{url_webhook}</b></div>')
+        return mark_safe(f"""<div style="background-color: #fdf2f8; padding: 10px; border-left: 4px solid #ec4899;">URL Webhook: <b>{url_webhook}</b></div>""")
 
-    @admin.display(description='📖 Ayuda Telegram')
+    @admin.display(description='📖 ¿Cómo crear el Bot?')
     def guia_telegram(self, obj):
-        return mark_safe('<div style="background:#eff6ff; padding:10px; border-left:4px solid #3b82f6;">Usa @BotFather y @userinfobot</div>')
+        return mark_safe("""<div style="background-color: #eff6ff; padding: 10px; border-left: 4px solid #3b82f6;">Usa @BotFather y @userinfobot.</div>""")
 
-    @admin.display(description='Probar') 
+    @admin.display(description='Probar Conexión') 
     def boton_prueba_telegram(self, obj):
         if obj.pk: 
             url = reverse('admin:salon_peluqueria_test_telegram', args=[obj.pk])
-            return mark_safe(f'<a class="button" href="{url}" style="background:#10b981; color:white;">🔔 Test</a>')
+            return mark_safe(f'<a class="button" href="{url}" style="background-color: #10b981; color: white;">🔔 Probar Telegram</a>')
         return "-"
     
     def get_urls(self):
@@ -78,24 +82,20 @@ class PeluqueriaAdmin(admin.ModelAdmin):
 
     def test_telegram_view(self, request, object_id):
         try:
-            clean_id = str(object_id).split('/')[0] # Corrección clave para evitar errores de ID
-            peluqueria = self.get_object(request, clean_id)
+            peluqueria = self.get_object(request, str(object_id).split('/')[0])
             if peluqueria and peluqueria.telegram_token and peluqueria.telegram_chat_id:
-                requests.post(f"https://api.telegram.org/bot{peluqueria.telegram_token}/sendMessage", 
-                              data={"chat_id": peluqueria.telegram_chat_id, "text": "✅ Test exitoso."}, timeout=3)
+                requests.post(f"https://api.telegram.org/bot{peluqueria.telegram_token}/sendMessage", data={"chat_id": peluqueria.telegram_chat_id, "text": "✅ Test exitoso."}, timeout=3)
                 self.message_user(request, "✅ Mensaje enviado.", level=messages.SUCCESS)
             else:
                 self.message_user(request, "⚠️ Faltan datos.", level=messages.WARNING)
-        except Exception: 
-            pass
+        except: pass
         return HttpResponseRedirect("../")
 
-# --- 3. MODELO SAAS (LEADS) ---
+# --- 3. NUEVO: ADMIN TORRE DE CONTROL (TÚ) ---
 @admin.register(SolicitudSaaS)
 class SolicitudSaaSAdmin(admin.ModelAdmin):
     list_display = ('nombre_empresa', 'nicho', 'telefono', 'fecha_solicitud', 'atendido')
     list_filter = ('nicho', 'atendido')
-    search_fields = ('nombre_empresa', 'telefono')
     list_editable = ('atendido',)
 
 # --- OTROS ADMINS ---
@@ -120,7 +120,7 @@ class AusenciaAdmin(SalonOwnerAdmin):
     list_display = ('empleado', 'fecha_inicio', 'fecha_fin')
 
 @admin.register(PerfilUsuario)
-class PerfilUsuarioAdmin(admin.ModelAdmin):
+class PerfilUsuarioAdmin(SuperuserOnlyAdmin):
     list_display = ('user', 'peluqueria')
 
 admin.site.unregister(User)
