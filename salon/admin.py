@@ -29,10 +29,7 @@ class SalonOwnerAdmin(admin.ModelAdmin):
                 obj.peluqueria = request.user.perfil.peluqueria
         super().save_model(request, obj, form, change)
 
-class SuperuserOnlyAdmin(admin.ModelAdmin):
-    def has_module_permission(self, request): return request.user.is_superuser
-
-# --- 2. CONFIGURACIÓN DE PELUQUERÍA (MODO TUTORIAL) ---
+# --- 2. CONFIGURACIÓN DE PELUQUERÍA ---
 @admin.register(Peluqueria)
 class PeluqueriaAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
@@ -42,67 +39,36 @@ class PeluqueriaAdmin(admin.ModelAdmin):
             return qs.filter(id=request.user.perfil.peluqueria.id)
         return qs.none()
 
-    # --- CAMPOS DE SOLO LECTURA (LAS GUÍAS) ---
     readonly_fields = ('boton_prueba_telegram', 'guia_telegram', 'guia_bold') 
 
-    # --- ORDEN VISUAL DEL FORMULARIO ---
     fieldsets = (
         ('🏢 Información del Negocio', {
             'fields': ('nombre', 'nombre_visible', 'ciudad', 'direccion', 'telefono')
         }),
-        ('💳 Pagos con Bold (Configuración)', {
+        ('💳 Pagos con Bold', {
             'fields': ('guia_bold', 'porcentaje_abono', 'bold_api_key', 'bold_integrity_key'),
-            'description': 'Configure aquí sus llaves de Bold para recibir el dinero en su cuenta bancaria.'
+            'description': 'Configure aquí sus llaves de Bold.'
         }),
-        ('🔔 Notificaciones Telegram (Configuración)', {
+        ('🔔 Notificaciones Telegram', {
             'fields': ('guia_telegram', 'telegram_token', 'telegram_chat_id', 'boton_prueba_telegram'),
             'description': 'Conecte su celular para recibir avisos inmediatos.'
         }),
     )
 
-    # --- GUÍA VISUAL PARA BOLD ---
-    @admin.display(description='📖 ¿Cómo configurar Bold?')
+    @admin.display(description='📖 Ayuda Bold')
     def guia_bold(self, obj):
         url_webhook = "https://citaspeluqueria-backend.onrender.com/retorno-bold/"
-        return mark_safe(f"""
-            <div style="background-color: #fdf2f8; border-left: 5px solid #ec4899; padding: 15px; border-radius: 4px; color: #333;">
-                <h4 style="margin-top:0; color: #be185d;">🚀 Pasos para activar pagos:</h4>
-                <ol style="margin-left: 20px; line-height: 1.6;">
-                    <li>Inicia sesión en tu cuenta de <b>Bold.co</b> (Panel de Comercios).</li>
-                    <li>Ve al menú <b>Integraciones</b> o <b>Desarrolladores</b>.</li>
-                    <li>Copia la <b>"Llave de Identidad"</b> y pégala abajo en el campo <em>Bold Integrity Key</em>.</li>
-                    <li>Copia la <b>"Llave Pública" (PK)"</b> y pégala abajo en el campo <em>Bold Api Key</em>.</li>
-                    <li>Si Bold te pide una <b>"URL de Retorno"</b> o Webhook, copia y pega exactamente este enlace:</li>
-                </ol>
-                <div style="background: white; padding: 10px; border: 1px dashed #ec4899; font-family: monospace; font-weight: bold; text-align: center;">
-                    {url_webhook}
-                </div>
-            </div>
-        """)
+        return mark_safe(f'<div style="background:#fdf2f8; padding:10px; border-left:4px solid #ec4899;">Webhook: <b>{url_webhook}</b></div>')
 
-    # --- GUÍA VISUAL PARA TELEGRAM ---
-    @admin.display(description='📖 ¿Cómo crear el Bot?')
+    @admin.display(description='📖 Ayuda Telegram')
     def guia_telegram(self, obj):
-        return mark_safe("""
-            <div style="background-color: #eff6ff; border-left: 5px solid #3b82f6; padding: 15px; border-radius: 4px; color: #333;">
-                <h4 style="margin-top:0; color: #1d4ed8;">🤖 Pasos para activar notificaciones:</h4>
-                <ol style="margin-left: 20px; line-height: 1.6;">
-                    <li>Abre la app de Telegram y busca el usuario <b>@BotFather</b>.</li>
-                    <li>Escribe el comando <code>/newbot</code> y sigue las instrucciones para ponerle nombre.</li>
-                    <li>Al final te dará un <b>TOKEN</b> (letras y números raros). Cópialo y pégalo abajo en <em>Telegram Token</em>.</li>
-                    <li>Ahora, busca el usuario <b>@userinfobot</b> en Telegram y dale "Iniciar".</li>
-                    <li>Te responderá con tu <b>Id</b> (un número). Cópialo y pégalo abajo en <em>Telegram Chat ID</em>.</li>
-                    <li><b>¡IMPORTANTE!</b> Busca tu nuevo bot en Telegram y dale "Iniciar" para que pueda escribirte.</li>
-                </ol>
-            </div>
-        """)
+        return mark_safe('<div style="background:#eff6ff; padding:10px; border-left:4px solid #3b82f6;">Usa @BotFather y @userinfobot</div>')
 
-    # --- BOTÓN DE PRUEBA ---
-    @admin.display(description='Probar Conexión') 
+    @admin.display(description='Probar') 
     def boton_prueba_telegram(self, obj):
         if obj.pk: 
             url = reverse('admin:salon_peluqueria_test_telegram', args=[obj.pk])
-            return mark_safe(f'<a class="button" href="{url}" style="background-color: #10b981; color: white; padding: 8px 15px; border-radius: 20px; font-weight:bold;">🔔 Enviar Mensaje de Prueba al Celular</a>')
+            return mark_safe(f'<a class="button" href="{url}" style="background:#10b981; color:white;">🔔 Test</a>')
         return "-"
     
     def get_urls(self):
@@ -112,23 +78,27 @@ class PeluqueriaAdmin(admin.ModelAdmin):
 
     def test_telegram_view(self, request, object_id):
         try:
-            peluqueria = self.get_object(request, str(object_id).split('/')[0])
-            if not peluqueria: return HttpResponseRedirect("../")
-            url_retorno = reverse('admin:salon_peluqueria_change', args=[peluqueria.pk])
-            
-            token = peluqueria.telegram_token
-            chat_id = peluqueria.telegram_chat_id
-            if not token or not chat_id:
-                self.message_user(request, "⚠️ Faltan datos para probar.", level=messages.WARNING)
-                return HttpResponseRedirect(url_retorno)
-            
-            url = f"https://api.telegram.org/bot{token}/sendMessage"
-            requests.post(url, data={"chat_id": chat_id, "text": "✅ ¡Hola! Tu sistema de citas PASO está conectado correctamente."}, timeout=3)
-            self.message_user(request, "✅ Mensaje de prueba enviado. Revisa tu Telegram.", level=messages.SUCCESS)
-            return HttpResponseRedirect(url_retorno)
-        except: return HttpResponseRedirect("../")
+            clean_id = str(object_id).split('/')[0] # Corrección clave para evitar errores de ID
+            peluqueria = self.get_object(request, clean_id)
+            if peluqueria and peluqueria.telegram_token and peluqueria.telegram_chat_id:
+                requests.post(f"https://api.telegram.org/bot{peluqueria.telegram_token}/sendMessage", 
+                              data={"chat_id": peluqueria.telegram_chat_id, "text": "✅ Test exitoso."}, timeout=3)
+                self.message_user(request, "✅ Mensaje enviado.", level=messages.SUCCESS)
+            else:
+                self.message_user(request, "⚠️ Faltan datos.", level=messages.WARNING)
+        except Exception: 
+            pass
+        return HttpResponseRedirect("../")
 
-# --- OTROS ADMINS (No cambian) ---
+# --- 3. MODELO SAAS (LEADS) ---
+@admin.register(SolicitudSaaS)
+class SolicitudSaaSAdmin(admin.ModelAdmin):
+    list_display = ('nombre_empresa', 'nicho', 'telefono', 'fecha_solicitud', 'atendido')
+    list_filter = ('nicho', 'atendido')
+    search_fields = ('nombre_empresa', 'telefono')
+    list_editable = ('atendido',)
+
+# --- OTROS ADMINS ---
 @admin.register(Servicio)
 class ServicioAdmin(SalonOwnerAdmin):
     list_display = ('nombre', 'precio', 'str_duracion')
@@ -141,7 +111,7 @@ class EmpleadoAdmin(SalonOwnerAdmin):
 
 @admin.register(Cita)
 class CitaAdmin(SalonOwnerAdmin):
-    list_display = ('cliente_nombre', 'empleado', 'fecha_hora_inicio', 'estado', 'precio_total', 'abono_pagado') 
+    list_display = ('cliente_nombre', 'empleado', 'fecha_hora_inicio', 'estado', 'precio_total') 
     filter_horizontal = ('servicios',) 
     exclude = ('peluqueria',) 
 
@@ -150,15 +120,8 @@ class AusenciaAdmin(SalonOwnerAdmin):
     list_display = ('empleado', 'fecha_inicio', 'fecha_fin')
 
 @admin.register(PerfilUsuario)
-class PerfilUsuarioAdmin(SuperuserOnlyAdmin):
+class PerfilUsuarioAdmin(admin.ModelAdmin):
     list_display = ('user', 'peluqueria')
-
-@admin.register(SolicitudSaaS)
-class SolicitudSaaSAdmin(admin.ModelAdmin):
-    list_display = ('nombre_empresa', 'nicho', 'cantidad_empleados', 'telefono', 'fecha_solicitud', 'atendido')
-    list_filter = ('nicho', 'cantidad_empleados', 'atendido')
-    search_fields = ('nombre_empresa', 'nombre_contacto', 'telefono')
-    list_editable = ('atendido',)
 
 admin.site.unregister(User)
 admin.site.unregister(Group)
