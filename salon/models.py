@@ -23,11 +23,11 @@ class Peluqueria(models.Model):
     # CONFIGURACIÓN DEL NEGOCIO
     porcentaje_abono = models.IntegerField(default=50, help_text="Porcentaje de abono (Ej: 50).")
     
-    # INTEGRACIÓN TELEGRAM (Del Cliente)
+    # INTEGRACIÓN TELEGRAM
     telegram_token = models.CharField(max_length=100, blank=True, null=True)
     telegram_chat_id = models.CharField(max_length=100, blank=True, null=True)
     
-    # INTEGRACIÓN BOLD (Del Cliente)
+    # INTEGRACIÓN BOLD
     bold_api_key = models.CharField(max_length=200, blank=True, null=True)
     bold_integrity_key = models.CharField(max_length=200, blank=True, null=True)
     
