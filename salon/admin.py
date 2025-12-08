@@ -30,9 +30,6 @@ class SalonOwnerAdmin(admin.ModelAdmin):
                 obj.peluqueria = request.user.perfil.peluqueria
         super().save_model(request, obj, form, change)
 
-class SuperuserOnlyAdmin(admin.ModelAdmin):
-    def has_module_permission(self, request): return request.user.is_superuser
-
 # --- 2. CONFIGURACIÓN DE PELUQUERÍA ---
 @admin.register(Peluqueria)
 class PeluqueriaAdmin(admin.ModelAdmin):
@@ -59,12 +56,12 @@ class PeluqueriaAdmin(admin.ModelAdmin):
         }),
     )
 
-    @admin.display(description='📖 ¿Cómo configurar Bold?')
+    @admin.display(description='📖 Ayuda Bold')
     def guia_bold(self, obj):
         url_webhook = "https://citaspeluqueria-backend.onrender.com/retorno-bold/"
         return mark_safe(f"""<div style="background-color: #fdf2f8; padding: 10px; border-left: 4px solid #ec4899;">URL Webhook: <b>{url_webhook}</b></div>""")
 
-    @admin.display(description='📖 ¿Cómo crear el Bot?')
+    @admin.display(description='📖 Ayuda Telegram')
     def guia_telegram(self, obj):
         return mark_safe("""<div style="background-color: #eff6ff; padding: 10px; border-left: 4px solid #3b82f6;">Usa @BotFather y @userinfobot.</div>""")
 
@@ -120,7 +117,7 @@ class AusenciaAdmin(SalonOwnerAdmin):
     list_display = ('empleado', 'fecha_inicio', 'fecha_fin')
 
 @admin.register(PerfilUsuario)
-class PerfilUsuarioAdmin(SuperuserOnlyAdmin):
+class PerfilUsuarioAdmin(admin.ModelAdmin):
     list_display = ('user', 'peluqueria')
 
 admin.site.unregister(User)
