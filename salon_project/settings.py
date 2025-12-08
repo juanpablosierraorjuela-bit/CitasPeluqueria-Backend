@@ -15,7 +15,9 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-tu-clave-secreta-aqui
 API_SECRET_KEY = os.environ.get('API_SECRET_KEY', 'mi-clave-super-secreta-cambiame')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = 'RENDER' not in os.environ
+# --- CORRECCIÓN 1: Debug activado temporalmente para ver errores ---
+# Cuando arregles el error, vuelve a cambiar esto a: 'RENDER' not in os.environ
+DEBUG = True 
 
 # ------------------------------------------------------------------------------
 # 🚑 CORRECCIÓN DE EMERGENCIA (ALLOWED_HOSTS)
@@ -113,7 +115,11 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# --- CORRECCIÓN 2: WhiteNoise Permisivo ---
+# Usamos CompressedStaticFilesStorage en lugar de ManifestStaticFilesStorage
+# Esto evita que el sitio se caiga si falta un archivo referenciado en el CSS.
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
