@@ -1,5 +1,7 @@
 from django.contrib import admin, messages
-from django.contrib.auth.models import Group, User 
+from django.contrib.auth.models import Group, User
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin # Importamos el Admin base
+from django import forms # Importamos formularios para los checkboxes
 from django.urls import path, reverse 
 from django.http import HttpResponseRedirect 
 from django.utils.safestring import mark_safe 
@@ -95,6 +97,21 @@ class SolicitudSaaSAdmin(admin.ModelAdmin):
     list_filter = ('nicho', 'atendido')
     list_editable = ('atendido',)
 
+# --- 4. ADMIN PERSONALIZADO PARA USUARIOS (CON CHULITOS) ---
+class CustomUserAdmin(BaseUserAdmin):
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        
+        # Convertir el selector de GRUPOS en lista de chulitos
+        if 'groups' in form.base_fields:
+            form.base_fields['groups'].widget = forms.CheckboxSelectMultiple()
+        
+        # Convertir el selector de PERMISOS en lista de chulitos
+        if 'user_permissions' in form.base_fields:
+            form.base_fields['user_permissions'].widget = forms.CheckboxSelectMultiple()
+            
+        return form
+
 # --- OTROS ADMINS ---
 @admin.register(Servicio)
 class ServicioAdmin(SalonOwnerAdmin):
@@ -120,7 +137,8 @@ class AusenciaAdmin(SalonOwnerAdmin):
 class PerfilUsuarioAdmin(admin.ModelAdmin):
     list_display = ('user', 'peluqueria')
 
+# Desregistramos el User original y registramos el nuestro con chulitos
 admin.site.unregister(User)
 admin.site.unregister(Group)
-admin.site.register(User)
+admin.site.register(User, CustomUserAdmin)
 admin.site.register(Group)
