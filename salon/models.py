@@ -47,13 +47,15 @@ class Servicio(models.Model):
 
 class Empleado(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='empleados')
+    # --- NUEVO: VINCULACIÓN CON USUARIO ---
+    user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='empleado_perfil')
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100)
+    email_contacto = models.EmailField(blank=True, null=True)
     activo = models.BooleanField(default=True)
 
     def __str__(self): return f"{self.nombre} {self.apellido}"
 
-# --- NUEVO: HORARIOS DE TRABAJO ---
 class HorarioEmpleado(models.Model):
     DIAS = [
         (0, 'Lunes'), (1, 'Martes'), (2, 'Miércoles'), 
@@ -64,8 +66,13 @@ class HorarioEmpleado(models.Model):
     hora_inicio = models.TimeField()
     hora_fin = models.TimeField()
     
+    # --- NUEVO: ALMUERZO ---
+    almuerzo_inicio = models.TimeField(null=True, blank=True, help_text="Inicio del descanso")
+    almuerzo_fin = models.TimeField(null=True, blank=True, help_text="Fin del descanso")
+    
     class Meta:
         ordering = ['dia_semana', 'hora_inicio']
+        unique_together = ['empleado', 'dia_semana']
 
 class Cita(models.Model):
     ESTADOS = [('P', 'Pendiente Pago'), ('C', 'Confirmada'), ('A', 'Anulada')]
