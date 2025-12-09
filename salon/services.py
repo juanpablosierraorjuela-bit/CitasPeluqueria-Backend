@@ -1,113 +1,67 @@
-from datetime import datetime, timedelta
-from django.db.models import Q
-from django.utils.timezone import make_aware 
-from .models import Cita, HorarioSemanal, Ausencia
+from datetime import timedelta, datetime
+from django.utils import timezone
+from .models import Cita, Ausencia, HorarioEmpleado
 
-# ================================================================
-# 🧠 CEREBRO DE DISPONIBILIDAD (Con soporte para Ausencias)
-# ================================================================
-
-def obtener_bloques_disponibles(empleado, fecha_consulta, duracion_total_servicios):
+def obtener_bloques_disponibles(empleado, fecha_date, duracion_servicio):
     """
-    Calcula los horarios disponibles, manejando:
-    1. Horario Laboral
-    2. Citas existentes
-    3. Ausencias (Vacaciones/Enfermedad)
+    Calcula los bloques libres basados en:
+    1. Los horarios configurados en HorarioEmpleado para ese día de la semana.
+    2. Las citas ya agendadas.
+    3. Las ausencias (vacaciones/permisos).
     """
+    # 1. Obtener el día de la semana (0=Lunes, 6=Domingo)
+    dia_semana = fecha_date.weekday()
     
-    # 0. VERIFICAR AUSENCIAS (NUEVO)
-    # Si hay una ausencia que cubra la fecha de consulta, no hay cupos.
-    esta_ausente = Ausencia.objects.filter(
-        empleado=empleado,
-        fecha_inicio__lte=fecha_consulta,
-        fecha_fin__gte=fecha_consulta
-    ).exists()
-
-    if esta_ausente:
-        return [] # El empleado está de vacaciones hoy
-
-    # 1. ¿El empleado trabaja ese día de la semana?
-    dia_semana = fecha_consulta.weekday()
-    horario = HorarioSemanal.objects.filter(empleado=empleado, dia_semana=dia_semana).first()
+    # 2. Buscar los turnos de trabajo de ese día
+    turnos = HorarioEmpleado.objects.filter(empleado=empleado, dia_semana=dia_semana).order_by('hora_inicio')
     
-    if not horario:
-        return [] 
+    if not turnos.exists():
+        return [] # No trabaja este día
 
-    horas_disponibles = []
+    bloques_disponibles = []
+
+    # 3. Obtener citas y ausencias del día
+    inicio_dia = timezone.make_aware(datetime.combine(fecha_date, datetime.min.time()))
+    fin_dia = timezone.make_aware(datetime.combine(fecha_date, datetime.max.time()))
     
-    # Crear fechas base (Naive)
-    inicio_naive = datetime.combine(fecha_consulta, horario.hora_inicio)
-    fin_naive = datetime.combine(fecha_consulta, horario.hora_fin)
+    citas = Cita.objects.filter(empleado=empleado, fecha_hora_inicio__range=(inicio_dia, fin_dia), estado__in=['C', 'P'])
+    ausencias = Ausencia.objects.filter(empleado=empleado, fecha_inicio__lte=fin_dia, fecha_fin__gte=inicio_dia)
 
-    # CONVERTIR A AWARE (Manejo de zonas horarias)
-    try:
-        hora_actual = make_aware(inicio_naive)
-        fin_jornada = make_aware(fin_naive)
-    except ValueError:
-        hora_actual = inicio_naive
-        fin_jornada = fin_naive
-    
-    # 2. Buscamos citas (La competencia)
-    citas_del_dia = Cita.objects.filter(
-        empleado=empleado,
-        fecha_hora_inicio__date=fecha_consulta
-    ).exclude(estado='A').values('fecha_hora_inicio', 'fecha_hora_fin')
+    # 4. Recorrer cada turno (ej: Mañana 9-12, Tarde 2-6)
+    for turno in turnos:
+        hora_actual = timezone.make_aware(datetime.combine(fecha_date, turno.hora_inicio))
+        hora_fin_turno = timezone.make_aware(datetime.combine(fecha_date, turno.hora_fin))
 
-    # 3. Barrido
-    while hora_actual + duracion_total_servicios <= fin_jornada:
-        fin_estimado = hora_actual + duracion_total_servicios
-        esta_ocupado = False
+        while hora_actual + duracion_servicio <= hora_fin_turno:
+            fin_bloque = hora_actual + duracion_servicio
+            ocupado = False
 
-        # A) Descanso
-        if horario.descanso_inicio and horario.descanso_fin:
-            ini_desc_naive = datetime.combine(fecha_consulta, horario.descanso_inicio)
-            fin_desc_naive = datetime.combine(fecha_consulta, horario.descanso_fin)
-            try:
-                ini_desc = make_aware(ini_desc_naive)
-                fin_desc = make_aware(fin_desc_naive)
-            except ValueError:
-                ini_desc = ini_desc_naive
-                fin_desc = fin_desc_naive
-            
-            if (hora_actual < fin_desc) and (fin_estimado > ini_desc):
-                esta_ocupado = True
-
-        # B) Citas Existentes
-        if not esta_ocupado:
-            for cita in citas_del_dia:
-                c_inicio = cita['fecha_hora_inicio']
-                c_fin = cita['fecha_hora_fin']
-                
-                if (hora_actual < c_fin) and (fin_estimado > c_inicio):
-                    esta_ocupado = True
+            # Verificar choques con citas
+            for c in citas:
+                if (hora_actual < c.fecha_hora_fin) and (fin_bloque > c.fecha_hora_inicio):
+                    ocupado = True
                     break
-        
-        if not esta_ocupado:
-            horas_disponibles.append(hora_actual.strftime("%H:%M"))
-        
-        hora_actual += timedelta(minutes=30)
+            
+            # Verificar choques con ausencias
+            if not ocupado:
+                for a in ausencias:
+                    if (hora_actual < a.fecha_fin) and (fin_bloque > a.fecha_inicio):
+                        ocupado = True
+                        break
+            
+            if not ocupado:
+                bloques_disponibles.append(hora_actual.strftime("%H:%M"))
 
-    return horas_disponibles
+            # Avanzamos 30 mins (intervalo estándar)
+            hora_actual += timedelta(minutes=30)
+            
+    return bloques_disponibles
 
-def verificar_conflicto_atomic(empleado, inicio_nuevo, fin_nuevo):
-    """
-    Guardia de Seguridad: Verifica citas y también ausencias de última hora.
-    """
-    # 1. Verificar Citas
-    choque_cita = Cita.objects.filter(
+def verificar_conflicto_atomic(empleado, inicio, fin):
+    # Verifica si hay solapamiento exacto en el momento de guardar (evita doble booking)
+    return Cita.objects.filter(
         empleado=empleado,
-        fecha_hora_inicio__lt=fin_nuevo,
-        fecha_hora_fin__gt=inicio_nuevo
-    ).exclude(estado='A').exists()
-
-    if choque_cita: return True
-
-    # 2. Verificar Ausencias (Por si el dueño le dio vacaciones hace 1 segundo)
-    fecha_dia = inicio_nuevo.date()
-    choque_ausencia = Ausencia.objects.filter(
-        empleado=empleado,
-        fecha_inicio__lte=fecha_dia,
-        fecha_fin__gte=fecha_dia
+        estado__in=['P', 'C'],
+        fecha_hora_inicio__lt=fin,
+        fecha_hora_fin__gt=inicio
     ).exists()
-
-    return choque_ausencia
