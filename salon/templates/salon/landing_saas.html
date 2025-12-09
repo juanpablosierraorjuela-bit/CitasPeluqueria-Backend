@@ -4,242 +4,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PASO Business | Infraestructura Digital</title>
+    <title>Crea tu Salón Virtual - Gratis</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-dark: #0f172a;
-            --text-white: #f8fafc;
-            --accent-pink: #ec4899;
-            --accent-purple: #8b5cf6;
-            --gradient: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
-        }
-        body { margin: 0; font-family: 'Outfit', sans-serif; background: var(--bg-dark); color: var(--text-white); overflow-x: hidden; }
-        
-        /* HERO SECTION */
-        .hero {
-            min-height: 90vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 20px;
-            background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
-        }
-        
-        h1 {
-            font-size: 4rem;
-            line-height: 1;
-            margin-bottom: 20px;
-            font-weight: 800;
-        }
-        
-        .gradient-text {
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        p.subtitle {
-            font-size: 1.2rem;
-            color: #94a3b8;
-            max-width: 600px;
-            margin-bottom: 40px;
-        }
-        
-        /* BOTONES */
-        .cta-btn {
-            background: var(--gradient);
-            color: white;
-            padding: 18px 40px;
-            border-radius: 50px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 1.1rem;
-            box-shadow: 0 10px 30px rgba(236, 72, 153, 0.4);
-            transition: transform 0.3s;
-            display: inline-block;
-            cursor: pointer;
-            border: none;
-        }
-        .cta-btn:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(236, 72, 153, 0.6); }
-
-        /* CARACTERÍSTICAS (GRID) */
-        .features { padding: 80px 20px; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
-        
-        .feature-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 30px;
-            border-radius: 20px;
-            transition: 0.3s;
-        }
-        .feature-card:hover { border-color: var(--accent-pink); background: rgba(255, 255, 255, 0.05); }
-        
-        .icon { font-size: 2.5rem; margin-bottom: 20px; display: block; }
-        h3 { font-size: 1.5rem; margin-bottom: 10px; }
-        p { color: #94a3b8; line-height: 1.6; }
-
-        /* --- MODAL (VENTANA EMERGENTE) --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.9);
-            backdrop-filter: blur(10px);
-            display: none; justify-content: center; align-items: center; z-index: 1000;
-            opacity: 0; transition: opacity 0.3s ease;
-        }
-        .modal-overlay.active { display: flex; opacity: 1; }
-
-        .modal-content {
-            background: #1e293b;
-            padding: 40px;
-            border-radius: 24px;
-            width: 90%;
-            max-width: 500px;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            position: relative;
-            transform: translateY(20px); transition: transform 0.3s ease;
-        }
-        .modal-overlay.active .modal-content { transform: translateY(0); }
-
-        .close-modal { position: absolute; top: 20px; right: 20px; color: #94a3b8; font-size: 1.5rem; cursor: pointer; background: none; border: none; }
-        
-        /* FORMULARIO */
-        .form-group { margin-bottom: 20px; text-align: left; }
-        .form-label { display: block; color: #cbd5e1; margin-bottom: 8px; font-size: 0.9rem; font-weight: 500; }
-        .form-input, .form-select {
-            width: 100%; padding: 12px 15px; background: #0f172a; border: 1px solid #334155;
-            border-radius: 12px; color: white; font-family: 'Outfit', sans-serif; font-size: 1rem;
-            outline: none; transition: 0.3s; box-sizing: border-box;
-        }
-        .form-input:focus, .form-select:focus { border-color: #ec4899; box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.2); }
-
-        .btn-submit {
-            width: 100%; background: var(--gradient); border: none; color: white;
-            padding: 15px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer;
-            margin-top: 10px; transition: 0.3s;
-        }
-        .btn-submit:hover { opacity: 0.9; transform: scale(1.02); }
-
-        /* Footer */
-        footer { text-align: center; padding: 50px; border-top: 1px solid rgba(255,255,255,0.1); color: #64748b; }
-
-        @media(max-width:768px) { h1 { font-size: 2.5rem; } }
+        body { font-family: 'Outfit', sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: white; color: #0f172a; padding: 40px; border-radius: 20px; width: 100%; max-width: 450px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+        h1 { text-align: center; margin-bottom: 10px; color: #ec4899; }
+        p.subtitle { text-align: center; color: #64748b; margin-bottom: 30px; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-family: inherit; }
+        button { width: 100%; padding: 15px; background: linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%); color: white; border: none; border-radius: 50px; font-weight: 700; cursor: pointer; font-size: 1.1rem; transition: transform 0.2s; }
+        button:hover { transform: scale(1.02); }
+        .error { background: #fee2e2; color: #b91c1c; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-size: 0.9rem; }
     </style>
 </head>
 <body>
-
-    <nav style="padding: 20px; display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto;">
-        <span style="font-weight: 800; letter-spacing: 1px;">PASO BUSINESS</span>
-        <a href="{% url 'inicio' %}" style="color: white; text-decoration: none; font-size: 0.9rem;">Volver al Directorio</a>
-    </nav>
-
-    <section class="hero">
-        <h1>Tu Imperio Beauty<br><span class="gradient-text">En Piloto Automático</span></h1>
-        <p class="subtitle">La infraestructura que usan los salones top para gestionar reservas, cobros y personal sin estrés.</p>
-        
-        <button onclick="abrirModal()" class="cta-btn">
-            💎 Solicitar Acceso Exclusivo
-        </button>
-        
-        <p style="margin-top: 15px; font-size: 0.8rem; color: #64748b;">*Cupos limitados por ciudad para garantizar exclusividad.</p>
-    </section>
-
-    <section class="features">
-        <div class="feature-card">
-            <span class="icon">🤖</span>
-            <h3>Agenda Inteligente</h3>
-            <p>Tus clientes reservan 24/7. El sistema organiza huecos y optimiza el tiempo de tus estilistas.</p>
-        </div>
-        <div class="feature-card">
-            <span class="icon">💳</span>
-            <h3>Pagos Blindados</h3>
-            <p>Elimina las inasistencias cobrando anticipos automáticamente con tecnología Bold.</p>
-        </div>
-        <div class="feature-card">
-            <span class="icon">📈</span>
-            <h3>Control de Negocio</h3>
-            <p>Dashboard en tiempo real: ¿Cuánto vendiste hoy? ¿Quién es tu mejor empleado? Todo en tu celular.</p>
-        </div>
-    </section>
-
-    <div class="modal-overlay" id="modalForm">
-        <div class="modal-content">
-            <button class="close-modal" onclick="cerrarModal()">&times;</button>
-            
-            <h2 style="margin-top: 0; margin-bottom: 20px; text-align: center;">Aplica para digitalizar tu negocio</h2>
-            
-            <form method="POST">
-                {% csrf_token %}
-                
-                <div class="form-group">
-                    <label class="form-label">Nombre del Propietario</label>
-                    <input type="text" name="nombre" class="form-input" placeholder="Ej: Juan Pérez" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Nombre del Negocio</label>
-                    <input type="text" name="empresa" class="form-input" placeholder="Ej: Studio 54" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">WhatsApp de Contacto</label>
-                    <input type="tel" name="telefono" class="form-input" placeholder="+57 300..." required>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Tipo de Negocio</label>
-                    <select name="nicho" class="form-select" required>
-                        <option value="" disabled selected>Selecciona una opción...</option>
-                        <option value="barberia">💈 Barbería</option>
-                        <option value="salon_belleza">💇 Salón de Belleza</option>
-                        <option value="spa">🧖 Spa / Estética</option>
-                        <option value="unas">💅 Estudio de Uñas</option>
-                        <option value="otro">✨ Otro</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Tamaño del Equipo</label>
-                    <select name="empleados" class="form-select" required>
-                        <option value="1-2">Solo yo / 2 personas</option>
-                        <option value="3-5">Equipo Pequeño (3-5)</option>
-                        <option value="6-10">Equipo Mediano (6-10)</option>
-                        <option value="10+">Equipo Grande (10+)</option>
-                    </select>
-                </div>
-
-                <button type="submit" class="btn-submit">Enviar Solicitud 🚀</button>
-            </form>
-        </div>
-    </div>
-
-    <footer>
-        <p>© 2025 PASO Technology. Hecho para líderes.</p>
-    </footer>
-
-    <script>
-        const modal = document.getElementById('modalForm');
-
-        function abrirModal() {
-            modal.classList.add('active');
-        }
-
-        function cerrarModal() {
-            modal.classList.remove('active');
-        }
-
-        // Cerrar si hace clic fuera del contenido
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) cerrarModal();
-        });
-
-        {% if success %}
-        alert("¡Solicitud Recibida! 🚀\n\nHemos recibido tus datos. Nuestro equipo de expansión analizará tu perfil y te contactará en breve al WhatsApp.");
-        {% endif %}
-    </script>
-
+<div class="card">
+    <h1>🚀 Crea tu Salón</h1>
+    <p class="subtitle">Empieza a recibir citas automáticas en segundos.</p>
+    {% if error %} <div class="error">{{ error }}</div> {% endif %}
+    <form method="POST">
+        {% csrf_token %}
+        <label>Nombre de tu Negocio</label>
+        <input type="text" name="empresa" placeholder="Ej: Barbería El Corte" required>
+        <label>Tu Nombre Completo</label>
+        <input type="text" name="nombre" placeholder="Ej: Juan Pérez" required>
+        <label>Tu Celular (WhatsApp)</label>
+        <input type="tel" name="telefono" placeholder="Ej: 310..." required>
+        <label>Correo Electrónico (Será tu usuario)</label>
+        <input type="email" name="email" placeholder="juan@gmail.com" required>
+        <label>Contraseña</label>
+        <input type="password" name="password" placeholder="Crea una contraseña segura" required>
+        <button type="submit">✨ Crear mi Salón Ahora</button>
+    </form>
+</div>
 </body>
 </html>
