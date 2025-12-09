@@ -186,4 +186,19 @@ def dashboard_dueño(request):
     return render(request, 'salon/dashboard.html', {'peluqueria': peluqueria, 'citas_hoy': citas_hoy, 'ingresos_mes': ingresos_mes, 'proximas_citas': proximas_citas})
 
 def manifest_view(request):
-    return JsonResponse({"name": "Citas App", "display": "standalone", "background_color": "#ffffff", "theme_color": "#ec4899", "icons": []})
+    # ICONOS: Aquí "engañamos" al navegador diciendo que existen estos iconos.
+    # IMPORTANTE: Asegúrate de subir una imagen (tu logo) llamada 'icon-512.png' a la carpeta static/img/
+    icons = [
+        {"src": "/static/img/icon-192.png", "sizes": "192x192", "type": "image/png"},
+        {"src": "/static/img/icon-512.png", "sizes": "512x512", "type": "image/png"}
+    ]
+    
+    return JsonResponse({
+        "name": "Citas App",
+        "short_name": "Citas",
+        "start_url": "/", 
+        "display": "standalone",
+        "background_color": "#ffffff",
+        "theme_color": "#ec4899",
+        "icons": icons
+    })
