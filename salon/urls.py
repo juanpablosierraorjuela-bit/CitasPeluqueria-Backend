@@ -8,8 +8,12 @@ urlpatterns = [
     path('dashboard/', views.dashboard_dueño, name='dashboard_dueño'),
     path('cita-confirmada/', views.cita_confirmada, name='cita_confirmada'),
     path('<slug:slug_peluqueria>/agendar/', views.agendar_cita, name='agendar_cita'),
-    path('retorno-bold/', views.retorno_bold, name='retorno_bold'), # <--- ESTA ES OBLIGATORIA
+    path('retorno-bold/', views.retorno_bold, name='retorno_bold'),
     path('manifest.json', views.manifest_view, name='pwa_manifest'),
+
+    # NUEVAS VISTAS DE GESTIÓN
+    path('equipo/nuevo/', views.crear_empleado_con_usuario, name='crear_empleado'),
+    path('soy-profesional/horario/', views.mi_horario_empleado, name='mi_horario'),
 
     # API INTERNA
     path('api/horarios/', views.obtener_horas_disponibles, name='api_horarios_web'),
