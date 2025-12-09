@@ -5,7 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PASO | Reserva tu Estilo</title>
+    
+    <link rel="manifest" href="{% url 'pwa_manifest' %}">
+    <meta name="theme-color" content="#ec4899">
+    <link rel="apple-touch-icon" href="{% static 'img/icon-192.png' %}">
+
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
             --bg-color: #f8fafc;
@@ -38,21 +44,21 @@
             right: 25px;
             background: #ffffff;
             color: #0f172a;
-            width: 50px;  /* Ancho fijo para ser circular */
-            height: 50px; /* Alto fijo para ser circular */
-            border-radius: 50%; /* Círculo perfecto */
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
             text-decoration: none;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            justify-content: center; /* Centra el icono */
+            justify-content: center;
             border: 1px solid rgba(0,0,0,0.05);
             z-index: 1000;
         }
         
         .btn-admin-access:hover {
-            transform: translateY(-3px) rotate(15deg); /* Pequeña animación al pasar el mouse */
+            transform: translateY(-3px) rotate(15deg);
             box-shadow: 0 10px 20px rgba(0,0,0,0.12);
             color: #ec4899; 
         }
@@ -197,48 +203,96 @@
         }
         .salon-card:hover .action-link { opacity: 1; gap: 10px; }
 
-        /* --- BOTÓN FLOTANTE PWA (Asegurado) --- */
-        .btn-pwa-install {
+        /* =========================================================
+           ✨ NUEVO DISEÑO PWA: EXCLUSIVO Y DINÁMICO (GLASSMORPHISM)
+           ========================================================= */
+        .pwa-toast {
             position: fixed;
-            bottom: 30px; /* Un poco más arriba */
+            bottom: 30px;
             left: 50%;
-            transform: translateX(-50%);
-            background: #0f172a;
-            color: white;
-            border: none;
-            padding: 12px 30px;
+            transform: translateX(-50%) translateY(100px); /* Empieza escondido abajo */
+            
+            /* Efecto Vidrio Premium */
+            background: rgba(15, 23, 42, 0.85); /* Fondo oscuro semitransparente */
+            backdrop-filter: blur(12px); /* El efecto borroso detrás */
+            -webkit-backdrop-filter: blur(12px);
+            
+            padding: 12px 20px;
             border-radius: 50px;
-            font-size: 1rem;
-            font-weight: 600;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
-            cursor: pointer;
-            z-index: 2000; /* Z-index alto para asegurar visibilidad */
-            animation: slideUp 0.5s ease;
-            display: none; /* Se activa con JS */
+            display: flex;
             align-items: center;
-            gap: 10px;
-            border: 2px solid rgba(255,255,255,0.1);
-        }
-        
-        .btn-pwa-install:hover {
-            background: #ec4899;
-            transform: translateX(-50%) translateY(-2px);
+            gap: 15px;
+            
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Rebote suave */
         }
 
-        @keyframes slideUp {
-            from { bottom: -60px; opacity: 0; }
-            to { bottom: 30px; opacity: 1; }
+        /* Clase para mostrarlo */
+        .pwa-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: all;
         }
+
+        /* Icono animado */
+        .pwa-icon-box {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(236, 72, 153, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0); }
+        }
+
+        .pwa-info {
+            display: flex; flex-direction: column;
+        }
+        .pwa-title { color: white; font-weight: 700; font-size: 0.95rem; }
+        .pwa-subtitle { color: #cbd5e1; font-size: 0.75rem; }
+
+        .btn-pwa-action {
+            background: white;
+            color: #0f172a;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-pwa-action:hover {
+            transform: scale(1.05);
+            background: #ec4899;
+            color: white;
+        }
+        
+        .pwa-close {
+            background: transparent; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer; margin-left: 5px;
+        }
+        .pwa-close:hover { color: white; }
 
         @media (max-width: 768px) {
             .header-title { font-size: 2.5rem; }
             .salon-grid { padding: 0 20px 80px; }
-            /* Ajuste del botón dueño en móvil */
             .btn-admin-access {
-                top: 15px;
-                right: 15px;
-                width: 40px;
-                height: 40px;
+                top: 15px; right: 15px; width: 40px; height: 40px;
+            }
+            /* En móvil, la tarjeta ocupa más ancho */
+            .pwa-toast {
+                width: 90%;
+                justify-content: space-between;
+                border-radius: 20px;
             }
         }
     </style>
@@ -323,9 +377,15 @@
         {% endfor %}
     </div>
 
-    <button id="btn-instalar-pwa" class="btn-pwa-install">
-        📲 Instalar App
-    </button>
+    <div id="pwa-toast" class="pwa-toast">
+        <div class="pwa-icon-box">📲</div>
+        <div class="pwa-info">
+            <span class="pwa-title">Instalar App</span>
+            <span class="pwa-subtitle">Reserva más rápido</span>
+        </div>
+        <button id="pwa-install-btn" class="btn-pwa-action">INSTALAR</button>
+        <button id="pwa-close-btn" class="pwa-close">&times;</button>
+    </div>
 
     <script>
         function filtrarCiudad(ciudad) {
@@ -373,29 +433,58 @@
             });
         }
 
-        // --- LÓGICA DE INSTALACIÓN PWA ---
-        let deferredPrompt;
-        const installBtn = document.getElementById('btn-instalar-pwa');
+        // ====================================================
+        // 🚀 LÓGICA PWA MEJORADA
+        // ====================================================
+        
+        // 1. Registrar Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/static/js/sw.js')
+                .then(function(registration) {
+                    console.log('SW Registrado con éxito:', registration.scope);
+                }, function(err) {
+                    console.log('Fallo en registro SW:', err);
+                });
+            });
+        }
 
-        // Escucha si el navegador permite instalar la app
+        // 2. Manejar la Instalación
+        let deferredPrompt;
+        const pwaToast = document.getElementById('pwa-toast');
+        const installBtn = document.getElementById('pwa-install-btn');
+        const closeBtn = document.getElementById('pwa-close-btn');
+
         window.addEventListener('beforeinstallprompt', (e) => {
+            // Evitar que Chrome muestre el prompt automático feo
             e.preventDefault();
             deferredPrompt = e;
-            // Muestra el botón solo cuando es instalable
-            installBtn.style.display = 'flex';
+            
+            // Mostrar nuestra tarjeta exclusiva después de 2 segundos
+            setTimeout(() => {
+                pwaToast.classList.add('show');
+            }, 2000);
         });
 
         installBtn.addEventListener('click', async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
+                console.log(`User response: ${outcome}`);
                 deferredPrompt = null;
-                installBtn.style.display = 'none';
+                // Ocultar tarjeta
+                pwaToast.classList.remove('show');
             }
         });
 
+        closeBtn.addEventListener('click', () => {
+            pwaToast.classList.remove('show');
+        });
+
+        // Ocultar si ya se instaló
         window.addEventListener('appinstalled', () => {
-            installBtn.style.display = 'none';
+            pwaToast.classList.remove('show');
+            console.log('App instalada');
         });
     </script>
 
