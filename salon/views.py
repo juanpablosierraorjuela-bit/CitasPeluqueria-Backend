@@ -15,6 +15,7 @@ import requests
 
 from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, SolicitudSaaS, HorarioEmpleado
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
+from . import api  # Importamos api para las rutas
 
 # --- VISTA PARA EL REGISTRO DE NUEVOS SALONES (SAAS) ---
 def landing_saas(request):
@@ -30,7 +31,6 @@ def landing_saas(request):
                 return render(request, 'salon/landing_saas.html', {'error': 'Este correo ya está registrado.'})
 
             with transaction.atomic():
-                # 1. Crear Usuario
                 user = User.objects.create_user(username=email, email=email, password=password)
                 user.first_name = nombre_contacto
                 user.is_staff = True 
@@ -39,7 +39,6 @@ def landing_saas(request):
                 grupo, _ = Group.objects.get_or_create(name='Dueños')
                 user.groups.add(grupo)
 
-                # 2. Crear Peluquería
                 base_slug = slugify(nombre_negocio)
                 slug = base_slug
                 counter = 1
@@ -54,10 +53,9 @@ def landing_saas(request):
                     telefono=telefono
                 )
 
-                # 3. Vincular Perfil
                 PerfilUsuario.objects.create(user=user, peluqueria=peluqueria, es_dueño=True)
 
-                # 4. Crear Empleado (Dueño)
+                # Creamos también el perfil de empleado para que el dueño pueda agendarse
                 empleado = Empleado.objects.create(
                     peluqueria=peluqueria,
                     user=user,
@@ -66,12 +64,11 @@ def landing_saas(request):
                     activo=True
                 )
 
-                # 5. Crear Horario por Defecto
+                # Horario por defecto
                 for dia in range(0, 5): 
                     HorarioEmpleado.objects.create(empleado=empleado, dia_semana=dia, hora_inicio=time(9,0), hora_fin=time(18,0), almuerzo_inicio=time(13,0), almuerzo_fin=time(14,0))
                 HorarioEmpleado.objects.create(empleado=empleado, dia_semana=5, hora_inicio=time(9,0), hora_fin=time(14,0))
 
-                # 6. Servicios de ejemplo
                 Servicio.objects.create(peluqueria=peluqueria, nombre="Corte General", precio=20000, duracion=timedelta(minutes=45))
 
                 SolicitudSaaS.objects.create(nombre_contacto=nombre_contacto, nombre_empresa=nombre_negocio, telefono=telefono, nicho="Belleza", atendido=True)
@@ -184,8 +181,9 @@ def cita_confirmada(request):
 # --- DASHBOARD DUEÑO ---
 @login_required(login_url='/admin/login/')
 def dashboard_dueño(request):
-    # Si es empleado (no dueño), lo mandamos a su horario
-    if hasattr(request.user, 'empleado_perfil'):
+    # CORRECCIÓN: Solo redirigir si es empleado Y NO ES DUEÑO
+    es_dueno = hasattr(request.user, 'perfil') and request.user.perfil.es_dueño
+    if hasattr(request.user, 'empleado_perfil') and not es_dueno:
         return redirect('mi_horario')
 
     peluqueria = None
@@ -196,7 +194,6 @@ def dashboard_dueño(request):
     
     if not peluqueria: return HttpResponse("No tienes peluquería asignada.")
     
-    # Datos básicos para el dashboard
     hoy = now().date()
     citas_hoy = Cita.objects.filter(peluqueria=peluqueria, fecha_hora_inicio__date=hoy).count()
     ingresos = Cita.objects.filter(peluqueria=peluqueria, fecha_hora_inicio__month=hoy.month).aggregate(Sum('precio_total'))['precio_total__sum'] or 0
@@ -209,7 +206,7 @@ def dashboard_dueño(request):
         'proximas_citas': proximas
     })
 
-# --- GESTIÓN DE EQUIPO (NUEVO) ---
+# --- GESTIÓN DE EQUIPO ---
 @login_required
 def crear_empleado_con_usuario(request):
     if not hasattr(request.user, 'perfil') or not request.user.perfil.es_dueño:
@@ -234,7 +231,6 @@ def crear_empleado_con_usuario(request):
                 grupo_emp, _ = Group.objects.get_or_create(name='Empleados')
                 user_emp.groups.add(grupo_emp)
 
-                # El empleado NO es dueño
                 PerfilUsuario.objects.create(user=user_emp, peluqueria=peluqueria, es_dueño=False)
 
                 empleado = Empleado.objects.create(
@@ -245,7 +241,6 @@ def crear_empleado_con_usuario(request):
                     email_contacto=email
                 )
                 
-                # Horario default
                 for dia in range(0, 5):
                     HorarioEmpleado.objects.create(
                         empleado=empleado, dia_semana=dia, 
@@ -258,7 +253,7 @@ def crear_empleado_con_usuario(request):
 
     return render(request, 'salon/crear_empleado.html')
 
-# --- MINI-ADMIN EMPLEADO (NUEVO) ---
+# --- MI HORARIO (GUARDADO MASIVO) ---
 @login_required
 def mi_horario_empleado(request):
     try:
@@ -269,26 +264,40 @@ def mi_horario_empleado(request):
     dias_semana = {0:'Lunes', 1:'Martes', 2:'Miércoles', 3:'Jueves', 4:'Viernes', 5:'Sábado', 6:'Domingo'}
 
     if request.method == 'POST':
-        dia = int(request.POST.get('dia'))
-        inicio = request.POST.get('inicio')
-        fin = request.POST.get('fin')
-        lunch_ini = request.POST.get('lunch_ini')
-        lunch_fin = request.POST.get('lunch_fin')
-        trabaja = request.POST.get('trabaja') == 'on'
+        # 1. Obtener listas de datos
+        ids_dias = request.POST.getlist('dia_id') # [0, 1, 2...]
+        inicios = request.POST.getlist('hora_inicio')
+        fines = request.POST.getlist('hora_fin')
+        lunch_inis = request.POST.getlist('almuerzo_inicio')
+        lunch_fins = request.POST.getlist('almuerzo_fin')
+        
+        # Checkboxes: devuelve una lista solo con los IDs marcados (ej: ['0', '1', '4'])
+        dias_activos = request.POST.getlist('dias_activos') 
 
-        HorarioEmpleado.objects.filter(empleado=empleado, dia_semana=dia).delete()
+        with transaction.atomic():
+            # Limpiamos todo el horario anterior para evitar conflictos
+            HorarioEmpleado.objects.filter(empleado=empleado).delete()
 
-        if trabaja:
-            HorarioEmpleado.objects.create(
-                empleado=empleado,
-                dia_semana=dia,
-                hora_inicio=inicio,
-                hora_fin=fin,
-                almuerzo_inicio=lunch_ini if lunch_ini else None,
-                almuerzo_fin=lunch_fin if lunch_fin else None
-            )
+            # Recorremos los datos enviados (asumiendo que siempre llegan 7 días en orden)
+            for i, dia_str in enumerate(ids_dias):
+                dia_id = int(dia_str)
+                
+                # Verificamos si este día fue marcado en los checkbox
+                if dia_str in dias_activos:
+                    # Guardamos el nuevo horario
+                    HorarioEmpleado.objects.create(
+                        empleado=empleado,
+                        dia_semana=dia_id,
+                        hora_inicio=inicios[i],
+                        hora_fin=fines[i],
+                        almuerzo_inicio=lunch_inis[i] if lunch_inis[i] else None,
+                        almuerzo_fin=lunch_fins[i] if lunch_fins[i] else None
+                    )
+
+        # Redirigimos a la misma página para ver cambios
         return redirect('mi_horario')
 
+    # --- GET: Preparar datos para mostrar ---
     horarios_db = HorarioEmpleado.objects.filter(empleado=empleado)
     horario_dict = {h.dia_semana: h for h in horarios_db}
     
@@ -296,7 +305,8 @@ def mi_horario_empleado(request):
     for i, nombre in dias_semana.items():
         obj = horario_dict.get(i)
         lista_dias.append({
-            'id': i, 'nombre': nombre,
+            'id': i, 
+            'nombre': nombre,
             'trabaja': obj is not None,
             'inicio': obj.hora_inicio.strftime('%H:%M') if obj else '09:00',
             'fin': obj.hora_fin.strftime('%H:%M') if obj else '18:00',
