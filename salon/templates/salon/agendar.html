@@ -27,10 +27,28 @@
         .step-label { font-weight: 700; margin: 20px 0 10px; display: flex; gap: 10px; align-items: center; }
         .step-number { background: #f1f5f9; width: 25px; height: 25px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.8rem; }
         
-        .servicio-card { padding: 15px; border: 1px solid var(--border-light); border-radius: 12px; display: flex; justify-content: space-between; margin-bottom: 10px; cursor: pointer; transition: 0.2s; align-items: center; }
-        .servicio-option input:checked + .servicio-card { border-color: var(--accent-color); background: #fdf2f8; }
-        
-        .badge-duracion { font-size: 0.75rem; color: #64748b; background: #e2e8f0; padding: 3px 8px; border-radius: 10px; margin-left: 8px; font-weight: 500; }
+        /* --- ESTILOS: LISTA CON CHULITOS --- */
+        .lista-servicios {
+            display: flex; flex-direction: column; border: 1px solid var(--border-light); border-radius: 12px; overflow: hidden;
+        }
+        .servicio-row {
+            display: flex; align-items: center; padding: 15px; border-bottom: 1px solid var(--border-light); cursor: pointer; transition: background 0.2s; background: white;
+        }
+        .servicio-row:last-child { border-bottom: none; }
+        .servicio-row:hover { background-color: #f8fafc; }
+        .hidden-check { display: none; }
+        .custom-checkbox {
+            width: 22px; height: 22px; border: 2px solid #cbd5e1; border-radius: 6px; margin-right: 15px;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s; background: white; flex-shrink: 0;
+        }
+        .check-svg { width: 14px; height: 14px; stroke: white; stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; opacity: 0; transition: transform 0.2s, opacity 0.2s; transform: scale(0.5); }
+        .hidden-check:checked + .custom-checkbox { background-color: var(--accent-color); border-color: var(--accent-color); }
+        .hidden-check:checked + .custom-checkbox .check-svg { opacity: 1; transform: scale(1); }
+        .servicio-data { flex: 1; display: flex; justify-content: space-between; align-items: center; }
+        .servicio-info-main { display: flex; flex-direction: column; }
+        .nombre { font-weight: 500; color: var(--text-dark); font-size: 1rem; }
+        .badge { font-size: 0.75rem; color: #64748b; margin-top: 4px; display: inline-flex; align-items: center; gap: 4px; }
+        .precio { font-weight: 700; color: var(--text-dark); font-size: 1rem; }
 
         select, input[type="text"], input[type="tel"], input[type="date"] { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border-light); margin-bottom: 10px; font-family: inherit; }
         #contenedor-horas { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 15px; }
@@ -42,90 +60,25 @@
         #btn-confirmar.activo { opacity: 1; pointer-events: all; }
 
         .hidden { display: none; }
-        input[type="checkbox"].check-servicio { display: none; }
-
         .pago-options { display: flex; gap: 10px; margin-bottom: 15px; }
         .pago-label { flex: 1; border: 1px solid var(--border-light); padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; font-size: 0.9rem; }
         .pago-input { display: none; }
         .pago-input:checked + .pago-label { background: #fdf2f8; border-color: var(--accent-color); color: var(--accent-color); font-weight: 600; }
 
-        /* --- BOTÓN JOYA (DISEÑO SORPRESA) --- */
+        /* --- BOTÓN JOYA --- */
         .admin-jewel-btn {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 55px; /* Tamaño compacto */
-            height: 55px;
-            border-radius: 50%;
-            
-            /* Fondo elegante oscuro */
-            background: #0f172a; 
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            
-            /* Sombra suave inicial */
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-            
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            z-index: 1000;
-            
-            /* Animación suave */
+            position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; border-radius: 50%;
+            background: #0f172a; border: 2px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            display: flex; align-items: center; justify-content: center; text-decoration: none; z-index: 1000;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-
-        /* El ícono de la corona */
-        .admin-jewel-btn .icon {
-            font-size: 1.6rem;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-            transition: transform 0.4s ease;
-        }
-
-        /* EFECTO AL PASAR EL MOUSE (LA MAGIA) */
-        .admin-jewel-btn:hover {
-            /* Se transforma en el gradiente de la marca */
-            background: var(--accent-gradient);
-            transform: scale(1.1) rotate(-10deg); /* Crece y gira un poquito */
-            border-color: transparent;
-            
-            /* Sombra de neón brillante */
-            box-shadow: 0 0 25px rgba(236, 72, 153, 0.6), 
-                        0 0 10px rgba(139, 92, 246, 0.4);
-        }
-
-        .admin-jewel-btn:hover .icon {
-            transform: scale(1.2); /* El icono salta hacia ti */
-        }
+        .admin-jewel-btn .icon { font-size: 1.6rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); transition: transform 0.4s ease; }
+        .admin-jewel-btn:hover { background: var(--accent-gradient); transform: scale(1.1) rotate(-10deg); border-color: transparent; box-shadow: 0 0 25px rgba(236, 72, 153, 0.6); }
+        .admin-jewel-btn:hover .icon { transform: scale(1.2); }
         
-        /* Tooltip (Texto que aparece al pasar el mouse) */
-        .admin-jewel-btn::after {
-            content: "Panel de Dueño";
-            position: absolute;
-            right: 70px; /* A la izquierda del botón */
-            background: #0f172a;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            white-space: nowrap;
-            opacity: 0;
-            transform: translateX(10px);
-            transition: all 0.3s ease;
-            pointer-events: none;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .admin-jewel-btn:hover::after {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        /* Footer estilos */
         .site-footer { margin-top: auto; padding: 20px; text-align: center; font-size: 0.8rem; color: #94a3b8; }
         .owner-link { color: #cbd5e1; text-decoration: none; transition: color 0.3s; margin-left: 10px; border: 1px solid #e2e8f0; padding: 5px 12px; border-radius: 20px; }
         .owner-link:hover { color: #ec4899; border-color: #ec4899; background: white; }
-
     </style>
 </head>
 <body>
@@ -151,15 +104,24 @@
         <input type="hidden" name="hora_seleccionada" id="input_hora">
 
         <div class="step-label"><span class="step-number">1</span> Servicios</div>
-        {% for s in servicios %}
-            <label class="servicio-option">
-                <input type="checkbox" name="servicios" value="{{ s.id }}" class="check-servicio">
-                <div class="servicio-card">
-                    <div><span>{{ s.nombre }}</span><span class="badge-duracion">⏱️ {{ s.str_duracion }}</span></div>
-                    <strong>${{ s.precio }}</strong>
+        
+        <div class="lista-servicios">
+            {% for s in servicios %}
+            <label class="servicio-row">
+                <input type="checkbox" name="servicios" value="{{ s.id }}" class="hidden-check check-servicio">
+                <div class="custom-checkbox">
+                    <svg class="check-svg" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg>
+                </div>
+                <div class="servicio-data">
+                    <div class="servicio-info-main">
+                        <span class="nombre">{{ s.nombre }}</span>
+                        <span class="badge">⏱️ {{ s.str_duracion }}</span>
+                    </div>
+                    <span class="precio">${{ s.precio }}</span>
                 </div>
             </label>
-        {% endfor %}
+            {% endfor %}
+        </div>
 
         <div id="step-empleado" class="hidden">
             <div class="step-label"><span class="step-number">2</span> Estilista</div>
@@ -226,6 +188,18 @@
 </div>
 
 <script>
+    // --- NUEVO: REGISTRAR EL SERVICE WORKER PARA QUE SEA INSTALABLE ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/static/js/sw.js').then(function(registration) {
+                console.log('SW registrado');
+            }, function(err) {
+                console.log('SW falló: ', err);
+            });
+        });
+    }
+    // ------------------------------------------------------------------
+
     const checks = document.querySelectorAll('.check-servicio');
     const selEmpleado = document.getElementById('empleado');
     const pickerFecha = document.getElementById('picker-fecha');
