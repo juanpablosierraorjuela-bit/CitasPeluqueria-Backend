@@ -15,7 +15,7 @@ import requests
 
 from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, SolicitudSaaS, HorarioEmpleado
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
-from . import api  # Importamos api para las rutas
+from . import api  
 
 # --- VISTA PARA EL REGISTRO DE NUEVOS SALONES (SAAS) ---
 def landing_saas(request):
@@ -55,7 +55,7 @@ def landing_saas(request):
 
                 PerfilUsuario.objects.create(user=user, peluqueria=peluqueria, es_dueño=True)
 
-                # Creamos también el perfil de empleado para que el dueño pueda agendarse
+                # El dueño también es empleado para poder agendarse
                 empleado = Empleado.objects.create(
                     peluqueria=peluqueria,
                     user=user,
@@ -173,6 +173,7 @@ def agendar_cita(request, slug_peluqueria):
 
 @csrf_exempt 
 def retorno_bold(request):
+    # La URL de retorno simplemente redirige al inicio o confirmación
     return redirect('inicio')
 
 def cita_confirmada(request):
@@ -181,8 +182,12 @@ def cita_confirmada(request):
 # --- DASHBOARD DUEÑO ---
 @login_required(login_url='/admin/login/')
 def dashboard_dueño(request):
-    # CORRECCIÓN: Solo redirigir si es empleado Y NO ES DUEÑO
-    es_dueno = hasattr(request.user, 'perfil') and request.user.perfil.es_dueño
+    # CORRECCIÓN DE BUCLE: Verificar primero si es dueño explícitamente
+    es_dueno = False
+    if hasattr(request.user, 'perfil') and request.user.perfil.es_dueño:
+        es_dueno = True
+    
+    # Si tiene perfil de empleado pero NO es dueño, lo mandamos a su horario
     if hasattr(request.user, 'empleado_perfil') and not es_dueno:
         return redirect('mi_horario')
 
@@ -253,7 +258,7 @@ def crear_empleado_con_usuario(request):
 
     return render(request, 'salon/crear_empleado.html')
 
-# --- MI HORARIO (GUARDADO MASIVO) ---
+# --- MI HORARIO (LÓGICA MASIVA) ---
 @login_required
 def mi_horario_empleado(request):
     try:
@@ -264,27 +269,22 @@ def mi_horario_empleado(request):
     dias_semana = {0:'Lunes', 1:'Martes', 2:'Miércoles', 3:'Jueves', 4:'Viernes', 5:'Sábado', 6:'Domingo'}
 
     if request.method == 'POST':
-        # 1. Obtener listas de datos
-        ids_dias = request.POST.getlist('dia_id') # [0, 1, 2...]
+        # Recibimos LISTAS de datos
+        ids_dias = request.POST.getlist('dia_id') 
         inicios = request.POST.getlist('hora_inicio')
         fines = request.POST.getlist('hora_fin')
         lunch_inis = request.POST.getlist('almuerzo_inicio')
         lunch_fins = request.POST.getlist('almuerzo_fin')
-        
-        # Checkboxes: devuelve una lista solo con los IDs marcados (ej: ['0', '1', '4'])
         dias_activos = request.POST.getlist('dias_activos') 
 
         with transaction.atomic():
-            # Limpiamos todo el horario anterior para evitar conflictos
+            # Borrar horarios previos para evitar duplicados
             HorarioEmpleado.objects.filter(empleado=empleado).delete()
 
-            # Recorremos los datos enviados (asumiendo que siempre llegan 7 días en orden)
             for i, dia_str in enumerate(ids_dias):
                 dia_id = int(dia_str)
-                
-                # Verificamos si este día fue marcado en los checkbox
+                # Si el checkbox estaba marcado (el ID viaja en dias_activos)
                 if dia_str in dias_activos:
-                    # Guardamos el nuevo horario
                     HorarioEmpleado.objects.create(
                         empleado=empleado,
                         dia_semana=dia_id,
@@ -294,10 +294,9 @@ def mi_horario_empleado(request):
                         almuerzo_fin=lunch_fins[i] if lunch_fins[i] else None
                     )
 
-        # Redirigimos a la misma página para ver cambios
         return redirect('mi_horario')
 
-    # --- GET: Preparar datos para mostrar ---
+    # Preparar datos para el template
     horarios_db = HorarioEmpleado.objects.filter(empleado=empleado)
     horario_dict = {h.dia_semana: h for h in horarios_db}
     
