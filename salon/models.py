@@ -32,7 +32,17 @@ class Peluqueria(models.Model):
     bold_integrity_key = models.CharField(max_length=200, blank=True, null=True)
     
     def save(self, *args, **kwargs):
-        if not self.slug: self.slug = slugify(self.nombre)
+        # CORRECCIÓN: Genera un slug único para evitar el Error 500 (IntegrityError)
+        if not self.slug:
+            base_slug = slugify(self.nombre or "peluqueria")
+            self.slug = base_slug
+            num = 1
+            # Comprueba si el slug ya existe, excluyendo el objeto actual si se está actualizando.
+            while Peluqueria.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
+                self.slug = f"{base_slug}-{num}"
+                num += 1
+
+        # Lógica original
         if self.ciudad: self.ciudad = self.ciudad.title().strip()
         super().save(*args, **kwargs)
 
@@ -135,3 +145,4 @@ class SolicitudSaaS(models.Model):
 
     def __str__(self): return f"Lead: {self.nombre_empresa}"
     class Meta: verbose_name_plural = "Solicitudes SaaS"
+        
