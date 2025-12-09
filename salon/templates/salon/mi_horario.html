@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Horario | {{ empleado.nombre }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; background: #f8fafc; color: #0f172a; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 15px; }
+        .day-row { padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
+        .day-title { width: 120px; font-weight: 600; font-size: 1.1rem; }
+        .time-group { display: flex; align-items: center; gap: 5px; background: #f8fafc; padding: 5px 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .time-group label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700; }
+        input[type="time"] { border: none; background: transparent; font-family: inherit; font-size: 0.95rem; cursor: pointer; }
+        input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+        button.btn-save { background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-left: auto; }
+        .logout { color: #ef4444; text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1 style="margin:0;">Hola, {{ empleado.nombre }} 👋</h1>
+                <p style="margin:5px 0 0; color:#64748b;">Configura tu disponibilidad semanal</p>
+            </div>
+            <a href="/admin/logout/" class="logout">Cerrar Sesión</a>
+        </div>
+
+        {% for d in dias %}
+        <form method="POST" class="card">
+            {% csrf_token %}
+            <input type="hidden" name="dia" value="{{ d.id }}">
+            <div class="day-row">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" name="trabaja" {% if d.trabaja %}checked{% endif %}>
+                    <div class="day-title">{{ d.nombre }}</div>
+                </div>
+
+                <div class="time-group">
+                    <label>Turno</label>
+                    <input type="time" name="inicio" value="{{ d.inicio }}">
+                    <span>a</span>
+                    <input type="time" name="fin" value="{{ d.fin }}">
+                </div>
+
+                <div class="time-group">
+                    <label>🍔 Almuerzo</label>
+                    <input type="time" name="lunch_ini" value="{{ d.l_ini }}">
+                    <span>a</span>
+                    <input type="time" name="lunch_fin" value="{{ d.l_fin }}">
+                </div>
+
+                <button type="submit" class="btn-save">Guardar</button>
+            </div>
+        </form>
+        {% endfor %}
+    </div>
+</body>
+</html>
