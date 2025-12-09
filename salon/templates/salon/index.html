@@ -37,263 +37,58 @@
             position: relative;
         }
 
-        /* --- BOTÓN DUEÑO (SOLO CORONA) 👑 --- */
+        /* BOTÓN DUEÑO */
         .btn-admin-access {
-            position: absolute;
-            top: 25px;
-            right: 25px;
-            background: #ffffff;
-            color: #0f172a;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            text-decoration: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid rgba(0,0,0,0.05);
-            z-index: 1000;
+            position: absolute; top: 25px; right: 25px;
+            background: #ffffff; color: #0f172a;
+            width: 50px; height: 50px; border-radius: 50%;
+            text-decoration: none; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;
+            border: 1px solid rgba(0,0,0,0.05); z-index: 1000;
         }
-        
-        .btn-admin-access:hover {
-            transform: translateY(-3px) rotate(15deg);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.12);
-            color: #ec4899; 
-        }
+        .btn-admin-access:hover { transform: translateY(-3px) rotate(15deg); box-shadow: 0 10px 20px rgba(0,0,0,0.12); color: #ec4899; }
 
-        /* --- HERO SECTION --- */
-        header {
-            text-align: center;
-            padding: 80px 20px 40px;
-            max-width: 900px;
-            width: 100%;
-        }
+        header { text-align: center; padding: 80px 20px 40px; max-width: 900px; width: 100%; }
+        .brand-badge { display: inline-block; background: rgba(15, 23, 42, 0.05); color: var(--text-dark); padding: 8px 16px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; margin-bottom: 24px; letter-spacing: 2px; text-transform: uppercase; }
+        .header-title { font-size: 3.5rem; font-weight: 700; line-height: 1.1; margin-bottom: 20px; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -1.5px; }
 
-        .brand-badge {
-            display: inline-block;
-            background: rgba(15, 23, 42, 0.05);
-            color: var(--text-dark);
-            padding: 8px 16px;
-            border-radius: 50px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            margin-bottom: 24px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
-        .header-title {
-            font-size: 3.5rem;
-            font-weight: 700;
-            line-height: 1.1;
-            margin-bottom: 20px;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -1.5px;
-        }
-
-        /* --- BARRAS DE BÚSQUEDA Y FILTRO --- */
-        .search-container {
-            background: white;
-            padding: 10px;
-            border-radius: 50px;
-            box-shadow: var(--shadow-sm);
-            display: flex;
-            gap: 10px;
-            max-width: 500px;
-            margin: 30px auto 20px;
-            border: 1px solid #e2e8f0;
-            align-items: center;
-        }
-
-        .city-select {
-            flex: 1;
-            border: none;
-            padding: 12px 20px;
-            font-size: 1rem;
-            border-radius: 40px;
-            font-family: inherit;
-            color: var(--text-dark);
-            background: transparent;
-            cursor: pointer;
-            outline: none;
-        }
-
-        .btn-geo {
-            background: #f1f5f9;
-            border: none;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            transition: 0.2s;
-            color: var(--text-dark);
-        }
-
+        .search-container { background: white; padding: 10px; border-radius: 50px; box-shadow: var(--shadow-sm); display: flex; gap: 10px; max-width: 500px; margin: 30px auto 20px; border: 1px solid #e2e8f0; align-items: center; }
+        .city-select { flex: 1; border: none; padding: 12px 20px; font-size: 1rem; border-radius: 40px; font-family: inherit; color: var(--text-dark); background: transparent; cursor: pointer; outline: none; }
+        .btn-geo { background: #f1f5f9; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.2s; color: var(--text-dark); }
         .btn-geo:hover { background: #e2e8f0; color: #ec4899; }
 
-        /* --- GRID --- */
-        .salon-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 30px;
-            max-width: 1200px;
-            width: 100%;
-            padding: 40px 40px 100px;
-        }
-
-        .salon-card {
-            background: var(--card-bg);
-            border-radius: 24px;
-            padding: 30px;
-            text-decoration: none;
-            color: inherit;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: var(--shadow-sm);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            min-height: 200px;
-        }
-
-        .salon-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-hover);
-            border-color: rgba(236, 72, 153, 0.2);
-        }
-
-        .salon-card::after {
-            content: '';
-            position: absolute;
-            left: 0; bottom: 0; height: 4px; width: 0%;
-            background: var(--accent-gradient);
-            transition: width 0.3s ease;
-        }
+        .salon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 30px; max-width: 1200px; width: 100%; padding: 40px 40px 100px; }
+        .salon-card { background: var(--card-bg); border-radius: 24px; padding: 30px; text-decoration: none; color: inherit; position: relative; overflow: hidden; transition: all 0.3s ease; border: 1px solid rgba(255, 255, 255, 0.8); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between; min-height: 200px; }
+        .salon-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-hover); border-color: rgba(236, 72, 153, 0.2); }
+        .salon-card::after { content: ''; position: absolute; left: 0; bottom: 0; height: 4px; width: 0%; background: var(--accent-gradient); transition: width 0.3s ease; }
         .salon-card:hover::after { width: 100%; }
-
         .salon-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
-        .salon-city { 
-            display: inline-block; 
-            font-size: 0.75rem; 
-            font-weight: 700; 
-            text-transform: uppercase; 
-            color: #ec4899; 
-            background: #fdf2f8; 
-            padding: 4px 10px; 
-            border-radius: 20px; 
-            margin-bottom: 15px;
-        }
-
+        .salon-city { display: inline-block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #ec4899; background: #fdf2f8; padding: 4px 10px; border-radius: 20px; margin-bottom: 15px; }
         .info-row { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-gray); margin-bottom: 5px; }
-        
-        .action-link {
-            font-weight: 600; font-size: 0.9rem; color: var(--text-dark);
-            display: flex; align-items: center; gap: 5px; margin-top: 20px;
-            opacity: 0.7; transition: 0.3s;
-        }
+        .action-link { font-weight: 600; font-size: 0.9rem; color: var(--text-dark); display: flex; align-items: center; gap: 5px; margin-top: 20px; opacity: 0.7; transition: 0.3s; }
         .salon-card:hover .action-link { opacity: 1; gap: 10px; }
 
-        /* =========================================================
-           ✨ NUEVO DISEÑO PWA: EXCLUSIVO Y DINÁMICO (GLASSMORPHISM)
-           ========================================================= */
+        /* DISEÑO PWA FLOTANTE (GLASSMORPHISM) */
         .pwa-toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px); /* Empieza escondido abajo */
-            
-            /* Efecto Vidrio Premium */
-            background: rgba(15, 23, 42, 0.85); /* Fondo oscuro semitransparente */
-            backdrop-filter: blur(12px); /* El efecto borroso detrás */
-            -webkit-backdrop-filter: blur(12px);
-            
-            padding: 12px 20px;
-            border-radius: 50px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
-            z-index: 9999;
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Rebote suave */
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            padding: 12px 20px; border-radius: 50px; display: flex; align-items: center; gap: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+            z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-
-        /* Clase para mostrarlo */
-        .pwa-toast.show {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        /* Icono animado */
-        .pwa-icon-box {
-            width: 40px; height: 40px;
-            background: linear-gradient(135deg, #ec4899, #8b5cf6);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(236, 72, 153, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0); }
-        }
-
-        .pwa-info {
-            display: flex; flex-direction: column;
-        }
+        .pwa-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: all; }
+        .pwa-icon-box { width: 40px; height: 40px; background: linear-gradient(135deg, #ec4899, #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(236, 72, 153, 0); } 100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0); } }
+        .pwa-info { display: flex; flex-direction: column; }
         .pwa-title { color: white; font-weight: 700; font-size: 0.95rem; }
         .pwa-subtitle { color: #cbd5e1; font-size: 0.75rem; }
-
-        .btn-pwa-action {
-            background: white;
-            color: #0f172a;
-            border: none;
-            padding: 8px 18px;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .btn-pwa-action:hover {
-            transform: scale(1.05);
-            background: #ec4899;
-            color: white;
-        }
+        .btn-pwa-action { background: white; color: #0f172a; border: none; padding: 8px 18px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
+        .btn-pwa-action:hover { transform: scale(1.05); background: #ec4899; color: white; }
+        .pwa-close { background: transparent; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer; margin-left: 5px; }
         
-        .pwa-close {
-            background: transparent; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer; margin-left: 5px;
-        }
-        .pwa-close:hover { color: white; }
-
         @media (max-width: 768px) {
-            .header-title { font-size: 2.5rem; }
-            .salon-grid { padding: 0 20px 80px; }
-            .btn-admin-access {
-                top: 15px; right: 15px; width: 40px; height: 40px;
-            }
-            /* En móvil, la tarjeta ocupa más ancho */
-            .pwa-toast {
-                width: 90%;
-                justify-content: space-between;
-                border-radius: 20px;
-            }
+            .header-title { font-size: 2.5rem; } .salon-grid { padding: 0 20px 80px; }
+            .pwa-toast { width: 90%; justify-content: space-between; border-radius: 20px; }
         }
     </style>
 </head>
@@ -314,43 +109,14 @@
                     <option value="{{ c }}" {% if c == ciudad_actual %}selected{% endif %}>📍 {{ c }}</option>
                 {% endfor %}
             </select>
-            
-            <button class="btn-geo" onclick="usarMiUbicacion()" title="Usar mi ubicación actual">
-                🎯
-            </button>
+            <button class="btn-geo" onclick="usarMiUbicacion()" title="Usar mi ubicación actual">🎯</button>
         </div>
-
         <div style="margin-top: 30px;">
-            <a href="{% url 'landing_saas' %}" style="
-                display: inline-flex; 
-                align-items: center; 
-                gap: 12px; 
-                background: white; 
-                color: #0f172a; 
-                padding: 14px 30px; 
-                border-radius: 50px; 
-                text-decoration: none; 
-                font-weight: 600; 
-                font-size: 0.95rem; 
-                box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
-                border: 2px solid transparent; 
-                background-image: linear-gradient(white, white), linear-gradient(90deg, #ec4899, #8b5cf6); 
-                background-origin: border-box;
-                background-clip: padding-box, border-box;
-                transition: all 0.3s ease;
-                letter-spacing: 0.3px;">
-                
+            <a href="{% url 'landing_saas' %}" style="display: inline-flex; align-items: center; gap: 12px; background: white; color: #0f172a; padding: 14px 30px; border-radius: 50px; text-decoration: none; font-weight: 600; font-size: 0.95rem; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 2px solid transparent; background-image: linear-gradient(white, white), linear-gradient(90deg, #ec4899, #8b5cf6); background-origin: border-box; background-clip: padding-box, border-box; transition: all 0.3s ease; letter-spacing: 0.3px;">
                 <span style="font-size: 1.2rem;">👩‍🦱✨</span> 
-                
-                <span>
-                    ¿Tienes un salón hermoso? 
-                    <span style="background: linear-gradient(90deg, #ec4899, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 700;">
-                        Automatízalo con PASO Business &rarr;
-                    </span>
-                </span>
+                <span>¿Tienes un salón? <span style="background: linear-gradient(90deg, #ec4899, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 700;">Automatízalo con PASO &rarr;</span></span>
             </a>
         </div>
-
     </header>
 
     <div class="salon-grid">
@@ -359,134 +125,52 @@
                 <div class="salon-content">
                     <span class="salon-city">{{ p.ciudad }}</span>
                     <h2 class="salon-name">{{ p.nombre_visible }}</h2>
-                    
-                    {% if p.direccion %}
-                        <div class="info-row"><span>📍</span> {{ p.direccion }}</div>
-                    {% endif %}
+                    {% if p.direccion %}<div class="info-row"><span>📍</span> {{ p.direccion }}</div>{% endif %}
                 </div>
-                
-                <div class="action-link">
-                    Reservar <span>&rarr;</span>
-                </div>
+                <div class="action-link">Reservar <span>&rarr;</span></div>
             </a>
         {% empty %}
             <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
-                <p style="color: var(--text-gray);">No encontramos salones en esta ciudad todavía.</p>
-                <a href="/" style="color: #ec4899; text-decoration: none; font-weight: 600;">Ver todos</a>
+                <p style="color: var(--text-gray);">No encontramos salones aquí.</p>
+                <a href="/" style="color: #ec4899;">Ver todos</a>
             </div>
         {% endfor %}
     </div>
 
     <div id="pwa-toast" class="pwa-toast">
         <div class="pwa-icon-box">📲</div>
-        <div class="pwa-info">
-            <span class="pwa-title">Instalar App</span>
-            <span class="pwa-subtitle">Reserva más rápido</span>
-        </div>
+        <div class="pwa-info"><span class="pwa-title">Instalar App</span><span class="pwa-subtitle">Reserva más rápido</span></div>
         <button id="pwa-install-btn" class="btn-pwa-action">INSTALAR</button>
         <button id="pwa-close-btn" class="pwa-close">&times;</button>
     </div>
 
     <script>
-        function filtrarCiudad(ciudad) {
-            if (ciudad) {
-                window.location.href = `/?ciudad=${ciudad}`;
-            } else {
-                window.location.href = `/`;
-            }
-        }
-
+        function filtrarCiudad(c) { window.location.href = c ? `/?ciudad=${c}` : `/`; }
         function usarMiUbicacion() {
-            const btn = document.querySelector('.btn-geo');
-            btn.innerHTML = '⏳'; 
-            
-            if (!navigator.geolocation) {
-                alert("Tu navegador no soporta geolocalización.");
-                btn.innerHTML = '🎯';
-                return;
-            }
-
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                const lat = position.coords.latitude;
-                const lon = position.coords.longitude;
-
+            const btn = document.querySelector('.btn-geo'); btn.innerHTML = '⏳'; 
+            if (!navigator.geolocation) { alert("Sin soporte Geo."); btn.innerHTML = '🎯'; return; }
+            navigator.geolocation.getCurrentPosition(async (p) => {
                 try {
-                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-                    const data = await response.json();
-                    
-                    const ciudadDetectada = data.address.city || data.address.town || data.address.village;
-
-                    if (ciudadDetectada) {
-                        window.location.href = `/?ciudad=${ciudadDetectada}`;
-                    } else {
-                        alert("No pudimos detectar tu ciudad exacta.");
-                    }
-                } catch (error) {
-                    console.error(error);
-                    alert("Error al obtener tu ubicación.");
-                } finally {
-                    btn.innerHTML = '🎯';
-                }
-            }, () => {
-                alert("No pudimos acceder a tu ubicación. Verifica los permisos.");
-                btn.innerHTML = '🎯';
-            });
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.coords.latitude}&lon=${p.coords.longitude}`);
+                    const d = await res.json();
+                    const c = d.address.city || d.address.town || d.address.village;
+                    if (c) window.location.href = `/?ciudad=${c}`; else alert("Ciudad no detectada.");
+                } catch (e) { alert("Error."); } finally { btn.innerHTML = '🎯'; }
+            }, () => { alert("Permiso denegado."); btn.innerHTML = '🎯'; });
         }
 
-        // ====================================================
-        // 🚀 LÓGICA PWA MEJORADA
-        // ====================================================
-        
-        // 1. Registrar Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/static/js/sw.js')
-                .then(function(registration) {
-                    console.log('SW Registrado con éxito:', registration.scope);
-                }, function(err) {
-                    console.log('Fallo en registro SW:', err);
-                });
-            });
-        }
-
-        // 2. Manejar la Instalación
+        // PWA Logic
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('/static/js/sw.js');
         let deferredPrompt;
-        const pwaToast = document.getElementById('pwa-toast');
-        const installBtn = document.getElementById('pwa-install-btn');
-        const closeBtn = document.getElementById('pwa-close-btn');
-
+        const toast = document.getElementById('pwa-toast');
         window.addEventListener('beforeinstallprompt', (e) => {
-            // Evitar que Chrome muestre el prompt automático feo
-            e.preventDefault();
-            deferredPrompt = e;
-            
-            // Mostrar nuestra tarjeta exclusiva después de 2 segundos
-            setTimeout(() => {
-                pwaToast.classList.add('show');
-            }, 2000);
+            e.preventDefault(); deferredPrompt = e;
+            setTimeout(() => toast.classList.add('show'), 2000);
         });
-
-        installBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                console.log(`User response: ${outcome}`);
-                deferredPrompt = null;
-                // Ocultar tarjeta
-                pwaToast.classList.remove('show');
-            }
+        document.getElementById('pwa-install-btn').addEventListener('click', async () => {
+            if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; toast.classList.remove('show'); }
         });
-
-        closeBtn.addEventListener('click', () => {
-            pwaToast.classList.remove('show');
-        });
-
-        // Ocultar si ya se instaló
-        window.addEventListener('appinstalled', () => {
-            pwaToast.classList.remove('show');
-            console.log('App instalada');
-        });
+        document.getElementById('pwa-close-btn').addEventListener('click', () => toast.classList.remove('show'));
     </script>
-
 </body>
 </html>
