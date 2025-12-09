@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,15 +10,49 @@
         body { font-family: 'Outfit', sans-serif; background: #f8fafc; color: #0f172a; padding: 20px; }
         .container { max-width: 800px; margin: 0 auto; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 15px; }
+        
+        /* Estilo para el contenedor de toda la tarjeta */
+        .card-container { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; padding-bottom: 20px; }
+        
         .day-row { padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
-        .day-title { width: 120px; font-weight: 600; font-size: 1.1rem; }
-        .time-group { display: flex; align-items: center; gap: 5px; background: #f8fafc; padding: 5px 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
-        .time-group label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700; }
-        input[type="time"] { border: none; background: transparent; font-family: inherit; font-size: 0.95rem; cursor: pointer; }
-        input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
-        button.btn-save { background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-left: auto; }
-        .logout { color: #ef4444; text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+        .day-row:last-child { border-bottom: none; }
+        
+        .day-title { width: 100px; font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+        
+        .time-group { display: flex; align-items: center; gap: 5px; background: #f8fafc; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .time-group label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700; margin-right: 5px; }
+        
+        input[type="time"] { border: none; background: transparent; font-family: inherit; font-size: 0.95rem; cursor: pointer; color: #0f172a; }
+        input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; accent-color: #ec4899; }
+        
+        /* Botón Guardar Gigante */
+        .btn-save-all { 
+            display: block; 
+            width: calc(100% - 40px);
+            margin: 20px auto 0;
+            background: #0f172a; 
+            color: white; 
+            border: none; 
+            padding: 15px; 
+            border-radius: 12px; 
+            font-weight: 600; 
+            font-size: 1.1rem;
+            cursor: pointer; 
+            transition: transform 0.2s, background 0.2s;
+        }
+        .btn-save-all:hover { background: #ec4899; transform: translateY(-2px); }
+
+        .btn-back { 
+            text-decoration: none; 
+            color: #64748b; 
+            font-weight: 600; 
+            padding: 8px 16px; 
+            border-radius: 8px; 
+            background: white; 
+            border: 1px solid #e2e8f0; 
+            transition: 0.2s;
+        }
+        .btn-back:hover { background: #f1f5f9; color: #0f172a; }
     </style>
 </head>
 <body>
@@ -25,39 +60,41 @@
         <div class="header">
             <div>
                 <h1 style="margin:0;">Hola, {{ empleado.nombre }} 👋</h1>
-                <p style="margin:5px 0 0; color:#64748b;">Configura tu disponibilidad semanal</p>
+                <p style="margin:5px 0 0; color:#64748b;">Configura tu semana laboral</p>
             </div>
-            <a href="/admin/logout/" class="logout">Cerrar Sesión</a>
+            <a href="{% url 'dashboard_dueño' %}" class="btn-back">← Volver al Panel</a>
         </div>
 
-        {% for d in dias %}
-        <form method="POST" class="card">
+        <form method="POST" class="card-container">
             {% csrf_token %}
-            <input type="hidden" name="dia" value="{{ d.id }}">
+
+            {% for d in dias %}
             <div class="day-row">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <input type="checkbox" name="trabaja" {% if d.trabaja %}checked{% endif %}>
-                    <div class="day-title">{{ d.nombre }}</div>
+                <input type="hidden" name="dia_id" value="{{ d.id }}">
+
+                <div class="day-title">
+                    <input type="checkbox" name="dias_activos" value="{{ d.id }}" {% if d.trabaja %}checked{% endif %}>
+                    {{ d.nombre }}
                 </div>
 
                 <div class="time-group">
                     <label>Turno</label>
-                    <input type="time" name="inicio" value="{{ d.inicio }}">
+                    <input type="time" name="hora_inicio" value="{{ d.inicio }}">
                     <span>a</span>
-                    <input type="time" name="fin" value="{{ d.fin }}">
+                    <input type="time" name="hora_fin" value="{{ d.fin }}">
                 </div>
 
                 <div class="time-group">
                     <label>🍔 Almuerzo</label>
-                    <input type="time" name="lunch_ini" value="{{ d.l_ini }}">
+                    <input type="time" name="almuerzo_inicio" value="{{ d.l_ini }}">
                     <span>a</span>
-                    <input type="time" name="lunch_fin" value="{{ d.l_fin }}">
+                    <input type="time" name="almuerzo_fin" value="{{ d.l_fin }}">
                 </div>
-
-                <button type="submit" class="btn-save">Guardar</button>
             </div>
+            {% endfor %}
+
+            <button type="submit" class="btn-save-all">💾 Guardar Cambios</button>
         </form>
-        {% endfor %}
     </div>
 </body>
 </html>
