@@ -60,14 +60,15 @@ def landing_saas(request):
                 # 4. Crear Empleado (Dueño)
                 empleado = Empleado.objects.create(
                     peluqueria=peluqueria,
+                    user=user,
                     nombre=nombre_contacto.split()[0],
                     apellido=nombre_contacto.split()[-1] if ' ' in nombre_contacto else '',
                     activo=True
                 )
 
-                # 5. Crear Horario por Defecto (Lun-Vie 9-6, Sab 9-2)
+                # 5. Crear Horario por Defecto
                 for dia in range(0, 5): 
-                    HorarioEmpleado.objects.create(empleado=empleado, dia_semana=dia, hora_inicio=time(9,0), hora_fin=time(18,0))
+                    HorarioEmpleado.objects.create(empleado=empleado, dia_semana=dia, hora_inicio=time(9,0), hora_fin=time(18,0), almuerzo_inicio=time(13,0), almuerzo_fin=time(14,0))
                 HorarioEmpleado.objects.create(empleado=empleado, dia_semana=5, hora_inicio=time(9,0), hora_fin=time(14,0))
 
                 # 6. Servicios de ejemplo
@@ -84,7 +85,7 @@ def landing_saas(request):
 
     return render(request, 'salon/landing_saas.html')
 
-# --- RESTO DE VISTAS (Agenda, Home, API) ---
+# --- VISTAS WEB PÚBLICAS ---
 def inicio(request):
     ciudad = request.GET.get('ciudad')
     ciudades = Peluqueria.objects.values_list('ciudad', flat=True).distinct().order_by('ciudad')
@@ -175,13 +176,18 @@ def agendar_cita(request, slug_peluqueria):
 
 @csrf_exempt 
 def retorno_bold(request):
-    return redirect('inicio') # Simplificado, agrega tu lógica si la tienes guardada
+    return redirect('inicio')
 
 def cita_confirmada(request):
     return render(request, 'salon/confirmacion.html')
 
+# --- DASHBOARD DUEÑO ---
 @login_required(login_url='/admin/login/')
 def dashboard_dueño(request):
+    # Si es empleado (no dueño), lo mandamos a su horario
+    if hasattr(request.user, 'empleado_perfil'):
+        return redirect('mi_horario')
+
     peluqueria = None
     if hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
         peluqueria = request.user.perfil.peluqueria
@@ -189,9 +195,117 @@ def dashboard_dueño(request):
         peluqueria = Peluqueria.objects.first()
     
     if not peluqueria: return HttpResponse("No tienes peluquería asignada.")
-    return render(request, 'salon/dashboard.html', {'peluqueria': peluqueria})
+    
+    # Datos básicos para el dashboard
+    hoy = now().date()
+    citas_hoy = Cita.objects.filter(peluqueria=peluqueria, fecha_hora_inicio__date=hoy).count()
+    ingresos = Cita.objects.filter(peluqueria=peluqueria, fecha_hora_inicio__month=hoy.month).aggregate(Sum('precio_total'))['precio_total__sum'] or 0
+    proximas = Cita.objects.filter(peluqueria=peluqueria, fecha_hora_inicio__gte=now()).order_by('fecha_hora_inicio')[:5]
 
-# --- PWA: MANIFIESTO PARA INSTALAR APP ---
+    return render(request, 'salon/dashboard.html', {
+        'peluqueria': peluqueria,
+        'citas_hoy': citas_hoy,
+        'ingresos_mes': ingresos,
+        'proximas_citas': proximas
+    })
+
+# --- GESTIÓN DE EQUIPO (NUEVO) ---
+@login_required
+def crear_empleado_con_usuario(request):
+    if not hasattr(request.user, 'perfil') or not request.user.perfil.es_dueño:
+        return redirect('inicio')
+    
+    peluqueria = request.user.perfil.peluqueria
+
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        
+        if User.objects.filter(username=email).exists():
+            return render(request, 'salon/crear_empleado.html', {'error': 'El correo ya existe'})
+
+        try:
+            with transaction.atomic():
+                user_emp = User.objects.create_user(username=email, email=email, password=password)
+                user_emp.first_name = nombre
+                user_emp.save()
+                
+                grupo_emp, _ = Group.objects.get_or_create(name='Empleados')
+                user_emp.groups.add(grupo_emp)
+
+                # El empleado NO es dueño
+                PerfilUsuario.objects.create(user=user_emp, peluqueria=peluqueria, es_dueño=False)
+
+                empleado = Empleado.objects.create(
+                    peluqueria=peluqueria,
+                    user=user_emp,
+                    nombre=nombre,
+                    apellido="",
+                    email_contacto=email
+                )
+                
+                # Horario default
+                for dia in range(0, 5):
+                    HorarioEmpleado.objects.create(
+                        empleado=empleado, dia_semana=dia, 
+                        hora_inicio=time(9,0), hora_fin=time(18,0),
+                        almuerzo_inicio=time(13,0), almuerzo_fin=time(14,0)
+                    )
+            return redirect('dashboard_dueño')
+        except Exception as e:
+            return render(request, 'salon/crear_empleado.html', {'error': f'Error: {str(e)}'})
+
+    return render(request, 'salon/crear_empleado.html')
+
+# --- MINI-ADMIN EMPLEADO (NUEVO) ---
+@login_required
+def mi_horario_empleado(request):
+    try:
+        empleado = request.user.empleado_perfil 
+    except:
+        return HttpResponse("No tienes un perfil de estilista asignado.")
+
+    dias_semana = {0:'Lunes', 1:'Martes', 2:'Miércoles', 3:'Jueves', 4:'Viernes', 5:'Sábado', 6:'Domingo'}
+
+    if request.method == 'POST':
+        dia = int(request.POST.get('dia'))
+        inicio = request.POST.get('inicio')
+        fin = request.POST.get('fin')
+        lunch_ini = request.POST.get('lunch_ini')
+        lunch_fin = request.POST.get('lunch_fin')
+        trabaja = request.POST.get('trabaja') == 'on'
+
+        HorarioEmpleado.objects.filter(empleado=empleado, dia_semana=dia).delete()
+
+        if trabaja:
+            HorarioEmpleado.objects.create(
+                empleado=empleado,
+                dia_semana=dia,
+                hora_inicio=inicio,
+                hora_fin=fin,
+                almuerzo_inicio=lunch_ini if lunch_ini else None,
+                almuerzo_fin=lunch_fin if lunch_fin else None
+            )
+        return redirect('mi_horario')
+
+    horarios_db = HorarioEmpleado.objects.filter(empleado=empleado)
+    horario_dict = {h.dia_semana: h for h in horarios_db}
+    
+    lista_dias = []
+    for i, nombre in dias_semana.items():
+        obj = horario_dict.get(i)
+        lista_dias.append({
+            'id': i, 'nombre': nombre,
+            'trabaja': obj is not None,
+            'inicio': obj.hora_inicio.strftime('%H:%M') if obj else '09:00',
+            'fin': obj.hora_fin.strftime('%H:%M') if obj else '18:00',
+            'l_ini': obj.almuerzo_inicio.strftime('%H:%M') if (obj and obj.almuerzo_inicio) else '',
+            'l_fin': obj.almuerzo_fin.strftime('%H:%M') if (obj and obj.almuerzo_fin) else '',
+        })
+
+    return render(request, 'salon/mi_horario.html', {'dias': lista_dias, 'empleado': empleado})
+
 def manifest_view(request):
     icons = [
         {"src": "/static/img/icon-192.png", "sizes": "192x192", "type": "image/png"},
