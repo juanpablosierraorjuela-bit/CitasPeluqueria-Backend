@@ -139,6 +139,7 @@ def agendar_cita(request, slug_peluqueria):
             total_precio = sum([s.precio for s in servicios_objs])
 
             usa_bold = bool(peluqueria.bold_api_key and peluqueria.bold_integrity_key)
+            # Si usa Bold, la cita nace como 'Pendiente' (P). Si no, nace 'Confirmada' (C).
             estado_inicial = 'P' if usa_bold else 'C'
 
             with transaction.atomic():
@@ -156,12 +157,18 @@ def agendar_cita(request, slug_peluqueria):
                 porcentaje = peluqueria.porcentaje_abono if peluqueria.porcentaje_abono > 0 else 50
                 monto = int(total_precio * porcentaje / 100) if tipo_pago == 'abono' else int(total_precio)
                 cita.abono_pagado = monto
+                
+                # Referencia única para Bold
                 ref = f"CITA-{cita.id}-{int(datetime.now().timestamp())}"
                 cita.referencia_pago_bold = ref
                 cita.save()
+                
+                # Firma de integridad para seguridad
                 firma = hashlib.sha256(f"{ref}{monto}COP{peluqueria.bold_integrity_key}".encode('utf-8')).hexdigest()
+                
                 return render(request, 'salon/pago_bold.html', {'cita': cita, 'monto_anticipo': monto, 'signature': firma, 'peluqueria': peluqueria, 'referencia': ref})
             else:
+                # Si no usa Bold, notificamos de una vez
                 cita.enviar_notificacion_telegram()
                 return redirect('cita_confirmada')
             
@@ -173,7 +180,34 @@ def agendar_cita(request, slug_peluqueria):
 
 @csrf_exempt 
 def retorno_bold(request):
-    # La URL de retorno simplemente redirige al inicio o confirmación
+    """
+    Recibe la respuesta de Bold tras el pago.
+    URL de ejemplo: /retorno-bold/?bold-order-id=CITA-2-1234&bold-tx-status=approved
+    """
+    ref_pago = request.GET.get('bold-order-id')
+    estado_tx = request.GET.get('bold-tx-status')
+
+    if ref_pago and estado_tx == 'approved':
+        try:
+            # Buscamos la cita por la referencia única
+            cita = Cita.objects.get(referencia_pago_bold=ref_pago)
+            
+            # Solo actualizamos y notificamos si no estaba ya confirmada
+            if cita.estado != 'C':
+                cita.estado = 'C'  # Cambiamos a Confirmada
+                cita.save()
+                
+                # ¡AQUÍ ES DONDE SALE EL MENSAJE A TELEGRAM!
+                cita.enviar_notificacion_telegram()
+            
+            # Redirigimos a la pantalla de éxito
+            return redirect('cita_confirmada')
+            
+        except Cita.DoesNotExist:
+            # Si la referencia no existe (raro), volvemos al inicio
+            return redirect('inicio')
+    
+    # Si el pago fue rechazado o cancelado
     return redirect('inicio')
 
 def cita_confirmada(request):
@@ -182,12 +216,10 @@ def cita_confirmada(request):
 # --- DASHBOARD DUEÑO ---
 @login_required(login_url='/admin/login/')
 def dashboard_dueño(request):
-    # CORRECCIÓN DE BUCLE: Verificar primero si es dueño explícitamente
     es_dueno = False
     if hasattr(request.user, 'perfil') and request.user.perfil.es_dueño:
         es_dueno = True
     
-    # Si tiene perfil de empleado pero NO es dueño, lo mandamos a su horario
     if hasattr(request.user, 'empleado_perfil') and not es_dueno:
         return redirect('mi_horario')
 
@@ -258,7 +290,7 @@ def crear_empleado_con_usuario(request):
 
     return render(request, 'salon/crear_empleado.html')
 
-# --- MI HORARIO (LÓGICA MASIVA) ---
+# --- MI HORARIO ---
 @login_required
 def mi_horario_empleado(request):
     try:
@@ -269,7 +301,6 @@ def mi_horario_empleado(request):
     dias_semana = {0:'Lunes', 1:'Martes', 2:'Miércoles', 3:'Jueves', 4:'Viernes', 5:'Sábado', 6:'Domingo'}
 
     if request.method == 'POST':
-        # Recibimos LISTAS de datos
         ids_dias = request.POST.getlist('dia_id') 
         inicios = request.POST.getlist('hora_inicio')
         fines = request.POST.getlist('hora_fin')
@@ -278,25 +309,18 @@ def mi_horario_empleado(request):
         dias_activos = request.POST.getlist('dias_activos') 
 
         with transaction.atomic():
-            # Borrar horarios previos para evitar duplicados
             HorarioEmpleado.objects.filter(empleado=empleado).delete()
-
             for i, dia_str in enumerate(ids_dias):
                 dia_id = int(dia_str)
-                # Si el checkbox estaba marcado (el ID viaja en dias_activos)
                 if dia_str in dias_activos:
                     HorarioEmpleado.objects.create(
-                        empleado=empleado,
-                        dia_semana=dia_id,
-                        hora_inicio=inicios[i],
-                        hora_fin=fines[i],
+                        empleado=empleado, dia_semana=dia_id,
+                        hora_inicio=inicios[i], hora_fin=fines[i],
                         almuerzo_inicio=lunch_inis[i] if lunch_inis[i] else None,
                         almuerzo_fin=lunch_fins[i] if lunch_fins[i] else None
                     )
-
         return redirect('mi_horario')
 
-    # Preparar datos para el template
     horarios_db = HorarioEmpleado.objects.filter(empleado=empleado)
     horario_dict = {h.dia_semana: h for h in horarios_db}
     
@@ -304,8 +328,7 @@ def mi_horario_empleado(request):
     for i, nombre in dias_semana.items():
         obj = horario_dict.get(i)
         lista_dias.append({
-            'id': i, 
-            'nombre': nombre,
+            'id': i, 'nombre': nombre,
             'trabaja': obj is not None,
             'inicio': obj.hora_inicio.strftime('%H:%M') if obj else '09:00',
             'fin': obj.hora_fin.strftime('%H:%M') if obj else '18:00',
