@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
-import uuid
 
 class Peluqueria(models.Model):
     nombre = models.CharField(max_length=200)
@@ -12,12 +11,12 @@ class Peluqueria(models.Model):
     direccion = models.CharField(max_length=200, blank=True)
     telefono = models.CharField(max_length=20, blank=True)
     
-    # Configuración de Pagos (Bold)
+    # Pagos (Bold)
     bold_api_key = models.CharField(max_length=200, blank=True, null=True)
     bold_integrity_key = models.CharField(max_length=200, blank=True, null=True)
-    porcentaje_abono = models.IntegerField(default=50, help_text="Porcentaje que debe pagar el cliente para reservar")
+    porcentaje_abono = models.IntegerField(default=50)
     
-    # Configuración de Notificaciones
+    # Telegram
     telegram_token = models.CharField(max_length=200, blank=True, null=True)
     telegram_chat_id = models.CharField(max_length=100, blank=True, null=True)
 
@@ -33,7 +32,7 @@ class PerfilUsuario(models.Model):
 class Servicio(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='servicios')
     nombre = models.CharField(max_length=100)
-    duracion = models.DurationField(help_text="Ej: 00:30:00 para 30 min")
+    duracion = models.DurationField()
     precio = models.IntegerField()
 
     def __str__(self): return f"{self.nombre} (${self.precio})"
@@ -54,7 +53,7 @@ class Empleado(models.Model):
 
     def __str__(self): return f"{self.nombre} {self.apellido}"
 
-# --- NUEVO: MODELO PARA QUE CONTROLEN SUS HORARIOS ---
+# --- NUEVO: HORARIOS DE TRABAJO ---
 class HorarioEmpleado(models.Model):
     DIAS = [
         (0, 'Lunes'), (1, 'Martes'), (2, 'Miércoles'), 
@@ -67,13 +66,9 @@ class HorarioEmpleado(models.Model):
     
     class Meta:
         ordering = ['dia_semana', 'hora_inicio']
-        verbose_name = "Horario de Trabajo"
-        verbose_name_plural = "Horarios de Trabajo"
-
-    def __str__(self): return f"{self.get_dia_semana_display()}: {self.hora_inicio} - {self.hora_fin}"
 
 class Cita(models.Model):
-    ESTADOS = [('P', 'Pendiente Pago'), ('C', 'Confirmada'), ('A', 'Anulada/Fallida')]
+    ESTADOS = [('P', 'Pendiente Pago'), ('C', 'Confirmada'), ('A', 'Anulada')]
     
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='citas')
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
@@ -94,10 +89,9 @@ class Cita(models.Model):
     def __str__(self): return f"{self.cliente_nombre} - {self.fecha_hora_inicio}"
 
     def enviar_notificacion_telegram(self):
-        # Lógica para enviar aviso al Telegram del dueño
         if self.peluqueria.telegram_token and self.peluqueria.telegram_chat_id:
             import requests
-            msg = f"📅 *NUEVA CITA CONFIRMADA*\n👤 {self.cliente_nombre}\n📱 {self.cliente_telefono}\n💇 {self.empleado.nombre}\n🕒 {self.fecha_hora_inicio.strftime('%d/%m %I:%M %p')}\n💰 Total: ${self.precio_total}"
+            msg = f"📅 *NUEVA CITA*\n👤 {self.cliente_nombre}\n📱 {self.cliente_telefono}\n💇 {self.empleado.nombre}\n🕒 {self.fecha_hora_inicio.strftime('%d/%m %I:%M %p')}"
             try:
                 requests.post(f"https://api.telegram.org/bot{self.peluqueria.telegram_token}/sendMessage", 
                               data={"chat_id": self.peluqueria.telegram_chat_id, "text": msg, "parse_mode": "Markdown"}, timeout=1)
