@@ -15,8 +15,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-tu-clave-secreta-aqui
 API_SECRET_KEY = os.environ.get('API_SECRET_KEY', 'mi-clave-super-secreta-cambiame')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# --- CORRECCIÓN 1: Debug activado temporalmente para ver errores ---
-# Cuando arregles el error, vuelve a cambiar esto a: 'RENDER' not in os.environ
+# --- DEBUG activado temporalmente para ver errores ---
+# Cuando esté todo estable, cámbialo a: 'RENDER' not in os.environ
 DEBUG = True 
 
 # ------------------------------------------------------------------------------
@@ -64,6 +64,12 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+            ],
+            # --- PARCHE PARA JAZZMIN (DJANGO 5.1) ---
+            # Esto carga automáticamente el filtro 'length_is' en todas las plantillas
+            # para solucionar el error al añadir usuarios o ver listas.
+            'builtins': [
+                'salon.templatetags.jazzmin_patch',
             ],
         },
     },
