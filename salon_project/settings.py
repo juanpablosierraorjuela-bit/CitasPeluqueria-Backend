@@ -159,11 +159,25 @@ JAZZMIN_SETTINGS = {
     # Modelo para buscar globalmente (Ctrl+K)
     "search_model": ["salon.Cita", "salon.Peluqueria"],
 
-    # Menú lateral personalizado
+    # --- CAMBIO 1: Botones en la barra superior ---
     "topmenu_links": [
         {"name": "Ir al Sitio Web", "url": "inicio", "permissions": ["auth.view_user"]},
         {"name": "Ver Dashboard", "url": "dashboard_dueño", "permissions": ["auth.view_user"]},
+        # Este botón llevará al empleado directo a su configuración
+        {"name": "📅 Mi Horario y Almuerzo", "url": "mi_horario", "new_window": False},
     ],
+
+    # --- CAMBIO 2: Botón en el menú lateral ---
+    # Esto agrega el enlace en el menú de la izquierda, debajo de las apps
+    "custom_links": {
+        "salon": [{
+            "name": "Gestionar Mi Horario", 
+            "url": "mi_horario", 
+            "icon": "fas fa-clock",
+            # Esto asegura que aparezca para usuarios logueados con permiso
+            "permissions": ["salon.view_horarioempleado"] 
+        }]
+    },
 
     # Iconos para los modelos (busca en fontawesome.com/v5/search)
     "icons": {
@@ -177,6 +191,7 @@ JAZZMIN_SETTINGS = {
         "salon.HorarioSemanal": "fas fa-clock",
         "salon.Ausencia": "fas fa-plane-departure", # Icono de avión para vacaciones
         "salon.PerfilUsuario": "fas fa-id-card",
+        "salon.SolicitudSaaS": "fas fa-envelope-open-text",
     },
     
     # Orden del menú lateral
