@@ -1,21 +1,23 @@
-from django.contrib import admin, messages
+from django.contrib import admin
 from django.contrib.auth.models import Group, User
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin # Importamos el Admin base
-from django import forms # Importamos formularios para los checkboxes
-from django.urls import path, reverse 
-from django.http import HttpResponseRedirect 
-from django.utils.safestring import mark_safe 
-import requests 
-from .models import (
-    Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, Ausencia, SolicitudSaaS
-)
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django import forms
+from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, Ausencia, SolicitudSaaS, HorarioEmpleado
 
-# --- 1. ADMIN PARA DUEÑOS DE SALÓN ---
+# --- INLINE PARA HORARIOS (La magia del control de tiempo) ---
+class HorarioInline(admin.TabularInline):
+    model = HorarioEmpleado
+    extra = 0
+    min_num = 1
+    verbose_name = "Jornada Laboral"
+    verbose_name_plural = "Configurar Días y Horas de Trabajo"
+    help_text = "Agrega aquí los días y horas que este empleado trabaja."
+
+# --- ADMIN BASE PARA DUEÑOS ---
 class SalonOwnerAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser: return qs
-        # PROTECCIÓN: Solo filtramos si REALMENTE existe la peluquería
         if hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
             return qs.filter(peluqueria=request.user.perfil.peluqueria)
         return qs.none()
@@ -23,7 +25,8 @@ class SalonOwnerAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         if not request.user.is_superuser and 'peluqueria' in form.base_fields:
-            del form.base_fields['peluqueria'] 
+            # Ocultamos el campo peluquería, se asigna automática
+            form.base_fields['peluqueria'].widget = forms.HiddenInput()
         return form
 
     def save_model(self, request, obj, form, change):
@@ -32,113 +35,44 @@ class SalonOwnerAdmin(admin.ModelAdmin):
                 obj.peluqueria = request.user.perfil.peluqueria
         super().save_model(request, obj, form, change)
 
-# --- 2. CONFIGURACIÓN DE PELUQUERÍA ---
-@admin.register(Peluqueria)
-class PeluqueriaAdmin(admin.ModelAdmin):
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if request.user.is_superuser: return qs
-        if hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
-            return qs.filter(id=request.user.perfil.peluqueria.id)
-        return qs.none()
+# --- EMPLEADO ADMIN (CON HORARIOS) ---
+@admin.register(Empleado)
+class EmpleadoAdmin(SalonOwnerAdmin):
+    list_display = ('nombre', 'apellido', 'activo')
+    inlines = [HorarioInline] # <--- ¡Aquí aparecen los horarios!
+    exclude = ('peluqueria',)
 
-    readonly_fields = ('boton_prueba_telegram', 'guia_telegram', 'guia_bold') 
-
-    fieldsets = (
-        ('🏢 Información del Negocio', {
-            'fields': ('nombre', 'nombre_visible', 'ciudad', 'direccion', 'telefono')
-        }),
-        ('💳 Pagos con Bold (Configuración)', {
-            'fields': ('guia_bold', 'porcentaje_abono', 'bold_api_key', 'bold_integrity_key'),
-            'description': 'Configure aquí sus llaves de Bold.'
-        }),
-        ('🔔 Notificaciones Telegram (Configuración)', {
-            'fields': ('guia_telegram', 'telegram_token', 'telegram_chat_id', 'boton_prueba_telegram'),
-            'description': 'Conecte su celular para recibir avisos.'
-        }),
-    )
-
-    @admin.display(description='📖 Ayuda Bold')
-    def guia_bold(self, obj):
-        url_webhook = "https://citaspeluqueria-backend.onrender.com/retorno-bold/"
-        return mark_safe(f"""<div style="background-color: #fdf2f8; padding: 10px; border-left: 4px solid #ec4899;">URL Webhook: <b>{url_webhook}</b></div>""")
-
-    @admin.display(description='📖 Ayuda Telegram')
-    def guia_telegram(self, obj):
-        return mark_safe("""<div style="background-color: #eff6ff; padding: 10px; border-left: 4px solid #3b82f6;">Usa @BotFather y @userinfobot.</div>""")
-
-    @admin.display(description='Probar Conexión') 
-    def boton_prueba_telegram(self, obj):
-        if obj.pk: 
-            url = reverse('admin:salon_peluqueria_test_telegram', args=[obj.pk])
-            return mark_safe(f'<a class="button" href="{url}" style="background-color: #10b981; color: white;">🔔 Probar Telegram</a>')
-        return "-"
-    
-    def get_urls(self):
-        urls = super().get_urls()
-        info = self.model._meta.app_label, self.model._meta.model_name
-        return [path('<path:object_id>/test_telegram/', self.admin_site.admin_view(self.test_telegram_view), name='%s_%s_test_telegram' % info)] + urls
-
-    def test_telegram_view(self, request, object_id):
-        try:
-            peluqueria = self.get_object(request, str(object_id).split('/')[0])
-            if peluqueria and peluqueria.telegram_token and peluqueria.telegram_chat_id:
-                requests.post(f"https://api.telegram.org/bot{peluqueria.telegram_token}/sendMessage", data={"chat_id": peluqueria.telegram_chat_id, "text": "✅ Test exitoso."}, timeout=3)
-                self.message_user(request, "✅ Mensaje enviado.", level=messages.SUCCESS)
-            else:
-                self.message_user(request, "⚠️ Faltan datos.", level=messages.WARNING)
-        except: pass
-        return HttpResponseRedirect("../")
-
-# --- 3. NUEVO: ADMIN TORRE DE CONTROL (TÚ) ---
-@admin.register(SolicitudSaaS)
-class SolicitudSaaSAdmin(admin.ModelAdmin):
-    list_display = ('nombre_empresa', 'nicho', 'telefono', 'fecha_solicitud', 'atendido')
-    list_filter = ('nicho', 'atendido')
-    list_editable = ('atendido',)
-
-# --- 4. ADMIN PERSONALIZADO PARA USUARIOS (CON CHULITOS) ---
-class CustomUserAdmin(BaseUserAdmin):
-    def get_form(self, request, obj=None, **kwargs):
-        form = super().get_form(request, obj, **kwargs)
-        
-        # Convertir el selector de GRUPOS en lista de chulitos
-        if 'groups' in form.base_fields:
-            form.base_fields['groups'].widget = forms.CheckboxSelectMultiple()
-        
-        # Convertir el selector de PERMISOS en lista de chulitos
-        if 'user_permissions' in form.base_fields:
-            form.base_fields['user_permissions'].widget = forms.CheckboxSelectMultiple()
-            
-        return form
-
-# --- OTROS ADMINS ---
 @admin.register(Servicio)
 class ServicioAdmin(SalonOwnerAdmin):
     list_display = ('nombre', 'precio', 'str_duracion')
     exclude = ('peluqueria',)
 
-@admin.register(Empleado)
-class EmpleadoAdmin(SalonOwnerAdmin):
-    list_display = ('nombre', 'apellido')
-    exclude = ('peluqueria',)
-
 @admin.register(Cita)
 class CitaAdmin(SalonOwnerAdmin):
-    list_display = ('cliente_nombre', 'empleado', 'fecha_hora_inicio', 'estado', 'precio_total') 
-    filter_horizontal = ('servicios',) 
-    exclude = ('peluqueria',) 
+    list_display = ('cliente_nombre', 'empleado', 'fecha_hora_inicio', 'estado', 'precio_total')
+    list_filter = ('estado', 'fecha_hora_inicio', 'empleado')
+    exclude = ('peluqueria',)
 
-@admin.register(Ausencia)
-class AusenciaAdmin(SalonOwnerAdmin): 
-    list_display = ('empleado', 'fecha_inicio', 'fecha_fin')
+# --- REGISTRO SAAS (Para ti) ---
+@admin.register(SolicitudSaaS)
+class SolicitudSaaSAdmin(admin.ModelAdmin):
+    list_display = ('nombre_empresa', 'telefono', 'fecha_solicitud')
 
-@admin.register(PerfilUsuario)
-class PerfilUsuarioAdmin(admin.ModelAdmin):
-    list_display = ('user', 'peluqueria')
+@admin.register(Peluqueria)
+class PeluqueriaAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'ciudad', 'telefono')
 
-# Desregistramos el User original y registramos el nuestro con chulitos
+# --- USER CUSTOM ADMIN (Permisos con chulitos) ---
+class CustomUserAdmin(BaseUserAdmin):
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        if 'groups' in form.base_fields: form.base_fields['groups'].widget = forms.CheckboxSelectMultiple()
+        if 'user_permissions' in form.base_fields: form.base_fields['user_permissions'].widget = forms.CheckboxSelectMultiple()
+        return form
+
 admin.site.unregister(User)
 admin.site.unregister(Group)
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Group)
+admin.site.register(PerfilUsuario)
+admin.site.register(Ausencia)
