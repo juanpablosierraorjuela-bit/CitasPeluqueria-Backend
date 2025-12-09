@@ -28,34 +28,33 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            position: relative; /* Necesario para el botón absoluto */
+            position: relative;
         }
 
-        /* --- BOTÓN DUEÑO (CORONA) 👑 --- */
+        /* --- BOTÓN DUEÑO (SOLO CORONA) 👑 --- */
         .btn-admin-access {
             position: absolute;
             top: 25px;
             right: 25px;
             background: #ffffff;
             color: #0f172a;
-            padding: 8px 18px;
-            border-radius: 30px;
-            font-size: 0.85rem;
-            font-weight: 700;
+            width: 50px;  /* Ancho fijo para ser circular */
+            height: 50px; /* Alto fijo para ser circular */
+            border-radius: 50%; /* Círculo perfecto */
             text-decoration: none;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center; /* Centra el icono */
             border: 1px solid rgba(0,0,0,0.05);
             z-index: 1000;
         }
         
         .btn-admin-access:hover {
-            transform: translateY(-3px);
+            transform: translateY(-3px) rotate(15deg); /* Pequeña animación al pasar el mouse */
             box-shadow: 0 10px 20px rgba(0,0,0,0.12);
-            color: #ec4899; /* Se pone rosa al pasar el mouse */
+            color: #ec4899; 
         }
 
         /* --- HERO SECTION --- */
@@ -198,26 +197,27 @@
         }
         .salon-card:hover .action-link { opacity: 1; gap: 10px; }
 
-        /* --- BOTÓN FLOTANTE PWA --- */
+        /* --- BOTÓN FLOTANTE PWA (Asegurado) --- */
         .btn-pwa-install {
             position: fixed;
-            bottom: 20px;
+            bottom: 30px; /* Un poco más arriba */
             left: 50%;
             transform: translateX(-50%);
             background: #0f172a;
             color: white;
             border: none;
-            padding: 12px 24px;
+            padding: 12px 30px;
             border-radius: 50px;
             font-size: 1rem;
             font-weight: 600;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
             cursor: pointer;
-            z-index: 1000;
+            z-index: 2000; /* Z-index alto para asegurar visibilidad */
             animation: slideUp 0.5s ease;
-            display: flex;
+            display: none; /* Se activa con JS */
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            border: 2px solid rgba(255,255,255,0.1);
         }
         
         .btn-pwa-install:hover {
@@ -227,7 +227,7 @@
 
         @keyframes slideUp {
             from { bottom: -60px; opacity: 0; }
-            to { bottom: 20px; opacity: 1; }
+            to { bottom: 30px; opacity: 1; }
         }
 
         @media (max-width: 768px) {
@@ -237,8 +237,8 @@
             .btn-admin-access {
                 top: 15px;
                 right: 15px;
-                padding: 6px 14px;
-                font-size: 0.75rem;
+                width: 40px;
+                height: 40px;
             }
         }
     </style>
@@ -246,8 +246,7 @@
 <body>
 
     <a href="/admin/" class="btn-admin-access" title="Entrar al Panel Administrativo">
-        <span style="font-size: 1.2rem;">👑</span> 
-        <span>Soy el Dueño</span>
+        <span style="font-size: 1.5rem;">👑</span> 
     </a>
 
     <header>
@@ -324,7 +323,7 @@
         {% endfor %}
     </div>
 
-    <button id="btn-instalar-pwa" class="btn-pwa-install" style="display: none;">
+    <button id="btn-instalar-pwa" class="btn-pwa-install">
         📲 Instalar App
     </button>
 
@@ -378,9 +377,11 @@
         let deferredPrompt;
         const installBtn = document.getElementById('btn-instalar-pwa');
 
+        // Escucha si el navegador permite instalar la app
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
+            // Muestra el botón solo cuando es instalable
             installBtn.style.display = 'flex';
         });
 
