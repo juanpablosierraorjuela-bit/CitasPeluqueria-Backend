@@ -13,9 +13,10 @@ import hashlib
 import traceback
 import requests
 
-from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, SolicitudSaaS, HorarioEmpleado
+# HE ELIMINADO 'HorarioEmpleado' DE ESTA IMPORTACIÓN PARA ARREGLAR EL ERROR
+from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, SolicitudSaaS
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
-from . import api  
+from . import api
 
 # --- VISTA PARA EL REGISTRO DE NUEVOS SALONES (SAAS) ---
 def landing_saas(request):
@@ -64,10 +65,7 @@ def landing_saas(request):
                     activo=True
                 )
 
-                # Horario por defecto
-                for dia in range(0, 5): 
-                    HorarioEmpleado.objects.create(empleado=empleado, dia_semana=dia, hora_inicio=time(9,0), hora_fin=time(18,0), almuerzo_inicio=time(13,0), almuerzo_fin=time(14,0))
-                HorarioEmpleado.objects.create(empleado=empleado, dia_semana=5, hora_inicio=time(9,0), hora_fin=time(14,0))
+                # HE ELIMINADO LA CREACIÓN DE HORARIOS POR DEFECTO AQUÍ PORQUE EL MODELO NO EXISTE
 
                 Servicio.objects.create(peluqueria=peluqueria, nombre="Corte General", precio=20000, duracion=timedelta(minutes=45))
 
@@ -278,12 +276,8 @@ def crear_empleado_con_usuario(request):
                     email_contacto=email
                 )
                 
-                for dia in range(0, 5):
-                    HorarioEmpleado.objects.create(
-                        empleado=empleado, dia_semana=dia, 
-                        hora_inicio=time(9,0), hora_fin=time(18,0),
-                        almuerzo_inicio=time(13,0), almuerzo_fin=time(14,0)
-                    )
+                # HE ELIMINADO LA CREACIÓN DE HORARIOS POR DEFECTO
+
             return redirect('dashboard_dueño')
         except Exception as e:
             return render(request, 'salon/crear_empleado.html', {'error': f'Error: {str(e)}'})
@@ -300,40 +294,24 @@ def mi_horario_empleado(request):
 
     dias_semana = {0:'Lunes', 1:'Martes', 2:'Miércoles', 3:'Jueves', 4:'Viernes', 5:'Sábado', 6:'Domingo'}
 
+    # HE DESACTIVADO LA FUNCIÓN DE GUARDAR PORQUE EL MODELO NO EXISTE
+    # SI INTENTAN GUARDAR, SIMPLEMENTE RECARGARÁ LA PÁGINA SIN HACER NADA
     if request.method == 'POST':
-        ids_dias = request.POST.getlist('dia_id') 
-        inicios = request.POST.getlist('hora_inicio')
-        fines = request.POST.getlist('hora_fin')
-        lunch_inis = request.POST.getlist('almuerzo_inicio')
-        lunch_fins = request.POST.getlist('almuerzo_fin')
-        dias_activos = request.POST.getlist('dias_activos') 
-
-        with transaction.atomic():
-            HorarioEmpleado.objects.filter(empleado=empleado).delete()
-            for i, dia_str in enumerate(ids_dias):
-                dia_id = int(dia_str)
-                if dia_str in dias_activos:
-                    HorarioEmpleado.objects.create(
-                        empleado=empleado, dia_semana=dia_id,
-                        hora_inicio=inicios[i], hora_fin=fines[i],
-                        almuerzo_inicio=lunch_inis[i] if lunch_inis[i] else None,
-                        almuerzo_fin=lunch_fins[i] if lunch_fins[i] else None
-                    )
         return redirect('mi_horario')
 
-    horarios_db = HorarioEmpleado.objects.filter(empleado=empleado)
-    horario_dict = {h.dia_semana: h for h in horarios_db}
+    # YA NO CONSULTAMOS LA BASE DE DATOS DE HORARIOS
+    horario_dict = {} 
     
     lista_dias = []
     for i, nombre in dias_semana.items():
         obj = horario_dict.get(i)
         lista_dias.append({
             'id': i, 'nombre': nombre,
-            'trabaja': obj is not None,
-            'inicio': obj.hora_inicio.strftime('%H:%M') if obj else '09:00',
-            'fin': obj.hora_fin.strftime('%H:%M') if obj else '18:00',
-            'l_ini': obj.almuerzo_inicio.strftime('%H:%M') if (obj and obj.almuerzo_inicio) else '',
-            'l_fin': obj.almuerzo_fin.strftime('%H:%M') if (obj and obj.almuerzo_fin) else '',
+            'trabaja': False, # Por defecto sale que no trabaja porque no hay DB
+            'inicio': '09:00',
+            'fin': '18:00',
+            'l_ini': '',
+            'l_fin': '',
         })
 
     return render(request, 'salon/mi_horario.html', {'dias': lista_dias, 'empleado': empleado})
