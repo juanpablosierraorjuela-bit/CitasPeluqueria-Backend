@@ -99,7 +99,6 @@ def crear_cita_api(request, slug_peluqueria):
 
             # 1. Verificar conflicto (Ahora es 100% seguro porque nadie más puede escribir)
             if verificar_conflicto_atomic(empleado_bloqueado, inicio, fin):
-                # Lanzamos error específico para capturarlo fuera
                 raise ValueError('HORARIO_OCUPADO')
 
             # 2. Crear Cita
