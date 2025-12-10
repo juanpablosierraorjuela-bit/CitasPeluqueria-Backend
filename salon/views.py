@@ -11,6 +11,7 @@ from django.utils.text import slugify
 from datetime import datetime, timedelta, time
 import hashlib
 import traceback
+import pytz # Importante para la hora de Colombia
 
 # IMPORTACIÓN COMPLETA DE MODELOS Y SERVICIOS
 from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, SolicitudSaaS, HorarioEmpleado
@@ -99,18 +100,20 @@ def inicio(request):
 
     ciudades = Peluqueria.objects.values_list('ciudad', flat=True).distinct().order_by('ciudad')
 
-    # 2. Lógica Inteligente de Estado (Abierto/Cerrado)
-    ahora = timezone.localtime(timezone.now())
-    dia_actual = ahora.weekday() # 0=Lunes, 6=Domingo
-    hora_actual = ahora.time()
+    # 2. Lógica Inteligente de Estado (Abierto/Cerrado) con Zona Horaria Colombia
+    tz_colombia = pytz.timezone('America/Bogota')
+    ahora_colombia = timezone.now().astimezone(tz_colombia)
+    
+    dia_actual = ahora_colombia.weekday() # 0=Lunes, 6=Domingo
+    hora_actual = ahora_colombia.time()
 
     for p in peluquerias:
-        p.esta_abierto = False # Asumimos cerrado
+        p.esta_abierto = False # Asumimos cerrado por defecto
         
-        # Buscamos horarios de empleados activos de esta peluquería para hoy
+        # Buscamos horarios de empleados ACTIVOS de esta peluquería para hoy
         horarios_hoy = HorarioEmpleado.objects.filter(
             empleado__peluqueria=p,
-            empleado__activo=True,
+            empleado__activo=True, # Solo empleados que estén activos
             dia_semana=dia_actual
         )
 
@@ -125,7 +128,7 @@ def inicio(request):
                 
                 if not en_almuerzo:
                     p.esta_abierto = True
-                    break # Con uno abierto basta
+                    break # Con que haya UN empleado disponible, el local está abierto
 
     return render(request, 'salon/index.html', {
         'peluquerias': peluquerias, 
