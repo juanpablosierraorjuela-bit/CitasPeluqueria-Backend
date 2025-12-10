@@ -120,7 +120,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- CONFIGURACIÓN JAZZMIN MEJORADA PARA MÓVIL ---
+# --- CONFIGURACIÓN JAZZMIN (MENÚ LATERAL CORREGIDO) ---
 JAZZMIN_SETTINGS = {
     "site_title": "Administración PASO",
     "site_header": "PASO Admin",
@@ -130,15 +130,23 @@ JAZZMIN_SETTINGS = {
     # 1. Menú Superior (Escritorio)
     "topmenu_links": [
         {"name": "Ver Sitio", "url": "inicio", "permissions": ["auth.view_user"]},
-        {"name": "📅 Mi Horario (Visual)", "url": "mi_horario", "new_window": True},
     ],
 
-    # 2. Menú de Usuario (Avatar - Visible en Móvil)
+    # 2. BOTONES EN EL MENÚ LATERAL (SIDEBAR) - VISIBLE EN MÓVIL
+    "custom_links": {
+        "salon": [{
+            "name": "📅 Gestionar Horario", 
+            "url": "mi_horario", 
+            "icon": "fas fa-clock",
+            "permissions": ["auth.view_user"]
+        }]
+    },
+
+    # 3. Menú de Usuario (Avatar)
     "usermenu_links": [
-        {"name": "📅 Gestionar Mi Horario", "url": "mi_horario", "new_window": True, "icon": "fas fa-clock"},
+        {"name": "📅 Mi Horario Visual", "url": "mi_horario", "new_window": True, "icon": "fas fa-clock"},
     ],
 
-    # 3. Iconos
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
