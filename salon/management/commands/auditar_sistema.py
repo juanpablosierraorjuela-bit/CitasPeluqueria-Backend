@@ -1,7 +1,5 @@
-# salon/management/commands/auditar_sistema.py
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from django.db.models import Q
 from salon.models import Cita, Peluqueria
 
 class Command(BaseCommand):
@@ -16,7 +14,7 @@ class Command(BaseCommand):
         # 1. DETECTAR CITAS SUPERPUESTAS (El resultado del Bug de Concurrencia)
         citas_activas = Cita.objects.filter(estado__in=['P', 'C']).order_by('empleado', 'fecha_hora_inicio')
         
-        # Iteramos (esto podría optimizarse con Window Functions en PostgreSQL, pero lo hacemos pythonico por compatibilidad)
+        # Iteramos buscando choques de horario
         for i in range(len(citas_activas) - 1):
             cita_actual = citas_activas[i]
             siguiente_cita = citas_activas[i+1]
@@ -30,8 +28,8 @@ class Command(BaseCommand):
                         f"para el empleado {cita_actual.empleado.nombre}."
                     ))
                     
-                    # Lógica de Auto-Reparación (Opcional: Marcar la más reciente como Anulada por Conflicto)
-                    siguiente_cita.estado = 'A' # Anulamos la segunda
+                    # Lógica de Auto-Reparación: Anular la segunda cita (la más reciente solapada)
+                    siguiente_cita.estado = 'A' 
                     siguiente_cita.cliente_nombre += " [ANULADA POR CONFLICTO SISTEMA]"
                     siguiente_cita.save()
                     
