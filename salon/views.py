@@ -15,6 +15,8 @@ import pytz
 
 from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, SolicitudSaaS, HorarioEmpleado
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
+# NUEVA IMPORTACIÓN DE SEGURIDAD
+from salon.utils.booking_lock import BookingManager
 
 # --- VISTA PARA EL REGISTRO DE NUEVOS SALONES (SAAS) ---
 def landing_saas(request):
@@ -162,9 +164,7 @@ def agendar_cita(request, slug_peluqueria):
 
             if not (nombre and empleado_id and fecha_str and hora_str): raise ValueError("Faltan datos")
 
-            empleado = get_object_or_404(Empleado, id=empleado_id)
-            
-            # --- CORRECCIÓN TIMEZONE ---
+            # CORRECCIÓN TIMEZONE
             fecha_naive = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
             if timezone.is_naive(fecha_naive):
                 inicio_cita = timezone.make_aware(fecha_naive)
@@ -179,16 +179,34 @@ def agendar_cita(request, slug_peluqueria):
             usa_bold = bool(peluqueria.bold_api_key and peluqueria.bold_integrity_key)
             estado_inicial = 'P' if usa_bold else 'C'
 
-            with transaction.atomic():
-                if verificar_conflicto_atomic(empleado, inicio_cita, fin_cita):
-                    return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados, 'error_mensaje': "⚠️ Horario ya reservado por otra persona."})
+            # -------------------------------------------------------------
+            # LÓGICA DE SEGURIDAD "BOOKING LOCK" INTEGRADA
+            # -------------------------------------------------------------
+            
+            # Definimos la lógica de creación dentro de una función interna
+            def _logica_creacion(empleado_bloqueado, *args, **kwargs):
+                # 1. Verificación final de conflicto (dentro de la transacción de bloqueo)
+                if verificar_conflicto_atomic(empleado_bloqueado, inicio_cita, fin_cita):
+                    raise ValueError("⚠️ Horario ya reservado por otra persona.")
                 
-                cita = Cita.objects.create(
-                    peluqueria=peluqueria, cliente_nombre=nombre, cliente_telefono=telefono,
-                    empleado=empleado, fecha_hora_inicio=inicio_cita, fecha_hora_fin=fin_cita,
-                    precio_total=total_precio, estado=estado_inicial
+                # 2. Crear Cita
+                nueva_cita = Cita.objects.create(
+                    peluqueria=peluqueria, 
+                    cliente_nombre=nombre, 
+                    cliente_telefono=telefono,
+                    empleado=empleado_bloqueado, 
+                    fecha_hora_inicio=inicio_cita, 
+                    fecha_hora_fin=fin_cita,
+                    precio_total=total_precio, 
+                    estado=estado_inicial
                 )
-                cita.servicios.set(servicios_objs)
+                nueva_cita.servicios.set(servicios_objs)
+                return nueva_cita
+
+            # Ejecutamos la reserva usando el Manager de Seguridad
+            cita = BookingManager.ejecutar_reserva_segura(empleado_id, _logica_creacion)
+            
+            # -------------------------------------------------------------
 
             if usa_bold:
                 porcentaje = peluqueria.porcentaje_abono if peluqueria.porcentaje_abono > 0 else 50
@@ -197,17 +215,18 @@ def agendar_cita(request, slug_peluqueria):
                 
                 ref = f"CITA-{cita.id}-{int(datetime.now().timestamp())}"
                 cita.referencia_pago_bold = ref
-                cita.save() # Guardamos la referencia
+                cita.save()
                 
                 firma = hashlib.sha256(f"{ref}{monto}COP{peluqueria.bold_integrity_key}".encode('utf-8')).hexdigest()
                 
                 return render(request, 'salon/pago_bold.html', {'cita': cita, 'monto_anticipo': monto, 'signature': firma, 'peluqueria': peluqueria, 'referencia': ref})
             else:
-                # Notificación Telegram solo si NO es Bold (si es Bold, se envía en el retorno)
                 cita.enviar_notificacion_telegram()
                 return redirect('cita_confirmada')
             
-        except Exception:
+        except ValueError as ve:
+            return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados, 'error_mensaje': str(ve)})
+        except Exception as e:
             traceback.print_exc()
             return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados, 'error_mensaje': "Error técnico procesando la reserva."})
 
