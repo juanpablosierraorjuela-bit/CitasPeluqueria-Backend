@@ -2,6 +2,9 @@ from datetime import timedelta, datetime, time
 from django.utils import timezone
 from .models import Cita, Ausencia, HorarioEmpleado
 
+# CORRECCIÓN: Definir un intervalo de agendamiento. Usamos 15 minutos para mayor granularidad.
+INTERVALO_MINUTOS = 15
+
 def obtener_bloques_disponibles(empleado, fecha_date, duracion_servicio):
     dia_semana = fecha_date.weekday() # 0=Lunes, 6=Domingo
     
@@ -63,7 +66,8 @@ def obtener_bloques_disponibles(empleado, fecha_date, duracion_servicio):
                     ocupado = True; break
             
         if not ocupado: bloques.append(hora_actual.strftime("%H:%M"))
-        hora_actual += timedelta(minutes=30)
+        # Usar el intervalo configurable (antes estaba en 30 minutos fijo)
+        hora_actual += timedelta(minutes=INTERVALO_MINUTOS)
             
     return bloques
 
