@@ -21,6 +21,9 @@ class Peluqueria(models.Model):
     direccion = models.CharField(max_length=200, blank=True)
     telefono = models.CharField(max_length=20, blank=True)
     
+    # IMPORTANTE: Nuevo campo para el código de país de WhatsApp (internacionalización)
+    codigo_pais_wa = models.CharField(max_length=5, default="57", help_text="Código de país para WhatsApp (Ej: 57 para Colombia)")
+    
     # CONFIGURACIÓN DEL NEGOCIO
     porcentaje_abono = models.IntegerField(default=50)
     
@@ -123,7 +126,9 @@ class Cita(models.Model):
                 for s in self.servicios.all():
                     lista_servicios += f"✂️ {s.nombre}\n"
                 
-                link_wa = f"https://wa.me/57{self.cliente_telefono.replace(' ', '')}"
+                # USO DEL NUEVO CAMPO: código de país configurable
+                codigo_pais = self.peluqueria.codigo_pais_wa
+                link_wa = f"https://wa.me/{codigo_pais}{self.cliente_telefono.replace(' ', '')}"
 
                 msg = (
                     f"🔥 *NUEVA RESERVA CONFIRMADA*\n"
