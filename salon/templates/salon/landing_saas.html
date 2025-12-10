@@ -18,9 +18,14 @@
         body { font-family: 'Outfit', sans-serif; margin: 0; padding: 0; background-color: var(--bg-light); color: var(--primary); overflow-x: hidden; }
         
         /* Navbar Simple */
-        nav { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; background: white; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+        nav { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; background: white; box-shadow: 0 4px 20px rgba(0,0,0,0.03); position: relative; z-index: 10; }
         .logo { font-weight: 800; font-size: 1.5rem; background: var(--accent-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
+        .nav-links { display: flex; gap: 20px; align-items: center; }
+        .btn-link { text-decoration: none; color: var(--primary); font-weight: 600; font-size: 0.95rem; }
+        .btn-login { text-decoration: none; padding: 10px 20px; background: #f1f5f9; color: var(--primary); border-radius: 50px; font-weight: 700; font-size: 0.9rem; transition: 0.2s; }
+        .btn-login:hover { background: #e2e8f0; }
+
         /* Hero Section Split */
         .hero { display: flex; flex-wrap: wrap; min-height: 100vh; }
         
@@ -56,6 +61,8 @@
             .hero { flex-direction: column; }
             .hero-content { padding: 40px 20px; }
             .hero-form { padding: 40px 20px; }
+            .nav-links { gap: 10px; }
+            .btn-link { display: none; } /* Ocultar "Volver" en movil para espacio */
         }
     </style>
 </head>
@@ -63,7 +70,10 @@
 
     <nav>
         <div class="logo">PASO Business</div>
-        <a href="/" style="text-decoration: none; color: var(--primary); font-weight: 600;">Volver al Directorio</a>
+        <div class="nav-links">
+            <a href="/" class="btn-link">Volver al Inicio</a>
+            <a href="/admin/login/" class="btn-login">Iniciar Sesión</a>
+        </div>
     </nav>
 
     <div class="hero">
