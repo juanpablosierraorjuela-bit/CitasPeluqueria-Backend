@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PASO | Tu estilo, tu tiempo</title>
     
-    <link rel="manifest" href="{% url 'pwa_manifest' %}">
+    <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#ffffff">
     <link rel="apple-touch-icon" href="{% static 'img/icon-192.png' %}">
 
@@ -276,19 +276,24 @@
         </div>
         
         {% if request.user.is_authenticated %}
-            {% if request.user.is_staff %}
+            {% if request.user.is_superuser %}
                 <a href="/admin/" class="btn-access dash">
-                    <span class="access-text">Mi Panel</span>
+                    <span class="access-text">Super Admin</span>
                     <div class="access-icon">👑</div>
                 </a>
+            {% elif request.user.perfil.es_dueño %}
+                <a href="{% url 'panel_negocio' %}" class="btn-access dash">
+                    <span class="access-text">Mi Negocio</span>
+                    <div class="access-icon">📊</div>
+                </a>
             {% else %}
-                <a href="{% url 'dashboard_dueño' %}" class="btn-access dash">
-                    <span class="access-text">Mi Cuenta</span>
-                    <div class="access-icon">👤</div>
+                <a href="{% url 'mi_agenda' %}" class="btn-access dash">
+                    <span class="access-text">Mi Agenda</span>
+                    <div class="access-icon">📅</div>
                 </a>
             {% endif %}
         {% else %}
-            <a href="{% url 'landing_saas' %}" class="btn-access">
+            <a href="{% url 'login_custom' %}" class="btn-access">
                 <span class="access-text">Ingresar / Registrarse</span>
                 <div class="access-icon">🔐</div>
             </a>
@@ -334,12 +339,7 @@
                     
                     <div class="card-footer">
                         <div class="status-wrapper">
-                            {% if p.esta_abierto %}
-                                <div class="status-pill open">ABIERTO AHORA</div>
-                            {% else %}
-                                <div class="status-pill closed">CERRADO</div>
-                                <div class="status-pill online">AGENDA 24/7</div>
-                            {% endif %}
+                            <div class="status-pill open">ABIERTO AHORA</div>
                         </div>
                         
                         <div class="btn-arrow">→</div>
