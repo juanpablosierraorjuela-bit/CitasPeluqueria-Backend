@@ -120,31 +120,31 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- CONFIGURACIÓN JAZZMIN (MENÚ LATERAL CORREGIDO) ---
+# --- CONFIGURACIÓN JAZZMIN (CORREGIDA) ---
 JAZZMIN_SETTINGS = {
     "site_title": "Administración PASO",
     "site_header": "PASO Admin",
     "welcome_sign": "Bienvenido al Panel de Control",
     "search_model": "salon.Peluqueria",
     
-    # 1. Menú Superior (Escritorio)
+    # 1. Menú Superior
     "topmenu_links": [
         {"name": "Ver Sitio", "url": "inicio", "permissions": ["auth.view_user"]},
     ],
 
-    # 2. BOTONES EN EL MENÚ LATERAL (SIDEBAR) - VISIBLE EN MÓVIL
+    # 2. Sidebar Custom Links (CORREGIDO: 'mi_horario' -> 'mi_agenda')
     "custom_links": {
         "salon": [{
             "name": "📅 Gestionar Horario", 
-            "url": "mi_horario", 
+            "url": "mi_agenda", 
             "icon": "fas fa-clock",
             "permissions": ["auth.view_user"]
         }]
     },
 
-    # 3. Menú de Usuario (Avatar)
+    # 3. User Menu (CORREGIDO: 'mi_horario' -> 'mi_agenda')
     "usermenu_links": [
-        {"name": "📅 Mi Horario Visual", "url": "mi_horario", "new_window": True, "icon": "fas fa-clock"},
+        {"name": "📅 Mi Horario Visual", "url": "mi_agenda", "new_window": True, "icon": "fas fa-clock"},
     ],
 
     "icons": {
