@@ -1,27 +1,26 @@
+# UBICACIÓN: salon/urls.py
 from django.urls import path
 from . import views
-from . import api  
+from . import api
 
 urlpatterns = [
-    # VISTAS WEB
+    # --- PÚBLICO ---
     path('', views.inicio, name='inicio'),
-    path('dashboard/', views.dashboard_dueño, name='dashboard_dueño'),
-    path('cita-confirmada/', views.cita_confirmada, name='cita_confirmada'),
-    path('<slug:slug_peluqueria>/agendar/', views.agendar_cita, name='agendar_cita'),
-    path('retorno-bold/', views.retorno_bold, name='retorno_bold'),
-    path('manifest.json', views.manifest_view, name='pwa_manifest'),
+    path('auth/login/', views.login_view, name='login_usuario'),
+    path('auth/logout/', views.logout_view, name='logout_usuario'),
+    path('<slug:slug_peluqueria>/reservar/', views.agendar_cita, name='agendar_cita'),
 
-    # NUEVAS VISTAS DE GESTIÓN
-    path('equipo/nuevo/', views.crear_empleado_con_usuario, name='crear_empleado'),
-    path('soy-profesional/horario/', views.mi_horario_empleado, name='mi_horario'),
+    # --- PANEL DUEÑO (SOLO ENTRAN SI TIENEN PERFIL DE DUEÑO) ---
+    path('negocio/dashboard/', views.panel_negocio, name='panel_negocio'),
+    path('negocio/configuracion/', views.configuracion_negocio, name='config_negocio'),
+    path('negocio/servicios/', views.gestionar_servicios, name='gestionar_servicios'),
+    path('negocio/servicios/borrar/<int:servicio_id>/', views.eliminar_servicio, name='eliminar_servicio'),
+    path('negocio/equipo/', views.gestionar_equipo, name='gestionar_equipo'),
 
-    # API INTERNA
-    path('api/horarios/', views.obtener_horas_disponibles, name='api_horarios_web'),
+    # --- PANEL EMPLEADO (SOLO ENTRAN SI SON EMPLEADOS) ---
+    path('mi-agenda/', views.mi_agenda, name='mi_agenda'),
 
-    # API EXTERNA
+    # --- API ---
     path('api/v1/<slug:slug_peluqueria>/servicios/', api.listar_servicios, name='api_servicios'),
-    path('api/v1/<slug:slug_peluqueria>/empleados/', api.listar_empleados, name='api_empleados'),
-    path('api/v1/<slug:slug_peluqueria>/disponibilidad/', api.consultar_disponibilidad, name='api_disponibilidad'),
-    path('api/v1/<slug:slug_peluqueria>/citas/crear/', api.crear_cita_api, name='api_crear_cita'),
-    path('negocios/', views.landing_saas, name='landing_saas'),
+    # ... resto de tus APIs
 ]
