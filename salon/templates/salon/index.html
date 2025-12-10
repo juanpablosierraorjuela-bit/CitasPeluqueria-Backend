@@ -200,6 +200,14 @@
             margin-top: auto; display: flex; justify-content: space-between; align-items: center;
             border-top: 1px solid #f1f5f9; padding-top: 15px;
         }
+        
+        /* Contenedor para los badges cuando están cerrados */
+        .status-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
 
         /* --- LOGICA DE ESTADO (Psicología de Venta) --- */
         .status-pill {
@@ -213,8 +221,14 @@
             content:''; width:8px; height:8px; background:#10b981; border-radius:50%; 
             box-shadow:0 0 0 2px rgba(16,185,129,0.2); animation: latido 2s infinite;
         }
+        
+        /* Estado: Cerrado (Nuevo) */
+        .status-pill.closed { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
+        .status-pill.closed::before {
+            content:''; width:8px; height:8px; background:#ef4444; border-radius:50%;
+        }
 
-        /* Estado: Local Cerrado pero Agenda Abierta */
+        /* Estado: Agenda Abierta (Luna) */
         .status-pill.online { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
         .status-pill.online::before { 
             content:'🌙'; font-size: 0.8rem; line-height: 1;
@@ -319,11 +333,14 @@
                     {% endif %}
                     
                     <div class="card-footer">
-                        {% if p.esta_abierto %}
-                            <div class="status-pill open">ABIERTO AHORA</div>
-                        {% else %}
-                            <div class="status-pill online">AGENDA DISPONIBLE</div>
-                        {% endif %}
+                        <div class="status-wrapper">
+                            {% if p.esta_abierto %}
+                                <div class="status-pill open">ABIERTO AHORA</div>
+                            {% else %}
+                                <div class="status-pill closed">CERRADO</div>
+                                <div class="status-pill online">AGENDA 24/7</div>
+                            {% endif %}
+                        </div>
                         
                         <div class="btn-arrow">→</div>
                     </div>
