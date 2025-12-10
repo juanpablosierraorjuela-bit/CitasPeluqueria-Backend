@@ -195,10 +195,10 @@
         </div>
         <div class="nav-actions">
             {% if request.user.perfil.es_dueño %}
-                <a href="{% url 'dashboard_dueño' %}" class="btn-small btn-ghost">📊 Panel</a>
+                <a href="{% url 'panel_negocio' %}" class="btn-small btn-ghost">📊 Panel</a>
             {% else %}
                 <a href="{% url 'inicio' %}" class="btn-small btn-ghost">🏠 Inicio</a>
-                <a href="/admin/logout/" class="btn-small btn-danger">Salir</a>
+                <a href="{% url 'logout_usuario' %}" class="btn-small btn-danger">Salir</a>
             {% endif %}
         </div>
     </div>
@@ -242,12 +242,30 @@
         </div>
         {% endfor %}
 
-        <div style="height: 80px;"></div> <div class="save-bar">
+        <div style="height: 80px;"></div> 
+        <div class="save-bar">
             <button type="submit" class="btn-save">
                 💾 Guardar Configuración
             </button>
         </div>
     </form>
+
+    {% if mis_citas %}
+    <div class="schedule-container" style="margin-top: -60px; margin-bottom: 100px;">
+        <h3 style="font-family: var(--font-display); margin-bottom: 15px;">Mis Próximas Citas</h3>
+        {% for c in mis_citas %}
+        <div style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+            <div>
+                <strong>{{ c.fecha_hora_inicio|date:"D d, H:i" }}</strong><br>
+                <span style="color: var(--secondary); font-size: 0.9rem;">{{ c.cliente_nombre }}</span>
+            </div>
+            <div style="font-weight: bold; color: var(--primary);">
+                ${{ c.precio_total }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
     <script>
         function toggleDay(id) {
