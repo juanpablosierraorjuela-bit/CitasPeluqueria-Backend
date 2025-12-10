@@ -41,7 +41,7 @@ def login_custom(request):
 
 def redirigir_segun_rol(user):
     if user.is_superuser:
-        return redirect('/admin/')
+        return redirect('/admin/') # Tú vas al Django Admin
     
     # Verificar si es dueño
     try:
@@ -62,6 +62,7 @@ def logout_view(request):
     return redirect('login_custom')
 
 def registro_empleado_publico(request, slug_peluqueria):
+    """Permite que un empleado se registre solo mediante un link"""
     peluqueria = get_object_or_404(Peluqueria, slug=slug_peluqueria)
 
     if request.method == 'POST':
@@ -74,28 +75,33 @@ def registro_empleado_publico(request, slug_peluqueria):
 
             try:
                 with transaction.atomic():
+                    # 1. Crear Usuario
                     user = User.objects.create_user(username=data['email'], email=data['email'], password=data['password'])
                     user.first_name = data['nombre']
                     user.last_name = data['apellido']
                     user.save()
 
+                    # 2. Crear Perfil (NO es dueño)
                     PerfilUsuario.objects.create(user=user, peluqueria=peluqueria, es_dueño=False)
 
+                    # 3. Crear Ficha Empleado
                     emp = Empleado.objects.create(
                         peluqueria=peluqueria, user=user,
                         nombre=data['nombre'], apellido=data['apellido'],
                         email_contacto=data['email'], activo=True
                     )
 
+                    # 4. Horarios Default
                     for i in range(7):
                         HorarioEmpleado.objects.create(empleado=emp, dia_semana=i, hora_inicio=time(9,0), hora_fin=time(19,0))
 
+                # Auto-login y redirigir
                 login(request, user)
                 return redirect('mi_agenda')
 
             except Exception as e:
                 print(e)
-                return render(request, 'salon/registro_empleado.html', {'peluqueria': peluqueria, 'form': form, 'error': 'Error interno.'})
+                return render(request, 'salon/registro_empleado.html', {'peluqueria': peluqueria, 'form': form, 'error': 'Error interno al crear cuenta.'})
     else:
         form = RegistroPublicoEmpleadoForm()
 
@@ -118,7 +124,7 @@ def panel_negocio(request):
     empleados = peluqueria.empleados.filter(activo=True)
     servicios = peluqueria.servicios.all()
 
-    # KPIs Avanzados (Para que el Dashboard se vea lleno)
+    # KPIs Avanzados (CORREGIDO: Se agregan para evitar error en template)
     ingresos_mes = peluqueria.citas.filter(
         fecha_hora_inicio__month=hoy.month, 
         estado='C'
@@ -152,7 +158,6 @@ def configuracion_negocio(request):
     else:
         form = ConfigNegocioForm(instance=peluqueria)
     
-    # Usamos crear_empleado como base visual o una nueva si tienes
     return render(request, 'salon/crear_empleado.html', {'form': form, 'titulo': 'Configuración del Negocio'}) 
 
 @login_required
@@ -172,7 +177,6 @@ def gestionar_servicios(request):
         form = ServicioForm()
 
     servicios = peluqueria.servicios.all()
-    # Si tienes un template específico úsalo, si no, usa el dashboard genérico
     return render(request, 'salon/dashboard.html', {'custom_content': 'servicios', 'servicios': servicios, 'form': form, 'peluqueria': peluqueria})
 
 @login_required
@@ -244,14 +248,12 @@ def mi_agenda(request):
 # =======================================================
 
 def inicio(request):
-    # Lógica de búsqueda
     ciudad = request.GET.get('ciudad')
     if ciudad:
         peluquerias = Peluqueria.objects.filter(ciudad__icontains=ciudad)
     else:
         peluquerias = Peluqueria.objects.all()
         
-    # Obtener lista única de ciudades para el filtro
     ciudades = Peluqueria.objects.values_list('ciudad', flat=True).distinct()
     
     return render(request, 'salon/index.html', {
@@ -264,6 +266,9 @@ def landing_saas(request):
     return render(request, 'salon/landing_saas.html')
 
 def agendar_cita(request, slug_peluqueria):
+    """
+    CORREGIDO: Lógica real para guardar la cita en la base de datos usando el BookingManager.
+    """
     peluqueria = get_object_or_404(Peluqueria, slug=slug_peluqueria)
     servicios = peluqueria.servicios.all()
     empleados = peluqueria.empleados.filter(activo=True)
@@ -282,7 +287,7 @@ def agendar_cita(request, slug_peluqueria):
             if not (empleado_id and fecha_str and hora_str and servicios_ids):
                 raise ValueError("Faltan datos obligatorios para la reserva.")
 
-            # 2. Preparar objetos
+            # 2. Preparar objetos y calcular totales
             servicios_objs = Servicio.objects.filter(id__in=servicios_ids)
             duracion_total = sum([s.duracion for s in servicios_objs], timedelta())
             precio_total = sum([s.precio for s in servicios_objs])
@@ -293,7 +298,7 @@ def agendar_cita(request, slug_peluqueria):
 
             # 3. Lógica de Reserva ATÓMICA (Usando el BookingManager)
             def _crear_reserva_segura(empleado_bloqueado):
-                # Validar superposición (El BookingManager ya bloqueó la fila)
+                # Validar superposición (El BookingManager ya bloqueó la fila, así que es seguro consultar)
                 conflicto = Cita.objects.filter(
                     empleado=empleado_bloqueado,
                     estado__in=['P', 'C'],
@@ -313,7 +318,7 @@ def agendar_cita(request, slug_peluqueria):
                     fecha_hora_inicio=inicio,
                     fecha_hora_fin=fin,
                     precio_total=precio_total,
-                    estado='C' # Confirmada por defecto (luego integramos pago real)
+                    estado='C' # Confirmada por defecto (luego integramos pago Bold)
                 )
                 nueva_cita.servicios.set(servicios_objs)
                 return nueva_cita
@@ -324,8 +329,6 @@ def agendar_cita(request, slug_peluqueria):
             # 4. Enviar Notificaciones y Redirigir
             cita.enviar_notificacion_telegram()
             
-            # Si hay integración con Bold y es pago parcial, aquí iría la lógica
-            # Por ahora redirigimos a éxito
             return redirect('confirmacion_cita', slug_peluqueria=peluqueria.slug, cita_id=cita.id)
 
         except Exception as e:
