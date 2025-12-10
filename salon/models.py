@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.text import slugify
-from datetime import timedelta
+from datetime import timedelta, time  # Importamos 'time'
 from django.utils import timezone
 import requests
 
@@ -14,16 +14,18 @@ import requests
 
 class Peluqueria(models.Model):
     nombre = models.CharField(max_length=200)
-    slug = models.SlugField(unique=True, help_text="Identificador único en la URL (ej: mi-salon)") 
+    slug = models.SlugField(unique=True, help_text="Identificador único en la URL") 
     nombre_visible = models.CharField(max_length=200, default="Mi Salón")
     ciudad = models.CharField(max_length=100, default="Tunja")
     
     # DATOS DE CONTACTO
     direccion = models.CharField(max_length=200, blank=True)
     telefono = models.CharField(max_length=20, blank=True)
-    codigo_pais_wa = models.CharField(max_length=5, default="57", help_text="Código de país para WhatsApp")
+    codigo_pais_wa = models.CharField(max_length=5, default="57", help_text="Cód. País WhatsApp")
     
-    # CONFIGURACIÓN
+    # CONFIGURACIÓN GENERAL
+    hora_apertura = models.TimeField(default="06:00", help_text="Hora de apertura del local")
+    hora_cierre = models.TimeField(default="21:00", help_text="Hora de cierre del local")
     porcentaje_abono = models.IntegerField(default=50)
     
     # INTEGRACIONES
