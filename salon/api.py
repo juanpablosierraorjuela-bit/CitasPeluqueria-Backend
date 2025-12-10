@@ -13,11 +13,11 @@ def proteger_api(vista_func):
     def _wrapped_view(request, *args, **kwargs):
         api_key_recibida = request.headers.get('X-API-KEY')
         if api_key_recibida != settings.API_SECRET_KEY:
-            return JsonResponse({'error': 'Acceso denegado'}, status=403)
+            return JsonResponse({'error': 'Acceso denegado: API Key inválida'}, status=403)
         return vista_func(request, *args, **kwargs)
     return _wrapped_view
 
-@proteger_api # <--- CRÍTICO: Agregado
+@proteger_api
 def listar_servicios(request, slug_peluqueria):
     servicios = Servicio.objects.filter(peluqueria__slug=slug_peluqueria)
     data = list(servicios.values('id', 'nombre', 'duracion', 'precio'))
@@ -26,40 +26,50 @@ def listar_servicios(request, slug_peluqueria):
         s['precio'] = float(s['precio'])
     return JsonResponse(data, safe=False)
 
-@proteger_api # <--- CRÍTICO: Agregado
+@proteger_api
 def listar_empleados(request, slug_peluqueria):
-    empleados = Empleado.objects.filter(peluqueria__slug=slug_peluqueria)
+    empleados = Empleado.objects.filter(peluqueria__slug=slug_peluqueria, activo=True)
     data = [{'id': e.id, 'nombre': f"{e.nombre} {e.apellido}"} for e in empleados]
     return JsonResponse(data, safe=False)
 
-@proteger_api # <--- CRÍTICO: Agregado
+@proteger_api
 def consultar_disponibilidad(request, slug_peluqueria):
     fecha_str = request.GET.get('fecha')
     servicio_id = request.GET.get('service_id')
     empleado_id = request.GET.get('empleado_id') 
 
-    if not (fecha_str and servicio_id): return JsonResponse({'error': 'Faltan datos'}, status=400)
+    if not (fecha_str and servicio_id):
+        return JsonResponse({'error': 'Faltan parámetros fecha o service_id'}, status=400)
 
     try:
         fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
-        servicio = Servicio.objects.get(id=servicio_id)
-        if empleado_id and empleado_id != 'todos': empleados = [get_object_or_404(Empleado, id=empleado_id)]
-        else: empleados = Empleado.objects.filter(peluqueria__slug=slug_peluqueria)
+        servicio = get_object_or_404(Servicio, id=servicio_id)
+        
+        # Filtro de empleados
+        if empleado_id and empleado_id != 'todos': 
+            empleados = Empleado.objects.filter(id=empleado_id, activo=True)
+        else: 
+            empleados = Empleado.objects.filter(peluqueria__slug=slug_peluqueria, activo=True)
 
         resultados = {}
         for emp in empleados:
+            # Usamos la duración del servicio seleccionado para calcular bloques
             horas = obtener_bloques_disponibles(emp, fecha, servicio.duracion)
-            if horas: resultados[emp.nombre] = [{'hora_inicio': h} for h in horas]
+            if horas: 
+                resultados[emp.nombre] = [{'hora_inicio': h} for h in horas]
         
         return JsonResponse(resultados)
+    except ValueError:
+        return JsonResponse({'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, status=400)
     except Exception as e:
         print(f"Error API: {e}") 
-        return JsonResponse({'error': 'Error interno'}, status=500)
+        return JsonResponse({'error': 'Error interno del servidor'}, status=500)
 
 @csrf_exempt
 @proteger_api
 def crear_cita_api(request, slug_peluqueria):
-    if request.method != 'POST': return JsonResponse({'error': 'Solo POST'}, status=405)
+    if request.method != 'POST': 
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
 
     try:
         data = json.loads(request.body)
@@ -67,30 +77,42 @@ def crear_cita_api(request, slug_peluqueria):
         empleado = get_object_or_404(Empleado, id=data.get('empleado_id'))
         servicio = get_object_or_404(Servicio, id=data.get('servicio_id'))
         
-        inicio = datetime.strptime(f"{data.get('fecha')} {data.get('hora_inicio')}", "%Y-%m-%d %H:%M")
+        # Parseo seguro de fecha y hora
+        fecha_str = data.get('fecha')
+        hora_str = data.get('hora_inicio')
+        inicio = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
         fin = inicio + servicio.duracion
 
-        with transaction.atomic():
-            if verificar_conflicto_atomic(empleado, inicio, fin):
-                return JsonResponse({'error': 'OCUPADO'}, status=409)
+        # Validaciones extra
+        if empleado.peluqueria != peluqueria:
+            return JsonResponse({'error': 'El empleado no pertenece a esta peluquería'}, status=400)
 
+        with transaction.atomic():
+            # 1. Verificar conflicto antes de crear
+            if verificar_conflicto_atomic(empleado, inicio, fin):
+                return JsonResponse({'error': 'HORARIO_OCUPADO'}, status=409)
+
+            # 2. Crear Cita
             cita = Cita.objects.create(
                 peluqueria=peluqueria,
                 empleado=empleado,
-                cliente_nombre=data.get('cliente_nombre', 'App User'),
-                cliente_telefono=data.get('cliente_telefono', '000'),
+                cliente_nombre=data.get('cliente_nombre', 'Cliente App'),
+                cliente_telefono=data.get('cliente_telefono', '0000000000'),
                 fecha_hora_inicio=inicio,
                 fecha_hora_fin=fin,
                 precio_total=servicio.precio,
-                estado='C'
+                estado='C' # Confirmada directamente (Pago en local asumido para API)
             )
+            # 3. Asociar servicio (M2M)
             cita.servicios.add(servicio)
         
-        # NOTIFICAR MANUALMENTE (Para que salgan los servicios)
+        # Notificar fuera de la transacción para no bloquear si Telegram falla
         cita.enviar_notificacion_telegram()
 
-        return JsonResponse({'mensaje': 'OK', 'id': cita.id}, status=201)
+        return JsonResponse({'mensaje': 'Cita creada exitosamente', 'id': cita.id}, status=201)
 
+    except ValueError as ve:
+        return JsonResponse({'error': f'Error de formato: {str(ve)}'}, status=400)
     except Exception as e:
         print(f"Error API Crear Cita: {e}")
         return JsonResponse({'error': str(e)}, status=500)
