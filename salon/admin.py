@@ -3,10 +3,8 @@ from django.contrib import admin
 from django.contrib.auth.models import Group, User
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django import forms
-# 1. AGREGAMOS HorarioEmpleado A LA IMPORTACIÓN
 from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, Ausencia, SolicitudSaaS, HorarioEmpleado
 
-# 2. CONFIGURACIÓN DEL GUARDIA (Base)
 class SalonOwnerAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -26,27 +24,24 @@ class SalonOwnerAdmin(admin.ModelAdmin):
             obj.peluqueria = request.user.perfil.peluqueria
         super().save_model(request, obj, form, change)
 
-# 3. DEFINIMOS EL HORARIO COMO UNA TABLA INTERNA (INLINE)
 class HorarioEmpleadoInline(admin.TabularInline):
     model = HorarioEmpleado
     extra = 0
     can_delete = False
-    min_num = 7  # Obliga a mostrar los 7 días
+    min_num = 7
     max_num = 7
     fields = ('dia_semana', 'hora_inicio', 'hora_fin', 'almuerzo_inicio', 'almuerzo_fin')
-    readonly_fields = ('dia_semana',) # Para que no cambien el día, solo las horas
+    readonly_fields = ('dia_semana',)
     
     def has_add_permission(self, request, obj):
-        return False # No dejar agregar días extra, solo editar los 7 existentes
+        return False
 
-# 4. EMPLEADO (Ahora incluye los horarios adentro)
 @admin.register(Empleado)
 class EmpleadoAdmin(SalonOwnerAdmin):
     list_display = ('nombre', 'apellido', 'activo')
     exclude = ('peluqueria',)
-    inlines = [HorarioEmpleadoInline]  # <--- AQUÍ APARECE EL BOTÓN/TABLA
+    inlines = [HorarioEmpleadoInline]
 
-# 5. OTROS MODELOS
 @admin.register(Servicio)
 class ServicioAdmin(SalonOwnerAdmin):
     list_display = ('nombre', 'precio')
@@ -75,7 +70,8 @@ class AusenciaAdmin(admin.ModelAdmin):
 
 @admin.register(Peluqueria)
 class PeluqueriaAdmin(admin.ModelAdmin):
-    list_display = ('nombre_visible', 'ciudad', 'telefono')
+    # AGREGADO AQUÍ: hora_apertura y hora_cierre
+    list_display = ('nombre_visible', 'ciudad', 'telefono', 'hora_apertura', 'hora_cierre')
     exclude = ('slug',)
 
     def get_queryset(self, request):
@@ -97,7 +93,6 @@ class PerfilUsuarioAdmin(SalonOwnerAdmin):
 class SolicitudSaaSAdmin(admin.ModelAdmin):
     list_display = ('nombre_empresa', 'fecha_solicitud')
 
-# 6. CONFIGURACIÓN DE USUARIOS
 class CustomUserAdmin(BaseUserAdmin):
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
