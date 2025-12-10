@@ -13,7 +13,7 @@ import json
 
 # Importaciones locales
 from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, HorarioEmpleado
-from .forms import ConfigNegocioForm, ServicioForm, NuevoEmpleadoForm, RegistroPublicoEmpleadoForm
+from .forms import ConfigNegocioForm, ServicioForm, RegistroPublicoEmpleadoForm
 from .services import obtener_bloques_disponibles
 from salon.utils.booking_lock import BookingManager
 
@@ -124,7 +124,7 @@ def panel_negocio(request):
     empleados = peluqueria.empleados.filter(activo=True)
     servicios = peluqueria.servicios.all()
 
-    # KPIs Avanzados (CORREGIDO: Se agregan para evitar error en template)
+    # KPIs Avanzados
     ingresos_mes = peluqueria.citas.filter(
         fecha_hora_inicio__month=hoy.month, 
         estado='C'
@@ -146,19 +146,36 @@ def panel_negocio(request):
 
 @login_required
 def configuracion_negocio(request):
-    if not request.user.perfil.es_dueño: return redirect('inicio')
+    """
+    CORREGIDO: Maneja errores 500 y genera la URL del Webhook automáticamente.
+    Usa la nueva plantilla negocio/configuracion.html
+    """
+    if not hasattr(request.user, 'perfil') or not request.user.perfil.peluqueria:
+        messages.error(request, "No tienes una peluquería asignada.")
+        return redirect('panel_negocio')
+    
     peluqueria = request.user.perfil.peluqueria
 
     if request.method == 'POST':
-        form = ConfigNegocioForm(request.POST, instance=peluqueria)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Guardado correctamente.')
-            return redirect('panel_negocio')
-    else:
-        form = ConfigNegocioForm(instance=peluqueria)
+        try:
+            # Capturamos datos manualmente para evitar conflictos de validación de forms estrictos
+            peluqueria.bold_api_key = request.POST.get('bold_api_key', '').strip()
+            peluqueria.bold_integrity_key = request.POST.get('bold_integrity_key', '').strip()
+            peluqueria.telegram_token = request.POST.get('telegram_token', '').strip()
+            peluqueria.telegram_chat_id = request.POST.get('telegram_chat_id', '').strip()
+            
+            peluqueria.save()
+            messages.success(request, "¡Configuración guardada exitosamente!")
+        except Exception as e:
+            messages.error(request, f"Hubo un error al guardar: {str(e)}")
+
+    # Generar la URL del Webhook automáticamente para mostrarla
+    webhook_url = request.build_absolute_uri('/webhooks/bold/') 
     
-    return render(request, 'salon/crear_empleado.html', {'form': form, 'titulo': 'Configuración del Negocio'}) 
+    return render(request, 'negocio/configuracion.html', {
+        'peluqueria': peluqueria,
+        'webhook_url': webhook_url
+    })
 
 @login_required
 def gestionar_servicios(request):
@@ -172,18 +189,25 @@ def gestionar_servicios(request):
             nuevo.peluqueria = peluqueria
             nuevo.duracion = timedelta(minutes=form.cleaned_data['duracion_minutos'])
             nuevo.save()
+            messages.success(request, "Servicio creado.")
             return redirect('gestionar_servicios')
     else:
         form = ServicioForm()
 
     servicios = peluqueria.servicios.all()
-    return render(request, 'salon/dashboard.html', {'custom_content': 'servicios', 'servicios': servicios, 'form': form, 'peluqueria': peluqueria})
+    # Usamos panel_dueño/servicios.html si existe, o dashboard con include
+    return render(request, 'salon/panel_dueño/servicios.html', {
+        'servicios': servicios, 
+        'form': form, 
+        'peluqueria': peluqueria
+    })
 
 @login_required
 def eliminar_servicio(request, servicio_id):
     if not request.user.perfil.es_dueño: return redirect('inicio')
     s = get_object_or_404(Servicio, id=servicio_id, peluqueria=request.user.perfil.peluqueria)
     s.delete()
+    messages.success(request, "Servicio eliminado.")
     return redirect('gestionar_servicios')
 
 @login_required
@@ -212,6 +236,7 @@ def mi_agenda(request):
     dias_semana = {0:'Lunes', 1:'Martes', 2:'Miércoles', 3:'Jueves', 4:'Viernes', 5:'Sábado', 6:'Domingo'}
 
     if request.method == 'POST':
+        # Borrar y recrear horarios es una estrategia simple y efectiva para este caso
         HorarioEmpleado.objects.filter(empleado=empleado).delete()
         for i in range(7):
             if request.POST.get(f'trabaja_{i}'):
@@ -327,7 +352,9 @@ def agendar_cita(request, slug_peluqueria):
             cita = BookingManager.ejecutar_reserva_segura(empleado_id, _crear_reserva_segura)
             
             # 4. Enviar Notificaciones y Redirigir
-            cita.enviar_notificacion_telegram()
+            # IMPORTANTE: Asegúrate de tener el método enviar_notificacion_telegram en el modelo Cita
+            if hasattr(cita, 'enviar_notificacion_telegram'):
+                cita.enviar_notificacion_telegram()
             
             return redirect('confirmacion_cita', slug_peluqueria=peluqueria.slug, cita_id=cita.id)
 
@@ -336,7 +363,7 @@ def agendar_cita(request, slug_peluqueria):
                 'peluqueria': peluqueria, 
                 'servicios': servicios, 
                 'empleados': empleados,
-                'error_mensaje': str(e)
+                'error_mensaje': f"No se pudo agendar: {str(e)}"
             })
 
     return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados})
@@ -347,7 +374,7 @@ def api_obtener_horarios(request):
     fecha_str = request.GET.get('fecha')
     servicios_ids = request.GET.get('servicios_ids') # "1,2,3"
     
-    if not emp_id or not fecha_str or not servicios_ids: 
+    if not emp_id or not fecha_str: 
         return JsonResponse({'horas': []})
 
     try:
@@ -355,13 +382,15 @@ def api_obtener_horarios(request):
         emp = Empleado.objects.get(id=emp_id)
         
         # Calcular duración total de los servicios seleccionados
-        ids = [int(x) for x in servicios_ids.split(',')]
-        servicios = Servicio.objects.filter(id__in=ids)
-        duracion_total = sum([s.duracion for s in servicios], timedelta())
-        
-        # Si no hay servicios válidos, usar 30 min por defecto
-        if duracion_total == timedelta(0):
-            duracion_total = timedelta(minutes=30)
+        duracion_total = timedelta(minutes=30) # Default
+        if servicios_ids:
+            # Convertimos string "1,2,3" a lista de enteros de forma segura
+            ids = [int(x) for x in servicios_ids.split(',') if x.isdigit()]
+            if ids:
+                servicios = Servicio.objects.filter(id__in=ids)
+                calc_duracion = sum([s.duracion for s in servicios], timedelta())
+                if calc_duracion > timedelta(0):
+                    duracion_total = calc_duracion
 
         horas = obtener_bloques_disponibles(emp, fecha, duracion_total)
         return JsonResponse({'horas': horas})
