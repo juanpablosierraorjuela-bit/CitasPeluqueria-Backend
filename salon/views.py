@@ -16,7 +16,6 @@ import pytz
 
 from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, SolicitudSaaS, HorarioEmpleado
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
-# IMPORTAMOS AL GUARDIA
 from salon.utils.booking_lock import BookingManager
 
 # --- VISTA PARA EL REGISTRO DE NUEVOS SALONES (SAAS) ---
@@ -65,7 +64,6 @@ def landing_saas(request):
                     activo=True
                 )
                 
-                # Horario Default
                 for dia in range(5):
                     HorarioEmpleado.objects.create(
                         empleado=empleado, dia_semana=dia,
@@ -165,7 +163,6 @@ def agendar_cita(request, slug_peluqueria):
 
             if not (nombre and empleado_id and fecha_str and hora_str): raise ValueError("Faltan datos")
 
-            # Construir fecha inicio
             fecha_naive = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
             if timezone.is_naive(fecha_naive):
                 inicio_cita = timezone.make_aware(fecha_naive)
@@ -180,16 +177,10 @@ def agendar_cita(request, slug_peluqueria):
             usa_bold = bool(peluqueria.bold_api_key and peluqueria.bold_integrity_key)
             estado_inicial = 'P' if usa_bold else 'C'
 
-            # -------------------------------------------------------------
-            # LÓGICA DE SEGURIDAD "BOOKING LOCK" INTEGRADA
-            # -------------------------------------------------------------
-            
             def _logica_creacion(empleado_bloqueado, *args, **kwargs):
-                # 1. Verificación final de conflicto (segura dentro del bloqueo)
                 if verificar_conflicto_atomic(empleado_bloqueado, inicio_cita, fin_cita):
                     raise ValueError("⚠️ Lo sentimos, ese horario acaba de ser reservado por otra persona.")
                 
-                # 2. Crear Cita
                 nueva_cita = Cita.objects.create(
                     peluqueria=peluqueria, 
                     cliente_nombre=nombre, 
@@ -203,11 +194,8 @@ def agendar_cita(request, slug_peluqueria):
                 nueva_cita.servicios.set(servicios_objs)
                 return nueva_cita
 
-            # Ejecutamos la reserva usando al Guardia
             cita = BookingManager.ejecutar_reserva_segura(empleado_id, _logica_creacion)
             
-            # -------------------------------------------------------------
-
             if usa_bold:
                 porcentaje = peluqueria.porcentaje_abono if peluqueria.porcentaje_abono > 0 else 50
                 monto = int(total_precio * porcentaje / 100) if tipo_pago == 'abono' else int(total_precio)
@@ -302,6 +290,9 @@ def crear_empleado_con_usuario(request):
             with transaction.atomic():
                 user_emp = User.objects.create_user(username=email, email=email, password=password)
                 user_emp.first_name = nombre
+                
+                # --- CORRECCIÓN CLAVE: PERMISO PARA ENTRAR AL PANEL ---
+                user_emp.is_staff = True 
                 user_emp.save()
                 
                 grupo_emp, _ = Group.objects.get_or_create(name='Empleados')
