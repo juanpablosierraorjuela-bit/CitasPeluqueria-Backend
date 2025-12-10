@@ -1,319 +1,292 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dashboard | {{ peluqueria.nombre_visible }}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
+            --font-display: 'Cormorant Garamond', serif;
+            --font-body: 'Manrope', sans-serif;
+
+            --primary: #0f172a;
+            --secondary: #64748b;
+            --accent: #db2777;
+            --gold: #d4af37;
+            --success: #10b981;
+            
             --bg-body: #f8fafc;
-            --text-main: #0f172a;
-            --text-light: #64748b;
-            --accent: #ec4899;
-            --accent-grad: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
-            --white: #ffffff;
-            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+            --surface: rgba(255, 255, 255, 0.7);
+            --glass: rgba(255, 255, 255, 0.6);
+            
+            --shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 20px 40px -5px rgba(0, 0, 0, 0.1);
+            
+            --radius-xl: 32px;
+            --radius-lg: 20px;
         }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: 'Outfit', sans-serif;
+            font-family: var(--font-body);
             background-color: var(--bg-body);
-            color: var(--text-main);
-            margin: 0;
-            padding: 0;
+            color: var(--primary);
             min-height: 100vh;
         }
 
-        /* --- HEADER SUPERIOR --- */
-        .top-bar {
-            background: var(--white);
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #e2e8f0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+        /* --- FONDO AMBIENTAL --- */
+        .ambient-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: 
+                radial-gradient(circle at 10% 10%, rgba(219, 39, 119, 0.05) 0%, transparent 60%),
+                radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.05) 0%, transparent 60%);
         }
 
-        .brand h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin: 0;
-            background: var(--accent-grad);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        /* --- NAVBAR SUPERIOR --- */
+        .nav-glass {
+            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px);
+            padding: 15px 30px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100;
         }
 
-        .brand p {
-            font-size: 0.9rem;
-            color: var(--text-light);
-            margin: 2px 0 0 0;
+        .brand-logo {
+            font-family: var(--font-display); font-size: 1.5rem; font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 15px;
+        .nav-actions { display: flex; gap: 10px; }
+
+        .btn-nav {
+            padding: 8px 16px; border-radius: 50px; text-decoration: none;
+            font-size: 0.85rem; font-weight: 600; transition: all 0.2s;
+            display: flex; align-items: center; gap: 6px;
+        }
+        
+        .btn-ghost { background: transparent; color: var(--secondary); border: 1px solid rgba(0,0,0,0.1); }
+        .btn-ghost:hover { background: white; color: var(--primary); border-color: var(--primary); }
+        
+        .btn-solid { background: var(--primary); color: white; border: 1px solid var(--primary); }
+        .btn-solid:hover { background: transparent; color: var(--primary); }
+
+        /* --- LAYOUT PRINCIPAL --- */
+        .dashboard-container {
+            max-width: 1200px; margin: 40px auto; padding: 0 20px 80px;
         }
 
-        .btn-admin {
-            background: var(--text-main);
-            color: var(--white);
-            padding: 10px 20px;
-            border-radius: 50px;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.3s;
-        }
+        .dash-header { margin-bottom: 40px; animation: fadeDown 0.8s ease; }
+        .dash-header h1 { font-family: var(--font-display); font-size: 2.5rem; margin-bottom: 5px; }
+        .dash-header p { color: var(--secondary); font-size: 1rem; }
 
-        .btn-admin:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(15, 23, 42, 0.2);
-        }
-
-        /* --- CONTENEDOR PRINCIPAL --- */
-        .main-container {
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-
-        /* --- GRID DE ESTADÍSTICAS --- */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
+        /* --- GRID DE KPIS --- */
+        .kpi-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;
             margin-bottom: 40px;
         }
 
-        .stat-card {
-            background: var(--white);
-            padding: 30px;
-            border-radius: 24px;
-            box-shadow: var(--shadow);
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.3s ease;
-            border: 1px solid rgba(255,255,255,0.5);
+        .kpi-card {
+            background: var(--surface); backdrop-filter: blur(10px);
+            padding: 25px; border-radius: var(--radius-lg);
+            border: 1px solid rgba(255,255,255,0.5); box-shadow: var(--shadow-card);
+            transition: transform 0.3s ease; position: relative; overflow: hidden;
+            opacity: 0; animation: fadeUp 0.6s ease forwards;
+        }
+        .kpi-card:nth-child(1) { animation-delay: 0.1s; }
+        .kpi-card:nth-child(2) { animation-delay: 0.2s; }
+        .kpi-card:nth-child(3) { animation-delay: 0.3s; }
+
+        .kpi-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-hover); }
+
+        .kpi-icon {
+            font-size: 1.8rem; margin-bottom: 15px; display: inline-block;
+            background: white; padding: 10px; border-radius: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
 
-        .stat-card:hover {
-            transform: translateY(-5px);
+        .kpi-value {
+            font-family: var(--font-display); font-size: 2.8rem; font-weight: 700;
+            color: var(--primary); line-height: 1; margin-bottom: 5px;
         }
 
-        /* Decoración de fondo sutil en las cards */
-        .stat-card::after {
-            content: '';
-            position: absolute;
-            top: -20px; right: -20px;
-            width: 100px; height: 100px;
-            background: var(--accent-grad);
-            border-radius: 50%;
-            opacity: 0.1;
-            filter: blur(20px);
+        .kpi-label { font-size: 0.9rem; color: var(--secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Decoración de Ingresos */
+        .kpi-card.money .kpi-value { color: #059669; }
+        .kpi-card.money::after {
+            content: ''; position: absolute; right: -20px; top: -20px; width: 100px; height: 100px;
+            background: radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%); border-radius: 50%;
         }
 
-        .stat-icon {
-            font-size: 1.5rem;
-            margin-bottom: 15px;
-            display: inline-block;
-            background: #fdf2f8;
-            padding: 10px;
-            border-radius: 12px;
+        /* --- TABLA DE CITAS --- */
+        .table-panel {
+            background: var(--surface); backdrop-filter: blur(15px);
+            border-radius: var(--radius-xl); padding: 30px;
+            box-shadow: var(--shadow-card); border: 1px solid rgba(255,255,255,0.6);
+            opacity: 0; animation: fadeUp 0.8s ease 0.4s forwards;
         }
 
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--text-main);
-            margin-bottom: 5px;
-            letter-spacing: -1px;
+        .panel-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;
+        }
+        .panel-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; }
+
+        .custom-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+
+        .custom-table th {
+            text-align: left; padding: 0 20px 10px; color: var(--secondary);
+            font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
         }
 
-        .stat-label {
-            color: var(--text-light);
-            font-size: 0.95rem;
-            font-weight: 500;
+        .custom-table td {
+            background: white; padding: 20px; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;
+            transition: transform 0.2s;
         }
 
-        /* --- SECCIÓN DE TABLA --- */
-        .table-section {
-            background: var(--white);
-            border-radius: 24px;
-            padding: 30px;
-            box-shadow: var(--shadow);
+        .custom-table tr:hover td { transform: scale(1.01); z-index: 10; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+
+        .custom-table td:first-child { border-top-left-radius: 16px; border-bottom-left-radius: 16px; border-left: 1px solid #f1f5f9; }
+        .custom-table td:last-child { border-top-right-radius: 16px; border-bottom-right-radius: 16px; border-right: 1px solid #f1f5f9; }
+
+        /* Estilos de Celda */
+        .client-cell { display: flex; align-items: center; gap: 15px; }
+        
+        .client-avatar {
+            width: 45px; height: 45px; border-radius: 50%;
+            background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+            color: var(--secondary); font-weight: 700; display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; border: 2px solid #f8fafc;
+        }
+        
+        .client-info div:first-child { font-weight: 700; color: var(--primary); font-size: 0.95rem; }
+        .client-info div:last-child { font-size: 0.8rem; color: var(--secondary); }
+
+        .time-badge {
+            background: #eff6ff; color: #3b82f6; padding: 6px 12px; border-radius: 8px;
+            font-weight: 600; font-size: 0.85rem; display: inline-block;
         }
 
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-        }
+        .price-text { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; color: var(--primary); }
 
-        .section-header h3 {
-            margin: 0;
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
+        .empty-view { text-align: center; padding: 50px; color: var(--secondary); }
+        .empty-icon { font-size: 3rem; margin-bottom: 15px; opacity: 0.5; }
 
-        table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 10px; /* Espacio entre filas */
-        }
-
-        th {
-            text-align: left;
-            padding: 0 15px 10px 15px;
-            color: var(--text-light);
-            font-weight: 600;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        tbody tr {
-            background: #fcfcfc;
-            transition: all 0.2s;
-        }
-
-        tbody tr:hover {
-            transform: scale(1.01);
-            background: var(--white);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
-        }
-
-        td {
-            padding: 20px 15px;
-            font-size: 0.95rem;
-            border-top: 1px solid #f1f5f9;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; border-left: 1px solid #f1f5f9; }
-        td:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; border-right: 1px solid #f1f5f9; }
-
-        .client-name {
-            font-weight: 600;
-            color: var(--text-main);
-            display: block;
-        }
-        .client-phone {
-            font-size: 0.8rem;
-            color: var(--text-light);
-        }
-
-        .badge-time {
-            background: #e0f2fe;
-            color: #0284c7;
-            padding: 5px 10px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.85rem;
-        }
-
-        .price-tag {
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        /* Empty state */
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: var(--text-light);
-        }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 
         @media (max-width: 768px) {
-            .top-bar { padding: 20px; flex-direction: column; align-items: flex-start; gap: 15px; }
-            .btn-admin { width: 100%; text-align: center; }
-            td, th { padding: 15px 10px; }
+            .nav-glass { padding: 15px; flex-direction: column; gap: 15px; align-items: flex-start; }
+            .nav-actions { width: 100%; overflow-x: auto; padding-bottom: 5px; }
+            .custom-table td { padding: 15px 10px; }
+            .client-avatar { width: 35px; height: 35px; font-size: 0.8rem; }
         }
     </style>
 </head>
 <body>
 
-    <!-- BARRA SUPERIOR -->
-    <div class="top-bar">
-        <div class="brand">
-            <h1>Panel de Control</h1>
-            <p>{{ peluqueria.nombre_visible }}</p>
-        </div>
-        <div class="user-profile">
-            <a href="/admin/" class="btn-admin">⚙️ Ir al Administrador</a>
-        </div>
-    </div>
+    <div class="ambient-bg"></div>
 
-    <!-- CONTENIDO PRINCIPAL -->
-    <div class="main-container">
+    <nav class="nav-glass">
+        <div class="brand-logo">{{ peluqueria.nombre_visible }}</div>
+        <div class="nav-actions">
+            <a href="{% url 'mi_horario' %}" class="btn-nav btn-ghost">
+                <span>📅</span> Mi Horario
+            </a>
+            <a href="{% url 'crear_empleado_con_usuario' %}" class="btn-nav btn-ghost">
+                <span>👤</span> Nuevo Equipo
+            </a>
+            <a href="/admin/" class="btn-nav btn-solid">
+                <span>⚙️</span> Admin
+            </a>
+        </div>
+    </nav>
+
+    <main class="dashboard-container">
         
-        <!-- TARJETAS DE ESTADÍSTICAS -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <span class="stat-icon">📅</span>
-                <div class="stat-value">{{ citas_hoy }}</div>
-                <div class="stat-label">Citas Programadas Hoy</div>
-            </div>
-            
-            <div class="stat-card">
-                <span class="stat-icon">💰</span>
-                <div class="stat-value">${{ ingresos_mes }}</div>
-                <div class="stat-label">Ingresos Estimados (Mes)</div>
+        <header class="dash-header">
+            <h1>Panel de Control</h1>
+            <p>Bienvenido de nuevo. Aquí está el pulso de tu negocio hoy.</p>
+        </header>
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-icon">📅</div>
+                <div class="kpi-value">{{ citas_hoy }}</div>
+                <div class="kpi-label">Citas para Hoy</div>
             </div>
 
-            <!-- Puedes agregar más cards si el backend envía más datos -->
-            <div class="stat-card">
-                <span class="stat-icon">✨</span>
-                <div class="stat-value">Activo</div>
-                <div class="stat-label">Estado del Sistema</div>
+            <div class="kpi-card money">
+                <div class="kpi-icon">💰</div>
+                <div class="kpi-value">${{ ingresos_mes }}</div>
+                <div class="kpi-label">Ingresos del Mes</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-icon">⚡</div>
+                <div class="kpi-value">Activo</div>
+                <div class="kpi-label">Estado del Sistema</div>
             </div>
         </div>
 
-        <!-- TABLA DE PRÓXIMAS CITAS -->
-        <div class="table-section">
-            <div class="section-header">
-                <h3>Próximas Citas</h3>
+        <div class="table-panel">
+            <div class="panel-header">
+                <div class="panel-title">Próximas Citas</div>
+                <div style="font-size:0.9rem; color:var(--secondary);">{{ proximas_citas|length }} pendientes</div>
             </div>
 
-            <table>
+            <table class="custom-table">
                 <thead>
                     <tr>
                         <th>Cliente</th>
                         <th>Horario</th>
                         <th>Estilista</th>
-                        <th>Valor</th>
+                        <th>Valor Total</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for cita in proximas_citas %}
                     <tr>
                         <td>
-                            <span class="client-name">{{ cita.cliente_nombre }}</span>
-                            <span class="client-phone">{{ cita.cliente_telefono }}</span>
+                            <div class="client-cell">
+                                <div class="client-avatar">
+                                    {{ cita.cliente_nombre|first|upper }}
+                                </div>
+                                <div class="client-info">
+                                    <div>{{ cita.cliente_nombre }}</div>
+                                    <div>{{ cita.cliente_telefono }}</div>
+                                </div>
+                            </div>
                         </td>
                         <td>
-                            <span class="badge-time">{{ cita.fecha_hora_inicio|date:"D d, H:i" }}</span>
+                            <span class="time-badge">{{ cita.fecha_hora_inicio|date:"D d, H:i" }}</span>
                         </td>
-                        <td>{{ cita.empleado.nombre }}</td>
-                        <td class="price-tag">${{ cita.precio_total }}</td>
+                        <td style="font-weight:600; color:var(--secondary);">
+                            {{ cita.empleado.nombre }}
+                        </td>
+                        <td>
+                            <span class="price-text">${{ cita.precio_total }}</span>
+                        </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="empty-state">
-                            <p>No hay citas próximas agendadas.</p>
+                        <td colspan="4">
+                            <div class="empty-view">
+                                <div class="empty-icon">☕</div>
+                                <h3>Todo tranquilo por ahora</h3>
+                                <p>No hay citas próximas agendadas en el sistema.</p>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-
-    </div>
+    </main>
 
 </body>
 </html>
