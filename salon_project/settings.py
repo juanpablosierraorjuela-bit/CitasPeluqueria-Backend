@@ -40,12 +40,11 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',  # <--- CORREGIDO (Tenía falta de ortografía)
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # COMENTAR ESTA LÍNEA TEMPORALMENTE PARA DIAGNÓSTICO
-    'salon.middleware.PeluqueriaMiddleware',
+    'salon.middleware.PeluqueriaMiddleware',      # <--- ACTIVADO (Correcto para producción)
 ]
 
 ROOT_URLCONF = 'salon_project.urls'
