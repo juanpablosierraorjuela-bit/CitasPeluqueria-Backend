@@ -293,7 +293,7 @@
                 </a>
             {% endif %}
         {% else %}
-            <a href="{% url 'login_custom' %}" class="btn-access">
+            <a href="{% url 'landing_saas' %}" class="btn-access">
                 <span class="access-text">Ingresar / Registrarse</span>
                 <div class="access-icon">🔐</div>
             </a>
@@ -339,7 +339,12 @@
                     
                     <div class="card-footer">
                         <div class="status-wrapper">
-                            <div class="status-pill open">ABIERTO AHORA</div>
+                            {% if p.esta_abierto %}
+                                <div class="status-pill open">ABIERTO AHORA</div>
+                            {% else %}
+                                <div class="status-pill closed">CERRADO</div>
+                                <div class="status-pill online">AGENDA 24/7</div>
+                            {% endif %}
                         </div>
                         
                         <div class="btn-arrow">→</div>
