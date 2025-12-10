@@ -16,7 +16,7 @@ import pytz
 
 from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, SolicitudSaaS, HorarioEmpleado
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
-# IMPORTAMOS AL GUARDIA DE SEGURIDAD
+# IMPORTAMOS AL GUARDIA
 from salon.utils.booking_lock import BookingManager
 
 # --- VISTA PARA EL REGISTRO DE NUEVOS SALONES (SAAS) ---
@@ -165,7 +165,7 @@ def agendar_cita(request, slug_peluqueria):
 
             if not (nombre and empleado_id and fecha_str and hora_str): raise ValueError("Faltan datos")
 
-            # CORRECCIÓN TIMEZONE
+            # Construir fecha inicio
             fecha_naive = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
             if timezone.is_naive(fecha_naive):
                 inicio_cita = timezone.make_aware(fecha_naive)
@@ -184,7 +184,6 @@ def agendar_cita(request, slug_peluqueria):
             # LÓGICA DE SEGURIDAD "BOOKING LOCK" INTEGRADA
             # -------------------------------------------------------------
             
-            # Definimos la lógica de creación para pasarla al Guardia
             def _logica_creacion(empleado_bloqueado, *args, **kwargs):
                 # 1. Verificación final de conflicto (segura dentro del bloqueo)
                 if verificar_conflicto_atomic(empleado_bloqueado, inicio_cita, fin_cita):
@@ -244,7 +243,7 @@ def retorno_bold(request):
             if cita.estado != 'C':
                 cita.estado = 'C'
                 cita.save()
-                cita.enviar_notificacion_telegram() # Notificar tras pago exitoso
+                cita.enviar_notificacion_telegram() 
             return redirect('cita_confirmada')
         except Cita.DoesNotExist:
             return redirect('inicio')
@@ -342,11 +341,10 @@ def mi_horario_empleado(request):
     dias_semana = {0:'Lunes', 1:'Martes', 2:'Miércoles', 3:'Jueves', 4:'Viernes', 5:'Sábado', 6:'Domingo'}
 
     if request.method == 'POST':
-        # Eliminamos todo para reescribir (Estrategia Full-Replace)
         HorarioEmpleado.objects.filter(empleado=empleado).delete()
         
         for i in range(7):
-            if request.POST.get(f'trabaja_{i}'): # Solo si el check está marcado
+            if request.POST.get(f'trabaja_{i}'): 
                 ini = request.POST.get(f'inicio_{i}')
                 fin = request.POST.get(f'fin_{i}')
                 l_ini = request.POST.get(f'almuerzo_inicio_{i}')
