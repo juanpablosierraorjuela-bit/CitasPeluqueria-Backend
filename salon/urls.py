@@ -1,21 +1,22 @@
-# UBICACIÓN: salon/urls.py - FINAL CORREGIDO
 from django.urls import path
 from . import views
 
 urlpatterns = [
+    # --- PÁGINA DE INICIO ---
+    path('', views.inicio, name='inicio'),
     
-    # --- CLIENTE FINAL (RESERVAS) ---
-    # RESTAURADO: La página principal va en la raíz ('')
-    path('', views.inicio, name='inicio'), 
-    
+    # --- RUTA FALTANTE QUE CAUSABA EL ERROR 500 ---
+    path('info/', views.landing_saas, name='landing_saas'),
+
     # --- AUTENTICACIÓN ---
     path('login/', views.login_custom, name='login_custom'),
     path('logout/', views.logout_view, name='logout_usuario'),
+    
+    # --- RUTAS PUBLICAS ---
     path('<slug:slug_peluqueria>/unirse-al-equipo/', views.registro_empleado_publico, name='registro_empleado'),
-    # ... (el resto de rutas se mantiene igual)
     path('<slug:slug_peluqueria>/reservar/', views.agendar_cita, name='agendar_cita'),
     path('<slug:slug_peluqueria>/confirmacion/<int:cita_id>/', views.confirmacion_cita, name='confirmacion_cita'),
-    
+
     # --- API ---
     path('api/horarios/', views.api_obtener_horarios, name='api_horarios'),
     path('webhooks/bold/', views.retorno_bold, name='retorno_bold'),
