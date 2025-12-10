@@ -138,18 +138,15 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- AQUÍ ESTÁ EL CAMBIO QUE NECESITABAS ---
 JAZZMIN_SETTINGS = {
     "site_title": "Administración PASO",
     "site_header": "PASO Admin",
     "welcome_sign": "Bienvenido al Panel de Control",
     "search_model": "salon.Peluqueria",
     
-    # MENÚ SUPERIOR: Aquí agregamos el botón para los empleados
+    # MENÚ SUPERIOR CON EL BOTÓN
     "topmenu_links": [
         {"name": "Ver Sitio", "url": "inicio", "permissions": ["auth.view_user"]},
-        
-        # ESTE ES EL BOTÓN QUE TE FALTABA 👇
         {"name": "📅 Gestionar Mi Horario (Visual)", "url": "mi_horario", "new_window": True},
     ],
     
@@ -166,3 +163,7 @@ JAZZMIN_SETTINGS = {
 
 CORS_ALLOW_ALL_ORIGINS = True
 API_SECRET_KEY = os.environ.get('API_SECRET_KEY', 'mi-clave-super-secreta-cambiame')
+
+# --- ESTO ARREGLA EL ERROR 404 AL LOGUEARSE ---
+LOGIN_REDIRECT_URL = 'inicio'
+LOGOUT_REDIRECT_URL = 'inicio'
