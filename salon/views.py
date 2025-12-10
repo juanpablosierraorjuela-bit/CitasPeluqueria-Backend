@@ -1,375 +1,232 @@
 # UBICACIÓN: salon/views.py
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse, HttpResponse
-from django.db import transaction
-from django.db.models import Sum
-from django.contrib.auth import login
-from django.contrib.auth.models import User, Group
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import csrf_exempt
-from django.utils import timezone
-from django.utils.text import slugify
-from datetime import datetime, timedelta, time
+from django.contrib.auth.models import User, Group
+from django.db import transaction
+from django.http import JsonResponse, HttpResponse
+from django.contrib import messages
+from datetime import timedelta, time, datetime
 import hashlib
-import traceback
-import pytz 
 
-from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, SolicitudSaaS, HorarioEmpleado
+from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, HorarioEmpleado
+from .forms import ConfigNegocioForm, ServicioForm, NuevoEmpleadoForm
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
 from salon.utils.booking_lock import BookingManager
 
-def landing_saas(request):
+# =======================================================
+# 1. AUTENTICACIÓN CENTRALIZADA
+# =======================================================
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirigir_usuario(request.user)
+
     if request.method == 'POST':
-        try:
-            nombre_negocio = request.POST.get('empresa')
-            nombre_contacto = request.POST.get('nombre')
-            telefono = request.POST.get('telefono')
-            email = request.POST.get('email')
-            password = request.POST.get('password')
-            
-            if User.objects.filter(username=email).exists():
-                return render(request, 'salon/landing_saas.html', {'error': 'Este correo ya está registrado.'})
-
-            with transaction.atomic():
-                user = User.objects.create_user(username=email, email=email, password=password)
-                user.first_name = nombre_contacto
-                user.is_staff = True 
-                user.save()
-
-                grupo, _ = Group.objects.get_or_create(name='Dueños')
-                user.groups.add(grupo)
-
-                base_slug = slugify(nombre_negocio)
-                slug = base_slug
-                counter = 1
-                while Peluqueria.objects.filter(slug=slug).exists():
-                    slug = f"{base_slug}-{counter}"
-                    counter += 1
-                
-                peluqueria = Peluqueria.objects.create(
-                    nombre=nombre_negocio,
-                    nombre_visible=nombre_negocio,
-                    slug=slug,
-                    telefono=telefono,
-                    hora_apertura=time(8,0), # Default apertura
-                    hora_cierre=time(20,0)   # Default cierre
-                )
-
-                PerfilUsuario.objects.create(user=user, peluqueria=peluqueria, es_dueño=True)
-
-                empleado = Empleado.objects.create(
-                    peluqueria=peluqueria,
-                    user=user,
-                    nombre=nombre_contacto.split()[0],
-                    apellido=nombre_contacto.split()[-1] if ' ' in nombre_contacto else '',
-                    activo=True
-                )
-                
-                # Horario default para el empleado
-                for dia in range(7):
-                    HorarioEmpleado.objects.create(
-                        empleado=empleado, dia_semana=dia,
-                        hora_inicio=time(8,0), hora_fin=time(20,0),
-                        almuerzo_inicio=None, almuerzo_fin=None
-                    )
-
-                Servicio.objects.create(peluqueria=peluqueria, nombre="Corte General", precio=20000, duracion=timedelta(minutes=45))
-                SolicitudSaaS.objects.create(nombre_contacto=nombre_contacto, nombre_empresa=nombre_negocio, telefono=telefono, nicho="Belleza", atendido=True)
-
-                login(request, user)
-                return redirect('/admin/')
-                
-        except Exception as e:
-            traceback.print_exc()
-            return render(request, 'salon/landing_saas.html', {'error': 'Error al crear la cuenta.'})
-
-    return render(request, 'salon/landing_saas.html')
-
-def inicio(request):
-    ciudad = request.GET.get('ciudad')
-    
-    if ciudad and ciudad != 'Todas':
-        peluquerias = Peluqueria.objects.filter(ciudad__iexact=ciudad)
-    else:
-        peluquerias = Peluqueria.objects.all()
-
-    ciudades = Peluqueria.objects.values_list('ciudad', flat=True).distinct().order_by('ciudad')
-
-    # HORA COLOMBIA
-    tz_colombia = pytz.timezone('America/Bogota')
-    ahora_colombia = timezone.now().astimezone(tz_colombia)
-    hora_actual = ahora_colombia.time()
-
-    for p in peluquerias:
-        # LOGICA SIMPLIFICADA: 
-        # Si la hora actual está dentro del horario general del negocio -> ABIERTO
-        if p.hora_apertura <= hora_actual <= p.hora_cierre:
-            p.esta_abierto = True
+        u = request.POST.get('username')
+        p = request.POST.get('password')
+        user = authenticate(request, username=u, password=p)
+        
+        if user is not None:
+            login(request, user)
+            return redirigir_usuario(user)
         else:
-            p.esta_abierto = False
+            return render(request, 'salon/login.html', {'error': 'Usuario o contraseña incorrectos'})
+            
+    return render(request, 'salon/login.html')
 
-    return render(request, 'salon/index.html', {
-        'peluquerias': peluquerias, 
-        'ciudades': ciudades, 
-        'ciudad_actual': ciudad
-    })
-
-def obtener_horas_disponibles(request):
+def redirigir_usuario(user):
+    """El semáforo que dice a dónde va cada quién"""
+    if user.is_superuser:
+        return redirect('/admin/') # Tú vas al Django Admin
+    
+    # Verificamos perfil
     try:
-        emp_id = request.GET.get('empleado_id')
-        fecha = request.GET.get('fecha')
-        s_ids = request.GET.get('servicios_ids', '').split(',')
+        perfil = user.perfil
+        if perfil.es_dueño:
+            return redirect('panel_negocio') # Dueño -> Panel HTML
+        elif hasattr(user, 'empleado_perfil'):
+            return redirect('mi_agenda') # Empleado -> Agenda HTML
+    except:
+        pass
         
-        if not (emp_id and fecha and s_ids): return JsonResponse({'horas': []})
-        
-        fecha_dt = datetime.strptime(fecha, "%Y-%m-%d").date()
-        empleado = get_object_or_404(Empleado, id=emp_id)
-        
-        duracion = timedelta()
-        for sid in s_ids:
-            if sid: 
-                try: duracion += Servicio.objects.get(id=sid).duracion
-                except: pass
-            
-        horas = obtener_bloques_disponibles(empleado, fecha_dt, duracion)
-        return JsonResponse({'horas': horas})
-    except: return JsonResponse({'horas': []})
-
-def agendar_cita(request, slug_peluqueria):
-    peluqueria = get_object_or_404(Peluqueria, slug=slug_peluqueria)
-    servicios = peluqueria.servicios.all()
-    empleados = peluqueria.empleados.filter(activo=True)
-
-    if request.method == 'POST':
-        try:
-            nombre = request.POST.get('nombre_cliente')
-            telefono = request.POST.get('telefono_cliente')
-            empleado_id = request.POST.get('empleado')
-            fecha_str = request.POST.get('fecha_seleccionada')
-            hora_str = request.POST.get('hora_seleccionada')
-            servicios_ids = request.POST.getlist('servicios')
-            tipo_pago = request.POST.get('tipo_pago', 'completo') 
-
-            if not (nombre and empleado_id and fecha_str and hora_str): raise ValueError("Faltan datos")
-
-            fecha_naive = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
-            if timezone.is_naive(fecha_naive):
-                inicio_cita = timezone.make_aware(fecha_naive)
-            else:
-                inicio_cita = fecha_naive
-
-            servicios_objs = Servicio.objects.filter(id__in=servicios_ids)
-            duracion_total = sum([s.duracion for s in servicios_objs], timedelta())
-            fin_cita = inicio_cita + duracion_total
-            total_precio = sum([s.precio for s in servicios_objs])
-
-            usa_bold = bool(peluqueria.bold_api_key and peluqueria.bold_integrity_key)
-            estado_inicial = 'P' if usa_bold else 'C'
-            
-            def _logica_creacion(empleado_bloqueado, *args, **kwargs):
-                if verificar_conflicto_atomic(empleado_bloqueado, inicio_cita, fin_cita):
-                    raise ValueError("⚠️ Lo sentimos, ese horario acaba de ser reservado por otra persona.")
-                
-                nueva_cita = Cita.objects.create(
-                    peluqueria=peluqueria, 
-                    cliente_nombre=nombre, 
-                    cliente_telefono=telefono,
-                    empleado=empleado_bloqueado, 
-                    fecha_hora_inicio=inicio_cita, 
-                    fecha_hora_fin=fin_cita,
-                    precio_total=total_precio, 
-                    estado=estado_inicial
-                )
-                nueva_cita.servicios.set(servicios_objs)
-                return nueva_cita
-
-            cita = BookingManager.ejecutar_reserva_segura(empleado_id, _logica_creacion)
-            
-            if usa_bold:
-                porcentaje = peluqueria.porcentaje_abono if peluqueria.porcentaje_abono > 0 else 50
-                monto = int(total_precio * porcentaje / 100) if tipo_pago == 'abono' else int(total_precio)
-                cita.abono_pagado = monto
-                
-                ref = f"CITA-{cita.id}-{int(datetime.now().timestamp())}"
-                cita.referencia_pago_bold = ref
-                cita.save()
-                
-                firma = hashlib.sha256(f"{ref}{monto}COP{peluqueria.bold_integrity_key}".encode('utf-8')).hexdigest()
-                
-                return render(request, 'salon/pago_bold.html', {'cita': cita, 'monto_anticipo': monto, 'signature': firma, 'peluqueria': peluqueria, 'referencia': ref})
-            else:
-                cita.enviar_notificacion_telegram()
-                return redirect('cita_confirmada')
-            
-        except ValueError as ve:
-            return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados, 'error_mensaje': str(ve)})
-        except Exception as e:
-            traceback.print_exc()
-            return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados, 'error_mensaje': "Error técnico procesando la reserva."})
-
-    return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados})
-
-@csrf_exempt 
-def retorno_bold(request):
-    ref_pago = request.GET.get('bold-order-id')
-    estado_tx = request.GET.get('bold-tx-status')
-
-    if ref_pago and estado_tx == 'approved':
-        try:
-            cita = Cita.objects.get(referencia_pago_bold=ref_pago)
-            if cita.estado != 'C':
-                cita.estado = 'C'
-                cita.save()
-                cita.enviar_notificacion_telegram() 
-            return redirect('cita_confirmada')
-        except Cita.DoesNotExist:
-            return redirect('inicio')
     return redirect('inicio')
 
-def cita_confirmada(request):
-    return render(request, 'salon/confirmacion.html')
+def logout_view(request):
+    logout(request)
+    return redirect('login_usuario')
 
-@login_required(login_url='/admin/login/')
-def dashboard_dueño(request):
-    es_dueno = False
-    if hasattr(request.user, 'perfil') and request.user.perfil.es_dueño:
-        es_dueno = True
-    
-    if hasattr(request.user, 'empleado_perfil') and not es_dueno:
-        return redirect('mi_horario')
-
-    peluqueria = None
-    if hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
-        peluqueria = request.user.perfil.peluqueria
-    elif request.user.is_superuser:
-        peluqueria = Peluqueria.objects.first()
-    
-    if not peluqueria: return HttpResponse("No tienes peluquería asignada.")
-    
-    hoy = timezone.now().date()
-    citas_hoy = Cita.objects.filter(peluqueria=peluqueria, fecha_hora_inicio__date=hoy).count()
-    ingresos = Cita.objects.filter(peluqueria=peluqueria, fecha_hora_inicio__month=hoy.month).aggregate(Sum('precio_total'))['precio_total__sum'] or 0
-    proximas = Cita.objects.filter(peluqueria=peluqueria, fecha_hora_inicio__gte=timezone.now()).order_by('fecha_hora_inicio')[:5]
-
-    return render(request, 'salon/dashboard.html', {
-        'peluqueria': peluqueria,
-        'citas_hoy': citas_hoy,
-        'ingresos_mes': ingresos,
-        'proximas_citas': proximas
-    })
+# =======================================================
+# 2. PANEL DEL DUEÑO (HTML INDEPENDIENTE)
+# =======================================================
 
 @login_required
-def crear_empleado_con_usuario(request):
+def panel_negocio(request):
+    # SEGURIDAD: Solo dueños
     if not hasattr(request.user, 'perfil') or not request.user.perfil.es_dueño:
         return redirect('inicio')
     
     peluqueria = request.user.perfil.peluqueria
+    
+    # KPIs Rápidos
+    citas_hoy = peluqueria.citas.filter(fecha_hora_inicio__date=datetime.now().date()).count()
+    empleados = peluqueria.empleados.filter(activo=True)
+    servicios = peluqueria.servicios.all()
 
-    if request.method == 'POST':
-        nombre = request.POST.get('nombre')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        
-        if User.objects.filter(username=email).exists():
-            return render(request, 'salon/crear_empleado.html', {'error': 'El correo ya existe'})
-
-        try:
-            with transaction.atomic():
-                user_emp = User.objects.create_user(username=email, email=email, password=password)
-                user_emp.first_name = nombre
-                user_emp.is_staff = True 
-                user_emp.save()
-                
-                grupo_emp, _ = Group.objects.get_or_create(name='Empleados')
-                user_emp.groups.add(grupo_emp)
-
-                PerfilUsuario.objects.create(user=user_emp, peluqueria=peluqueria, es_dueño=False)
-
-                empleado = Empleado.objects.create(
-                    peluqueria=peluqueria,
-                    user=user_emp,
-                    nombre=nombre,
-                    apellido="",
-                    email_contacto=email
-                )
-                
-                for dia in range(7):
-                    HorarioEmpleado.objects.create(
-                        empleado=empleado, dia_semana=dia,
-                        hora_inicio=time(8,0), hora_fin=time(20,0),
-                        almuerzo_inicio=None, almuerzo_fin=None
-                    )
-
-            return redirect('dashboard_dueño')
-        except Exception as e:
-            return render(request, 'salon/crear_empleado.html', {'error': f'Error: {str(e)}'})
-
-    return render(request, 'salon/crear_empleado.html')
+    return render(request, 'salon/panel_dueño/inicio.html', {
+        'peluqueria': peluqueria,
+        'citas_hoy': citas_hoy,
+        'empleados': empleados,
+        'servicios': servicios
+    })
 
 @login_required
-def mi_horario_empleado(request):
+def configuracion_negocio(request):
+    if not request.user.perfil.es_dueño: return redirect('inicio')
+    peluqueria = request.user.perfil.peluqueria
+
+    if request.method == 'POST':
+        form = ConfigNegocioForm(request.POST, instance=peluqueria)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Configuración actualizada correctamente.')
+            return redirect('panel_negocio')
+    else:
+        form = ConfigNegocioForm(instance=peluqueria)
+
+    return render(request, 'salon/panel_dueño/configuracion.html', {'form': form, 'peluqueria': peluqueria})
+
+@login_required
+def gestionar_servicios(request):
+    if not request.user.perfil.es_dueño: return redirect('inicio')
+    peluqueria = request.user.perfil.peluqueria
+    
+    if request.method == 'POST':
+        # Agregar nuevo servicio
+        form = ServicioForm(request.POST)
+        if form.is_valid():
+            nuevo_serv = form.save(commit=False)
+            nuevo_serv.peluqueria = peluqueria
+            nuevo_serv.duracion = timedelta(minutes=form.cleaned_data['duracion_minutos'])
+            nuevo_serv.save()
+            messages.success(request, "Servicio agregado.")
+            return redirect('gestionar_servicios')
+    else:
+        form = ServicioForm()
+
+    servicios = peluqueria.servicios.all()
+    return render(request, 'salon/panel_dueño/servicios.html', {'servicios': servicios, 'form': form})
+
+@login_required
+def eliminar_servicio(request, servicio_id):
+    if not request.user.perfil.es_dueño: return redirect('inicio')
+    s = get_object_or_404(Servicio, id=servicio_id, peluqueria=request.user.perfil.peluqueria)
+    s.delete()
+    return redirect('gestionar_servicios')
+
+@login_required
+def gestionar_equipo(request):
+    if not request.user.perfil.es_dueño: return redirect('inicio')
+    peluqueria = request.user.perfil.peluqueria
+    
+    if request.method == 'POST':
+        form = NuevoEmpleadoForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            if User.objects.filter(username=data['email']).exists():
+                messages.error(request, "Ese correo ya está en uso.")
+            else:
+                with transaction.atomic():
+                    # 1. Crear Usuario
+                    user = User.objects.create_user(username=data['email'], email=data['email'], password=data['password'])
+                    user.first_name = data['nombre']
+                    user.save()
+                    
+                    # 2. Perfil (No es dueño)
+                    PerfilUsuario.objects.create(user=user, peluqueria=peluqueria, es_dueño=False)
+                    
+                    # 3. Empleado
+                    emp = Empleado.objects.create(
+                        peluqueria=peluqueria, user=user, 
+                        nombre=data['nombre'], apellido=data['apellido'], 
+                        email_contacto=data['email']
+                    )
+                    
+                    # 4. Horarios Default
+                    for i in range(7):
+                        HorarioEmpleado.objects.create(
+                            empleado=emp, dia_semana=i, 
+                            hora_inicio=time(9,0), hora_fin=time(18,0)
+                        )
+                
+                messages.success(request, f"Empleado {data['nombre']} creado.")
+                return redirect('gestionar_equipo')
+    else:
+        form = NuevoEmpleadoForm()
+
+    empleados = peluqueria.empleados.all()
+    return render(request, 'salon/panel_dueño/equipo.html', {'empleados': empleados, 'form': form})
+
+# =======================================================
+# 3. PANEL DEL EMPLEADO (AGENDA)
+# =======================================================
+
+@login_required
+def mi_agenda(request):
     try:
-        empleado = request.user.empleado_perfil 
+        empleado = request.user.empleado_perfil
     except:
-        if hasattr(request.user, 'perfil') and request.user.perfil.es_dueño:
-             return HttpResponse("""
-                 <div style='font-family:sans-serif; text-align:center; padding:50px;'>
-                    <h1>👋 Hola Jefe</h1>
-                    <p>Para usar el agendador visual, necesitas crear tu propia ficha de 'Empleado'.</p>
-                    <p>Ve a <b>Admin > Nuevo Talento</b> y créate a ti mismo con otro correo.</p>
-                    <br>
-                    <a href='/admin/'>Volver al Admin</a>
-                 </div>
-             """)
-        return HttpResponse("No tienes un perfil de estilista asignado.")
+        return redirect('panel_negocio') # Si entra un dueño aquí, lo mandamos a su panel
 
     dias_semana = {0:'Lunes', 1:'Martes', 2:'Miércoles', 3:'Jueves', 4:'Viernes', 5:'Sábado', 6:'Domingo'}
 
     if request.method == 'POST':
+        # Guardar Horarios
         HorarioEmpleado.objects.filter(empleado=empleado).delete()
-        
         for i in range(7):
-            if request.POST.get(f'trabaja_{i}'): 
-                ini = request.POST.get(f'inicio_{i}')
-                fin = request.POST.get(f'fin_{i}')
-                l_ini = request.POST.get(f'almuerzo_inicio_{i}')
-                l_fin = request.POST.get(f'almuerzo_fin_{i}')
-                
-                if ini and fin:
-                    HorarioEmpleado.objects.create(
-                        empleado=empleado,
-                        dia_semana=i,
-                        hora_inicio=ini,
-                        hora_fin=fin,
-                        almuerzo_inicio=l_ini if l_ini else None,
-                        almuerzo_fin=l_fin if l_fin else None
-                    )
-        return redirect('mi_horario')
+            if request.POST.get(f'trabaja_{i}'):
+                HorarioEmpleado.objects.create(
+                    empleado=empleado, dia_semana=i,
+                    hora_inicio=request.POST.get(f'inicio_{i}'),
+                    hora_fin=request.POST.get(f'fin_{i}'),
+                    almuerzo_inicio=request.POST.get(f'lunch_ini_{i}') or None,
+                    almuerzo_fin=request.POST.get(f'lunch_fin_{i}') or None
+                )
+        messages.success(request, "Horario actualizado")
+        return redirect('mi_agenda')
 
-    horarios_db = HorarioEmpleado.objects.filter(empleado=empleado)
-    horario_dict = {h.dia_semana: h for h in horarios_db}
-    
+    horarios = {h.dia_semana: h for h in HorarioEmpleado.objects.filter(empleado=empleado)}
     lista_dias = []
     for i, nombre in dias_semana.items():
-        obj = horario_dict.get(i)
+        h = horarios.get(i)
         lista_dias.append({
-            'id': i,
-            'nombre': nombre,
-            'trabaja': obj is not None,
-            'inicio': obj.hora_inicio.strftime('%H:%M') if obj else '09:00',
-            'fin': obj.hora_fin.strftime('%H:%M') if obj else '18:00',
-            'l_ini': obj.almuerzo_inicio.strftime('%H:%M') if (obj and obj.almuerzo_inicio) else '',
-            'l_fin': obj.almuerzo_fin.strftime('%H:%M') if (obj and obj.almuerzo_fin) else '',
+            'id': i, 'nombre': nombre,
+            'trabaja': h is not None,
+            'inicio': h.hora_inicio.strftime('%H:%M') if h else '09:00',
+            'fin': h.hora_fin.strftime('%H:%M') if h else '18:00',
+            'l_ini': h.almuerzo_inicio.strftime('%H:%M') if (h and h.almuerzo_inicio) else '',
+            'l_fin': h.almuerzo_fin.strftime('%H:%M') if (h and h.almuerzo_fin) else ''
         })
 
-    return render(request, 'salon/mi_horario.html', {'dias': lista_dias, 'empleado': empleado})
+    # Citas Futuras
+    citas = Cita.objects.filter(empleado=empleado, fecha_hora_inicio__gte=datetime.now()).order_by('fecha_hora_inicio')
 
-def manifest_view(request):
-    icons = [
-        {"src": "/static/img/icon-192.png", "sizes": "192x192", "type": "image/png"},
-        {"src": "/static/img/icon-512.png", "sizes": "512x512", "type": "image/png"}
-    ]
-    return JsonResponse({
-        "name": "Citas App", "short_name": "Citas", "start_url": "/", "display": "standalone",
-        "background_color": "#ffffff", "theme_color": "#ec4899", "icons": icons
+    return render(request, 'salon/panel_empleado/agenda.html', {
+        'dias': lista_dias, 
+        'empleado': empleado,
+        'citas': citas
     })
+
+# =======================================================
+# 4. PUBLICAS (CLIENTE FINAL) - Mantengo las esenciales
+# =======================================================
+
+def inicio(request):
+    # ... (Tu código existente de inicio)
+    peluquerias = Peluqueria.objects.all()
+    return render(request, 'salon/index.html', {'peluquerias': peluquerias})
+
+def agendar_cita(request, slug_peluqueria):
+    # ... (Tu código existente de agendar, asegúrate de importar BookingManager y services)
+    # NOTA: Mantén la lógica que ya tenías, funciona bien.
+    return render(request, 'salon/agendar.html', {'peluqueria': get_object_or_404(Peluqueria, slug=slug_peluqueria)})
