@@ -1,22 +1,20 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
 from django.db import transaction
-from django.db.models import Sum, Q
+from django.db.models import Sum
 from django.contrib.auth import login
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
-from django.utils import timezone  # Importante para zonas horarias
+from django.utils import timezone
 from django.utils.text import slugify
 from datetime import datetime, timedelta, time
 import hashlib
 import traceback
-import requests
 
 # IMPORTACIÓN COMPLETA DE MODELOS Y SERVICIOS
 from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, SolicitudSaaS, HorarioEmpleado
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
-from . import api
 
 # --- VISTA PARA EL REGISTRO DE NUEVOS SALONES (SAAS) ---
 def landing_saas(request):
@@ -102,7 +100,6 @@ def inicio(request):
     ciudades = Peluqueria.objects.values_list('ciudad', flat=True).distinct().order_by('ciudad')
 
     # 2. Lógica Inteligente de Estado (Abierto/Cerrado)
-    # Se basa en si hay AL MENOS UN empleado trabajando en este instante.
     ahora = timezone.localtime(timezone.now())
     dia_actual = ahora.weekday() # 0=Lunes, 6=Domingo
     hora_actual = ahora.time()
