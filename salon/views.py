@@ -56,15 +56,21 @@ def redirigir_segun_rol(user):
 
     # Verificar si es empleado
     try:
-        if hasattr(user, 'empleado_perfil'):
+        # Nota: Asumo que 'empleado_perfil' es el related_name del OnetoOneField en Empleado
+        if hasattr(user, 'empleado_perfil'): 
             return redirect('mi_agenda')
     except: pass
         
     return redirect('inicio')
 
 def logout_view(request):
+    """
+    CORREGIDO (Nivel Dios UX): Después de cerrar sesión, 
+    redirige al usuario a la página de inicio pública ('inicio') 
+    en lugar del formulario de login.
+    """
     logout(request)
-    return redirect('login_custom')
+    return redirect('inicio') # <--- CAMBIO CRÍTICO AQUÍ
 
 def registro_empleado_publico(request, slug_peluqueria):
     """Permite que un empleado se registre solo mediante un link"""
