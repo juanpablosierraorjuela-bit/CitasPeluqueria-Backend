@@ -6,19 +6,10 @@ import dj_database_url
 # 1. CONFIGURACIÓN BASE
 # ==========================================
 
-# Ruta base del proyecto
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# SEGURIDAD:
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-temporal-desarrollo-12345')
-
-# DEBUG:
 DEBUG = 'RENDER' not in os.environ
-
-# ALLOWED_HOSTS:
 ALLOWED_HOSTS = ['*']
-
-# CSRF:
 CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
 
 
@@ -27,19 +18,15 @@ CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
 # ==========================================
 
 INSTALLED_APPS = [
-    'jazzmin',                    # Panel de admin bonito
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
-    # Librerías de terceros
     'corsheaders',
     'django_multitenant',
-
-    # TUS APLICACIONES
     'salon', 
 ]
 
@@ -63,7 +50,7 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'salon_project.urls'
 
 # ==========================================
-# 4. PLANTILLAS (TEMPLATES)
+# 4. PLANTILLAS
 # ==========================================
 
 TEMPLATES = [
@@ -85,7 +72,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'salon_project.wsgi.application'
 
-
 # ==========================================
 # 5. BASE DE DATOS
 # ==========================================
@@ -96,7 +82,6 @@ DATABASES = {
         conn_max_age=600
     )
 }
-
 
 # ==========================================
 # 6. VALIDACIÓN DE PASSWORD
@@ -109,7 +94,6 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-
 # ==========================================
 # 7. INTERNATIONALIZATION
 # ==========================================
@@ -119,9 +103,8 @@ TIME_ZONE = 'America/Bogota'
 USE_I18N = True
 USE_TZ = True
 
-
 # ==========================================
-# 8. ARCHIVOS ESTÁTICOS (CSS, JS, IMAGES)
+# 8. ESTÁTICOS
 # ==========================================
 
 STATIC_URL = '/static/'
@@ -131,25 +114,31 @@ STATICFILES_DIRS = [
 ]
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-
 # ==========================================
 # 9. OTRAS CONFIGURACIONES
 # ==========================================
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# --- CONFIGURACIÓN JAZZMIN MEJORADA PARA MÓVIL ---
 JAZZMIN_SETTINGS = {
     "site_title": "Administración PASO",
     "site_header": "PASO Admin",
     "welcome_sign": "Bienvenido al Panel de Control",
     "search_model": "salon.Peluqueria",
     
-    # MENÚ SUPERIOR CON EL BOTÓN
+    # 1. Menú Superior (Escritorio)
     "topmenu_links": [
         {"name": "Ver Sitio", "url": "inicio", "permissions": ["auth.view_user"]},
-        {"name": "📅 Gestionar Mi Horario (Visual)", "url": "mi_horario", "new_window": True},
+        {"name": "📅 Mi Horario (Visual)", "url": "mi_horario", "new_window": True},
     ],
-    
+
+    # 2. Menú de Usuario (Avatar - Visible en Móvil)
+    "usermenu_links": [
+        {"name": "📅 Gestionar Mi Horario", "url": "mi_horario", "new_window": True, "icon": "fas fa-clock"},
+    ],
+
+    # 3. Iconos
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
@@ -164,6 +153,5 @@ JAZZMIN_SETTINGS = {
 CORS_ALLOW_ALL_ORIGINS = True
 API_SECRET_KEY = os.environ.get('API_SECRET_KEY', 'mi-clave-super-secreta-cambiame')
 
-# --- ESTO ARREGLA EL ERROR 404 AL LOGUEARSE ---
 LOGIN_REDIRECT_URL = 'inicio'
 LOGOUT_REDIRECT_URL = 'inicio'
