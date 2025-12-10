@@ -2,13 +2,10 @@ from django.contrib import admin
 from django.contrib.auth.models import Group, User
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django import forms
-from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, Ausencia, SolicitudSaaS, HorarioEmpleado
+# Eliminamos HorarioEmpleado de la importación porque ya no existe
+from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, Ausencia, SolicitudSaaS
 
-class HorarioInline(admin.TabularInline):
-    model = HorarioEmpleado
-    extra = 0
-    verbose_name = "Horario"
-    verbose_name_plural = "Horarios de Trabajo"
+# Eliminamos la clase HorarioInline porque dependía del modelo borrado
 
 class SalonOwnerAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
@@ -32,7 +29,7 @@ class SalonOwnerAdmin(admin.ModelAdmin):
 @admin.register(Empleado)
 class EmpleadoAdmin(SalonOwnerAdmin):
     list_display = ('nombre', 'apellido')
-    inlines = [HorarioInline]
+    # Eliminamos inlines = [HorarioInline] para evitar el error
     exclude = ('peluqueria',)
 
 @admin.register(Servicio)
