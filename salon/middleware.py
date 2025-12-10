@@ -6,13 +6,11 @@ class PeluqueriaMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if request.user.is_authenticated:
-            # VERIFICACIÓN SEGURA: Primero miramos si tiene perfil, y luego si tiene peluquería
-            if hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
-                set_current_tenant(request.user.perfil.peluqueria)
-            else:
-                # Si es superusuario o no tiene peluquería asignada
-                set_current_tenant(None)
+        # Lógica de seguridad:
+        # 1. Verifica si el usuario está autenticado
+        # 2. Verifica si el objeto 'user' tiene el atributo 'perfil' y luego 'peluqueria'
+        if request.user.is_authenticated and hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
+            set_current_tenant(request.user.perfil.peluqueria)
         else:
             set_current_tenant(None)
 
