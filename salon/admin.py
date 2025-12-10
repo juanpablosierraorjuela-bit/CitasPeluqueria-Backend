@@ -53,10 +53,26 @@ class CustomUserAdmin(BaseUserAdmin):
         if 'user_permissions' in form.base_fields: form.base_fields['user_permissions'].widget = forms.CheckboxSelectMultiple()
         return form
 
+# CRÍTICO: Registros de Peluqueria, PerfilUsuario y Ausencia con filtros de seguridad
+@admin.register(Peluqueria)
+class PeluqueriaAdmin(SalonOwnerAdmin):
+    list_display = ('nombre_visible', 'ciudad', 'telefono')
+    exclude = ('slug',)
+
+@admin.register(PerfilUsuario)
+class PerfilUsuarioAdmin(SalonOwnerAdmin):
+    list_display = ('user', 'peluqueria', 'es_dueño')
+
+@admin.register(Ausencia)
+class AusenciaAdmin(SalonOwnerAdmin):
+    list_display = ('empleado', 'fecha_inicio', 'fecha_fin')
+
+
 admin.site.unregister(User)
 admin.site.unregister(Group)
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Group)
-admin.site.register(Peluqueria)
-admin.site.register(PerfilUsuario)
-admin.site.register(Ausencia)
+# Se eliminan los registros simples y se usan los decoradores @admin.register de arriba:
+# admin.site.register(Peluqueria)
+# admin.site.register(PerfilUsuario)
+# admin.site.register(Ausencia)
