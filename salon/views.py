@@ -18,7 +18,6 @@ from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, Solicit
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
 from salon.utils.booking_lock import BookingManager
 
-# --- VISTA PARA EL REGISTRO DE NUEVOS SALONES (SAAS) ---
 def landing_saas(request):
     if request.method == 'POST':
         try:
@@ -83,7 +82,6 @@ def landing_saas(request):
 
     return render(request, 'salon/landing_saas.html')
 
-# --- VISTAS WEB PÚBLICAS ---
 def inicio(request):
     ciudad = request.GET.get('ciudad')
     
@@ -176,7 +174,7 @@ def agendar_cita(request, slug_peluqueria):
 
             usa_bold = bool(peluqueria.bold_api_key and peluqueria.bold_integrity_key)
             estado_inicial = 'P' if usa_bold else 'C'
-
+            
             def _logica_creacion(empleado_bloqueado, *args, **kwargs):
                 if verificar_conflicto_atomic(empleado_bloqueado, inicio_cita, fin_cita):
                     raise ValueError("⚠️ Lo sentimos, ese horario acaba de ser reservado por otra persona.")
@@ -240,7 +238,6 @@ def retorno_bold(request):
 def cita_confirmada(request):
     return render(request, 'salon/confirmacion.html')
 
-# --- DASHBOARD DUEÑO ---
 @login_required(login_url='/admin/login/')
 def dashboard_dueño(request):
     es_dueno = False
@@ -270,7 +267,6 @@ def dashboard_dueño(request):
         'proximas_citas': proximas
     })
 
-# --- GESTIÓN DE EQUIPO ---
 @login_required
 def crear_empleado_con_usuario(request):
     if not hasattr(request.user, 'perfil') or not request.user.perfil.es_dueño:
@@ -290,8 +286,6 @@ def crear_empleado_con_usuario(request):
             with transaction.atomic():
                 user_emp = User.objects.create_user(username=email, email=email, password=password)
                 user_emp.first_name = nombre
-                
-                # --- CORRECCIÓN CLAVE: PERMISO PARA ENTRAR AL PANEL ---
                 user_emp.is_staff = True 
                 user_emp.save()
                 
@@ -321,12 +315,22 @@ def crear_empleado_con_usuario(request):
 
     return render(request, 'salon/crear_empleado.html')
 
-# --- MI HORARIO ---
 @login_required
 def mi_horario_empleado(request):
     try:
         empleado = request.user.empleado_perfil 
     except:
+        # ARREGLADO: Si eres dueño pero no tienes perfil de empleado
+        if hasattr(request.user, 'perfil') and request.user.perfil.es_dueño:
+             return HttpResponse("""
+                 <div style='font-family:sans-serif; text-align:center; padding:50px;'>
+                    <h1>👋 Hola Jefe</h1>
+                    <p>Para usar el agendador visual, necesitas crear tu propia ficha de 'Empleado'.</p>
+                    <p>Ve a <b>Admin > Nuevo Talento</b> y créate a ti mismo con otro correo, o pide al soporte que asocie tu cuenta de Dueño a un perfil de Estilista.</p>
+                    <br>
+                    <a href='/admin/'>Volver al Admin</a>
+                 </div>
+             """)
         return HttpResponse("No tienes un perfil de estilista asignado.")
 
     dias_semana = {0:'Lunes', 1:'Martes', 2:'Miércoles', 3:'Jueves', 4:'Viernes', 5:'Sábado', 6:'Domingo'}
