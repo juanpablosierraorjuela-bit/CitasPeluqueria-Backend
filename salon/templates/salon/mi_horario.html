@@ -3,91 +3,263 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Horario | {{ empleado.nombre }}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mi Agenda | PASO</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Outfit', sans-serif; background: #f8fafc; color: #0f172a; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        
-        .card-container { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; padding-bottom: 20px; }
-        
-        .day-row { padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
-        .day-row:last-child { border-bottom: none; }
-        
-        .day-title { width: 100px; font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
-        
-        .time-group { display: flex; align-items: center; gap: 5px; background: #f8fafc; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
-        .time-group label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700; margin-right: 5px; }
-        
-        input[type="time"] { border: none; background: transparent; font-family: inherit; font-size: 0.95rem; cursor: pointer; color: #0f172a; }
-        input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; accent-color: #ec4899; }
-        
-        .btn-save-all { 
-            display: block; width: calc(100% - 40px); margin: 20px auto 0;
-            background: #0f172a; color: white; border: none; padding: 15px; 
-            border-radius: 12px; font-weight: 600; font-size: 1.1rem;
-            cursor: pointer; transition: transform 0.2s, background 0.2s;
-        }
-        .btn-save-all:hover { background: #ec4899; transform: translateY(-2px); }
+        :root {
+            --font-display: 'Cormorant Garamond', serif;
+            --font-body: 'Manrope', sans-serif;
 
-        .btn-back { 
-            text-decoration: none; color: #64748b; font-weight: 600; 
-            padding: 8px 16px; border-radius: 8px; background: white; 
-            border: 1px solid #e2e8f0; transition: 0.2s;
+            --primary: #1e293b;
+            --secondary: #64748b;
+            --accent: #db2777;
+            --success: #10b981;
+            
+            --bg-body: #f8fafc;
+            --surface: rgba(255, 255, 255, 0.7);
+            --glass: rgba(255, 255, 255, 0.5);
+            
+            --shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+            --radius: 20px;
         }
-        .btn-back:hover { background: #f1f5f9; color: #0f172a; }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-body);
+            color: var(--primary);
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+
+        /* --- FONDO AMBIENTAL --- */
+        .ambient-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: 
+                radial-gradient(circle at 0% 0%, rgba(219, 39, 119, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(99, 102, 241, 0.08) 0%, transparent 50%);
+        }
+
+        /* --- HEADER --- */
+        .header-container {
+            max-width: 800px; margin: 0 auto; padding: 40px 20px;
+            display: flex; justify-content: space-between; align-items: flex-end;
+            animation: fadeDown 0.8s ease;
+        }
+
+        .title-block h1 {
+            font-family: var(--font-display); font-size: 2.5rem; font-weight: 700;
+            line-height: 1; margin-bottom: 5px;
+        }
+        .title-block p { color: var(--secondary); font-size: 1rem; }
+
+        .nav-actions { display: flex; gap: 10px; align-items: center; }
+
+        .btn-small {
+            text-decoration: none; font-size: 0.85rem; font-weight: 600;
+            padding: 8px 16px; border-radius: 30px; transition: 0.2s;
+            display: inline-flex; align-items: center; gap: 5px;
+        }
+        .btn-ghost { background: white; color: var(--primary); box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+        .btn-ghost:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+        .btn-danger { color: #ef4444; background: #fef2f2; }
         
-        .logout-link { color: #ef4444; margin-left: 10px; text-decoration: none; font-size: 0.9rem; font-weight: 600; }
-        .logout-link:hover { text-decoration: underline; }
+        /* --- FORMULARIO CONTAINER --- */
+        .schedule-container {
+            max-width: 800px; margin: 0 auto; padding: 0 20px;
+        }
+
+        /* --- TARJETA DE DÍA --- */
+        .day-card {
+            background: var(--surface); backdrop-filter: blur(10px);
+            border-radius: var(--radius); padding: 20px;
+            margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.6);
+            box-shadow: var(--shadow-card);
+            display: flex; flex-direction: column; gap: 15px;
+            transition: all 0.3s ease;
+            opacity: 0; animation: fadeUp 0.5s ease forwards;
+        }
+        
+        /* Animación escalonada */
+        .day-card:nth-child(1) { animation-delay: 0.1s; }
+        .day-card:nth-child(2) { animation-delay: 0.2s; }
+        .day-card:nth-child(3) { animation-delay: 0.3s; }
+        .day-card:nth-child(4) { animation-delay: 0.4s; }
+        .day-card:nth-child(5) { animation-delay: 0.5s; }
+        .day-card:nth-child(6) { animation-delay: 0.6s; }
+        .day-card:nth-child(7) { animation-delay: 0.7s; }
+
+        .day-header {
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .day-name {
+            font-family: var(--font-display); font-size: 1.3rem; font-weight: 700;
+            color: var(--primary); display: flex; align-items: center; gap: 10px;
+        }
+
+        /* --- TOGGLE SWITCH --- */
+        .switch {
+            position: relative; display: inline-block; width: 50px; height: 28px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #cbd5e1; transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px;
+            background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        /* --- TIME CONTROLS --- */
+        .time-controls {
+            display: flex; flex-wrap: wrap; gap: 20px;
+            transition: opacity 0.3s, filter 0.3s;
+        }
+
+        .day-card.inactive .time-controls {
+            opacity: 0.4; pointer-events: none; filter: grayscale(1);
+        }
+
+        .time-group {
+            flex: 1; min-width: 200px;
+            background: white; padding: 10px 15px; border-radius: 12px;
+            display: flex; align-items: center; gap: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .group-icon { font-size: 1.2rem; }
+        
+        .time-inputs { display: flex; align-items: center; gap: 8px; flex: 1; }
+        
+        input[type="time"] {
+            border: none; background: #f1f5f9; padding: 6px 10px;
+            border-radius: 8px; font-family: var(--font-body); font-size: 0.9rem;
+            color: var(--primary); font-weight: 600; outline: none; cursor: pointer;
+            width: 100%; transition: background 0.2s;
+        }
+        input[type="time"]:focus { background: #e0f2fe; color: #0284c7; }
+
+        .divider { color: var(--secondary); font-size: 0.8rem; font-weight: 700; }
+
+        /* --- BOTÓN GUARDAR FLOTANTE --- */
+        .save-bar {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 50; width: 90%; max-width: 400px;
+        }
+
+        .btn-save {
+            width: 100%; padding: 16px; border: none; border-radius: 50px;
+            background: var(--primary); color: white;
+            font-family: var(--font-body); font-size: 1.1rem; font-weight: 700;
+            cursor: pointer; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25);
+            transition: transform 0.2s; position: relative; overflow: hidden;
+        }
+
+        .btn-save:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(15, 23, 42, 0.35); }
+        
+        /* Shimmer Effect */
+        .btn-save::after {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transform: skewX(-20deg); animation: shimmer 3s infinite;
+        }
+        
+        @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shimmer { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
+
+        @media (max-width: 600px) {
+            .time-controls { flex-direction: column; gap: 10px; }
+            .header-container { flex-direction: column; align-items: flex-start; gap: 15px; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div>
-                <h1 style="margin:0;">Hola, {{ empleado.nombre }} 👋</h1>
-                <p style="margin:5px 0 0; color:#64748b;">Configura tu semana laboral</p>
-            </div>
-            
-            <div>
-                {% if request.user.perfil.es_dueño %}
-                    <a href="{% url 'dashboard_dueño' %}" class="btn-back">← Volver al Panel</a>
-                {% else %}
-                    <a href="{% url 'inicio' %}" class="btn-back">🏠 Ir al Sitio</a>
-                    <a href="/admin/logout/" class="logout-link">Salir</a>
-                {% endif %}
-            </div>
+
+    <div class="ambient-bg"></div>
+
+    <div class="header-container">
+        <div class="title-block">
+            <h1>Hola, {{ empleado.nombre }} 👋</h1>
+            <p>Define tus horarios de trabajo y descansos.</p>
         </div>
+        <div class="nav-actions">
+            {% if request.user.perfil.es_dueño %}
+                <a href="{% url 'dashboard_dueño' %}" class="btn-small btn-ghost">📊 Panel</a>
+            {% else %}
+                <a href="{% url 'inicio' %}" class="btn-small btn-ghost">🏠 Inicio</a>
+                <a href="/admin/logout/" class="btn-small btn-danger">Salir</a>
+            {% endif %}
+        </div>
+    </div>
 
-        <form method="POST" class="card-container">
-            {% csrf_token %}
+    <form method="POST" class="schedule-container">
+        {% csrf_token %}
 
-            {% for d in dias %}
-            <div class="day-row">
-                <input type="hidden" name="dia_id" value="{{ d.id }}">
-                <div class="day-title">
-                    <input type="checkbox" name="dias_activos" value="{{ d.id }}" {% if d.trabaja %}checked{% endif %}>
+        {% for d in dias %}
+        <div class="day-card {% if not d.trabaja %}inactive{% endif %}" id="card_{{ d.id }}">
+            <div class="day-header">
+                <div class="day-name">
                     {{ d.nombre }}
                 </div>
+                <label class="switch">
+                    <input type="checkbox" name="trabaja_{{ d.id }}" id="check_{{ d.id }}" 
+                           {% if d.trabaja %}checked{% endif %} 
+                           onchange="toggleDay({{ d.id }})">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="time-controls">
                 <div class="time-group">
-                    <label>Turno</label>
-                    <input type="time" name="hora_inicio" value="{{ d.inicio }}">
-                    <span>a</span>
-                    <input type="time" name="hora_fin" value="{{ d.fin }}">
+                    <span class="group-icon">☀️</span>
+                    <div class="time-inputs">
+                        <input type="time" name="inicio_{{ d.id }}" value="{{ d.inicio }}">
+                        <span class="divider">a</span>
+                        <input type="time" name="fin_{{ d.id }}" value="{{ d.fin }}">
+                    </div>
                 </div>
+
                 <div class="time-group">
-                    <label>🍔 Almuerzo</label>
-                    <input type="time" name="almuerzo_inicio" value="{{ d.l_ini }}">
-                    <span>a</span>
-                    <input type="time" name="almuerzo_fin" value="{{ d.l_fin }}">
+                    <span class="group-icon">☕</span>
+                    <div class="time-inputs">
+                        <input type="time" name="almuerzo_inicio_{{ d.id }}" value="{{ d.l_ini }}">
+                        <span class="divider">a</span>
+                        <input type="time" name="almuerzo_fin_{{ d.id }}" value="{{ d.l_fin }}">
+                    </div>
                 </div>
             </div>
-            {% endfor %}
+        </div>
+        {% endfor %}
 
-            <button type="submit" class="btn-save-all">💾 Guardar Cambios</button>
-        </form>
-    </div>
+        <div style="height: 80px;"></div> <div class="save-bar">
+            <button type="submit" class="btn-save">
+                💾 Guardar Configuración
+            </button>
+        </div>
+    </form>
+
+    <script>
+        function toggleDay(id) {
+            const checkbox = document.getElementById(`check_${id}`);
+            const card = document.getElementById(`card_${id}`);
+            
+            if (checkbox.checked) {
+                card.classList.remove('inactive');
+            } else {
+                card.classList.add('inactive');
+            }
+        }
+    </script>
 </body>
 </html>
