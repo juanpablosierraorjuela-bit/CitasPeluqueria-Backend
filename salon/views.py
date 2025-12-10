@@ -1,5 +1,7 @@
 # UBICACIÓN: salon/views.py
 import logging
+import json
+from datetime import timedelta, time, datetime
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -8,13 +10,11 @@ from django.db import transaction
 from django.db.models import Sum
 from django.http import JsonResponse
 from django.contrib import messages
-from datetime import timedelta, time, datetime
 from django.utils import timezone
-import json
+from django.utils.text import slugify # IMPORTANTE: Necesario para crear el slug de la nueva peluquería
 
 # Importaciones locales
 from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, HorarioEmpleado
-# Nota: ConfigNegocioForm se eliminó porque hacemos el guardado manual para mayor control en este caso
 from .forms import ServicioForm, RegistroPublicoEmpleadoForm
 from .services import obtener_bloques_disponibles
 from salon.utils.booking_lock import BookingManager
@@ -191,7 +191,6 @@ def configuracion_negocio(request):
             messages.error(request, f"Hubo un error al guardar: {str(e)}")
 
     # 3. Generación de URL Webhook para mostrar en pantalla
-    # Usamos try/except por si request.build_absolute_uri falla en algunos contextos (raro, pero preventivo)
     try:
         webhook_url = request.build_absolute_uri('/webhooks/bold/') 
     except Exception:
@@ -309,7 +308,7 @@ def mi_agenda(request):
     return render(request, 'salon/mi_horario.html', {'empleado': empleado, 'dias': lista_dias, 'mis_citas': mis_citas})
 
 # =======================================================
-# 4. PÚBLICO (RESERVAS REALES)
+# 4. PÚBLICO (RESERVAS REALES Y SAAS)
 # =======================================================
 
 def inicio(request):
@@ -328,6 +327,68 @@ def inicio(request):
     })
 
 def landing_saas(request):
+    """
+    Vista de registro para NUEVOS DUEÑOS de peluquerías (SaaS).
+    Crea Usuario, Peluquería y Empleado Admin automáticamente.
+    """
+    if request.method == 'POST':
+        # 1. Obtener datos del formulario
+        nombre_negocio = request.POST.get('nombre_negocio')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        telefono = request.POST.get('telefono', '') 
+
+        # 2. Validaciones básicas
+        if User.objects.filter(username=email).exists():
+            messages.error(request, "Este correo ya está registrado.")
+            return render(request, 'salon/landing_saas.html')
+
+        try:
+            with transaction.atomic():
+                # 3. Crear el Usuario (Dueño)
+                user = User.objects.create_user(username=email, email=email, password=password)
+                user.first_name = "Dueño" 
+                user.save()
+
+                # 4. Crear la Peluquería
+                base_slug = slugify(nombre_negocio)
+                slug = base_slug
+                contador = 1
+                while Peluqueria.objects.filter(slug=slug).exists():
+                    slug = f"{base_slug}-{contador}"
+                    contador += 1
+
+                peluqueria = Peluqueria.objects.create(
+                    nombre=nombre_negocio,
+                    slug=slug,
+                    direccion="Dirección pendiente", 
+                    telefono=telefono
+                )
+                
+                # Crear Perfil de Dueño
+                PerfilUsuario.objects.create(user=user, peluqueria=peluqueria, es_dueño=True)
+
+                # 5. Crear el perfil de Empleado (Admin/Dueño) para que aparezca en agenda
+                Empleado.objects.create(
+                    user=user,
+                    peluqueria=peluqueria,
+                    nombre="Administrador",
+                    apellido="(Dueño)",
+                    email_contacto=email,
+                    activo=True
+                )
+
+            # 6. LOGUEAR AUTOMÁTICAMENTE Y REDIRIGIR
+            login(request, user)
+            messages.success(request, "¡Bienvenido! Tu negocio ha sido creado.")
+            return redirect('panel_negocio')
+
+        except Exception as e:
+            logger.error(f"Error en registro SaaS: {e}")
+            messages.error(request, f"Error al registrar: {str(e)}")
+            return render(request, 'salon/landing_saas.html')
+
+    # Si es GET (cuando entran a ver la página)
     return render(request, 'salon/landing_saas.html')
 
 def agendar_cita(request, slug_peluqueria):
