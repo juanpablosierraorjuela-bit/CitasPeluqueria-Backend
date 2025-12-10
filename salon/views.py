@@ -4,16 +4,17 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.db.models import Sum
 from django.http import JsonResponse
 from django.contrib import messages
 from datetime import timedelta, time, datetime
-import hashlib
+from django.utils import timezone
 import json
 
 # Importaciones locales
-from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, HorarioEmpleado, SolicitudSaaS
+from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, HorarioEmpleado
 from .forms import ConfigNegocioForm, ServicioForm, NuevoEmpleadoForm, RegistroPublicoEmpleadoForm
-from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
+from .services import obtener_bloques_disponibles
 from salon.utils.booking_lock import BookingManager
 
 # =======================================================
@@ -26,7 +27,7 @@ def login_custom(request):
         return redirigir_segun_rol(request.user)
 
     if request.method == 'POST':
-        u = request.POST.get('email') # Usamos el email como username
+        u = request.POST.get('email')
         p = request.POST.get('password')
         user = authenticate(request, username=u, password=p)
         
@@ -40,7 +41,7 @@ def login_custom(request):
 
 def redirigir_segun_rol(user):
     if user.is_superuser:
-        return redirect('/admin/') # Tú vas al Django Admin
+        return redirect('/admin/')
     
     # Verificar si es dueño
     try:
@@ -61,7 +62,6 @@ def logout_view(request):
     return redirect('login_custom')
 
 def registro_empleado_publico(request, slug_peluqueria):
-    """Permite que un empleado se registre solo mediante un link"""
     peluqueria = get_object_or_404(Peluqueria, slug=slug_peluqueria)
 
     if request.method == 'POST':
@@ -74,33 +74,28 @@ def registro_empleado_publico(request, slug_peluqueria):
 
             try:
                 with transaction.atomic():
-                    # 1. Crear Usuario
                     user = User.objects.create_user(username=data['email'], email=data['email'], password=data['password'])
                     user.first_name = data['nombre']
                     user.last_name = data['apellido']
                     user.save()
 
-                    # 2. Crear Perfil (NO es dueño)
                     PerfilUsuario.objects.create(user=user, peluqueria=peluqueria, es_dueño=False)
 
-                    # 3. Crear Ficha Empleado
                     emp = Empleado.objects.create(
                         peluqueria=peluqueria, user=user,
                         nombre=data['nombre'], apellido=data['apellido'],
                         email_contacto=data['email'], activo=True
                     )
 
-                    # 4. Horarios Default
                     for i in range(7):
                         HorarioEmpleado.objects.create(empleado=emp, dia_semana=i, hora_inicio=time(9,0), hora_fin=time(19,0))
 
-                # Auto-login y redirigir
                 login(request, user)
                 return redirect('mi_agenda')
 
             except Exception as e:
                 print(e)
-                return render(request, 'salon/registro_empleado.html', {'peluqueria': peluqueria, 'form': form, 'error': 'Error interno al crear cuenta.'})
+                return render(request, 'salon/registro_empleado.html', {'peluqueria': peluqueria, 'form': form, 'error': 'Error interno.'})
     else:
         form = RegistroPublicoEmpleadoForm()
 
@@ -116,12 +111,31 @@ def panel_negocio(request):
         return redirect('inicio')
     
     peluqueria = request.user.perfil.peluqueria
-    citas_hoy = peluqueria.citas.filter(fecha_hora_inicio__date=datetime.now().date()).count()
+    hoy = timezone.localdate()
+    
+    # KPIs Básicos
+    citas_hoy = peluqueria.citas.filter(fecha_hora_inicio__date=hoy).count()
     empleados = peluqueria.empleados.filter(activo=True)
     servicios = peluqueria.servicios.all()
 
+    # KPIs Avanzados (Para que el Dashboard se vea lleno)
+    ingresos_mes = peluqueria.citas.filter(
+        fecha_hora_inicio__month=hoy.month, 
+        estado='C'
+    ).aggregate(Sum('precio_total'))['precio_total__sum'] or 0
+
+    proximas_citas = peluqueria.citas.filter(
+        fecha_hora_inicio__gte=timezone.now(),
+        estado__in=['C', 'P']
+    ).order_by('fecha_hora_inicio')[:10]
+
     return render(request, 'salon/panel_dueño/inicio.html', {
-        'peluqueria': peluqueria, 'citas_hoy': citas_hoy, 'empleados': empleados, 'servicios': servicios
+        'peluqueria': peluqueria, 
+        'citas_hoy': citas_hoy, 
+        'empleados': empleados, 
+        'servicios': servicios,
+        'ingresos_mes': ingresos_mes,
+        'proximas_citas': proximas_citas
     })
 
 @login_required
@@ -138,8 +152,7 @@ def configuracion_negocio(request):
     else:
         form = ConfigNegocioForm(instance=peluqueria)
     
-    # Reutilizamos la plantilla de crear empleado o una simple para config, 
-    # asumiendo que crearás 'configuracion.html' similar a 'crear_empleado.html'
+    # Usamos crear_empleado como base visual o una nueva si tienes
     return render(request, 'salon/crear_empleado.html', {'form': form, 'titulo': 'Configuración del Negocio'}) 
 
 @login_required
@@ -159,7 +172,7 @@ def gestionar_servicios(request):
         form = ServicioForm()
 
     servicios = peluqueria.servicios.all()
-    # Usamos una plantilla simple o reutilizamos dashboard pasando contexto
+    # Si tienes un template específico úsalo, si no, usa el dashboard genérico
     return render(request, 'salon/dashboard.html', {'custom_content': 'servicios', 'servicios': servicios, 'form': form, 'peluqueria': peluqueria})
 
 @login_required
@@ -174,7 +187,6 @@ def gestionar_equipo(request):
     if not request.user.perfil.es_dueño: return redirect('inicio')
     peluqueria = request.user.perfil.peluqueria
     
-    # Aquí mostramos el link de invitación
     link_invitacion = request.build_absolute_uri(f"/{peluqueria.slug}/unirse-al-equipo/")
     empleados = peluqueria.empleados.all()
     
@@ -222,20 +234,33 @@ def mi_agenda(request):
             'l_fin': h.almuerzo_fin.strftime('%H:%M') if (h and h.almuerzo_fin) else ''
         })
 
-    return render(request, 'salon/mi_horario.html', {'empleado': empleado, 'dias': lista_dias})
+    # Mostrar citas futuras del empleado
+    mis_citas = Cita.objects.filter(empleado=empleado, fecha_hora_inicio__gte=datetime.now()).order_by('fecha_hora_inicio')
+
+    return render(request, 'salon/mi_horario.html', {'empleado': empleado, 'dias': lista_dias, 'mis_citas': mis_citas})
 
 # =======================================================
-# 4. PÚBLICO (RESERVAS)
+# 4. PÚBLICO (RESERVAS REALES)
 # =======================================================
 
 def inicio(request):
-    peluquerias = Peluqueria.objects.all()
-    return render(request, 'salon/index.html', {'peluquerias': peluquerias})
+    # Lógica de búsqueda
+    ciudad = request.GET.get('ciudad')
+    if ciudad:
+        peluquerias = Peluqueria.objects.filter(ciudad__icontains=ciudad)
+    else:
+        peluquerias = Peluqueria.objects.all()
+        
+    # Obtener lista única de ciudades para el filtro
+    ciudades = Peluqueria.objects.values_list('ciudad', flat=True).distinct()
+    
+    return render(request, 'salon/index.html', {
+        'peluquerias': peluquerias, 
+        'ciudades': ciudades,
+        'ciudad_actual': ciudad
+    })
 
 def landing_saas(request):
-    if request.method == 'POST':
-        # Aquí crearías la peluquería nueva si implementas registro automático de dueños
-        pass
     return render(request, 'salon/landing_saas.html')
 
 def agendar_cita(request, slug_peluqueria):
@@ -245,20 +270,71 @@ def agendar_cita(request, slug_peluqueria):
 
     if request.method == 'POST':
         try:
+            # 1. Recibir datos del formulario HTML
             empleado_id = request.POST.get('empleado')
             fecha_str = request.POST.get('fecha_seleccionada') # YYYY-MM-DD
             hora_str = request.POST.get('hora_seleccionada') # HH:MM
             cliente_nombre = request.POST.get('nombre_cliente')
             cliente_telefono = request.POST.get('telefono_cliente')
-            servicios_ids = request.POST.getlist('servicios') # Debe venir del frontend como lista
+            servicios_ids = request.POST.getlist('servicios') # Lista de IDs
+            tipo_pago = request.POST.get('tipo_pago', 'completo')
 
-            # ... Lógica de creación de cita (simplificada para este ejemplo) ...
-            # Aquí deberías llamar a tu BookingManager o lógica de creación
-            # Por ahora redirigimos a Bold si hay key
+            if not (empleado_id and fecha_str and hora_str and servicios_ids):
+                raise ValueError("Faltan datos obligatorios para la reserva.")
+
+            # 2. Preparar objetos
+            servicios_objs = Servicio.objects.filter(id__in=servicios_ids)
+            duracion_total = sum([s.duracion for s in servicios_objs], timedelta())
+            precio_total = sum([s.precio for s in servicios_objs])
             
-            return redirect('inicio') # Placeholder
+            # Fecha y Hora Inicio/Fin
+            inicio = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
+            fin = inicio + duracion_total
+
+            # 3. Lógica de Reserva ATÓMICA (Usando el BookingManager)
+            def _crear_reserva_segura(empleado_bloqueado):
+                # Validar superposición (El BookingManager ya bloqueó la fila)
+                conflicto = Cita.objects.filter(
+                    empleado=empleado_bloqueado,
+                    estado__in=['P', 'C'],
+                    fecha_hora_inicio__lt=fin,
+                    fecha_hora_fin__gt=inicio
+                ).exists()
+                
+                if conflicto:
+                    raise ValueError("Lo sentimos, este horario acaba de ser ocupado por otra persona.")
+
+                # Crear la cita
+                nueva_cita = Cita.objects.create(
+                    peluqueria=peluqueria,
+                    empleado=empleado_bloqueado,
+                    cliente_nombre=cliente_nombre,
+                    cliente_telefono=cliente_telefono,
+                    fecha_hora_inicio=inicio,
+                    fecha_hora_fin=fin,
+                    precio_total=precio_total,
+                    estado='C' # Confirmada por defecto (luego integramos pago real)
+                )
+                nueva_cita.servicios.set(servicios_objs)
+                return nueva_cita
+
+            # Ejecutar con protección contra doble reserva
+            cita = BookingManager.ejecutar_reserva_segura(empleado_id, _crear_reserva_segura)
+            
+            # 4. Enviar Notificaciones y Redirigir
+            cita.enviar_notificacion_telegram()
+            
+            # Si hay integración con Bold y es pago parcial, aquí iría la lógica
+            # Por ahora redirigimos a éxito
+            return redirect('confirmacion_cita', slug_peluqueria=peluqueria.slug, cita_id=cita.id)
+
         except Exception as e:
-            return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'error_mensaje': str(e)})
+            return render(request, 'salon/agendar.html', {
+                'peluqueria': peluqueria, 
+                'servicios': servicios, 
+                'empleados': empleados,
+                'error_mensaje': str(e)
+            })
 
     return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados})
 
@@ -266,20 +342,34 @@ def api_obtener_horarios(request):
     """API JSON usada por el frontend de reservas para llenar el select de horas"""
     emp_id = request.GET.get('empleado_id')
     fecha_str = request.GET.get('fecha')
+    servicios_ids = request.GET.get('servicios_ids') # "1,2,3"
     
-    if not emp_id or not fecha_str: return JsonResponse({'horas': []})
+    if not emp_id or not fecha_str or not servicios_ids: 
+        return JsonResponse({'horas': []})
 
     try:
         fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
         emp = Empleado.objects.get(id=emp_id)
-        # Asumimos duración de 30 min por defecto o sumamos servicios
-        horas = obtener_bloques_disponibles(emp, fecha, timedelta(minutes=30))
+        
+        # Calcular duración total de los servicios seleccionados
+        ids = [int(x) for x in servicios_ids.split(',')]
+        servicios = Servicio.objects.filter(id__in=ids)
+        duracion_total = sum([s.duracion for s in servicios], timedelta())
+        
+        # Si no hay servicios válidos, usar 30 min por defecto
+        if duracion_total == timedelta(0):
+            duracion_total = timedelta(minutes=30)
+
+        horas = obtener_bloques_disponibles(emp, fecha, duracion_total)
         return JsonResponse({'horas': horas})
-    except:
+    except Exception as e:
+        print(f"Error horarios: {e}")
         return JsonResponse({'horas': []})
 
 def confirmacion_cita(request, slug_peluqueria, cita_id):
-    return render(request, 'salon/confirmacion.html')
+    cita = get_object_or_404(Cita, id=cita_id)
+    return render(request, 'salon/confirmacion.html', {'cita': cita})
 
 def retorno_bold(request):
+    # Lógica de retorno de pago Bold (Simplificada)
     return render(request, 'salon/confirmacion.html')
