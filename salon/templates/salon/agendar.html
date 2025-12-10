@@ -265,6 +265,12 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05);
             text-decoration: none; font-size: 1.4rem; z-index: 40;
         }
+        
+        /* Estilo para mensaje de datos faltantes */
+        .data-missing-message {
+            background: #fff1f2; color: #be123c; padding: 15px; border-radius: 12px; 
+            margin-bottom: 20px; font-size: 0.95rem; text-align: center; font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -311,6 +317,10 @@
                             </div>
                         </div>
                     </label>
+                    {% empty %}
+                    <div class="data-missing-message" style="grid-column:1/-1;">
+                        ❌ No hay servicios activos para esta peluquería. Por favor, contacta al administrador para configurar el menú de servicios.
+                    </div>
                     {% endfor %}
                 </div>
             </div>
@@ -324,6 +334,10 @@
                             {{ e.nombre|first }}
                         </div>
                         <span class="stylist-name">{{ e.nombre }}</span>
+                    </div>
+                    {% empty %}
+                    <div class="data-missing-message" style="grid-column:1/-1;">
+                        ❌ No hay estilistas activos o con horarios disponibles para tomar reservas.
                     </div>
                     {% endfor %}
                 </div>
@@ -373,7 +387,7 @@
                     <label for="check_terminos" style="font-size:0.85rem; color:var(--secondary); line-height:1.5;">
                         Confirmo mi asistencia y acepto las <a href="#" style="color: var(--accent); font-weight: 700; text-decoration: none;">Políticas de Cancelación</a>. (El abono no es reembolsable si cancelas con menos de 24 horas).
                     </label>
-                    </div>
+                </div>
             </div>
 
             <div class="bottom-bar" id="bottom-bar">
