@@ -371,9 +371,9 @@
                 <div style="display:flex; gap:12px; margin-top:20px; align-items:flex-start; padding:0 5px;">
                     <input type="checkbox" id="check_terminos" style="margin-top:4px; accent-color: var(--primary);" required>
                     <label for="check_terminos" style="font-size:0.85rem; color:var(--secondary); line-height:1.5;">
-                        Confirmo mi asistencia y acepto las políticas de cancelación.
+                        Confirmo mi asistencia y acepto las <a href="#" style="color: var(--accent); font-weight: 700; text-decoration: none;">Políticas de Cancelación</a>. (El abono no es reembolsable si cancelas con menos de 24 horas).
                     </label>
-                </div>
+                    </div>
             </div>
 
             <div class="bottom-bar" id="bottom-bar">
@@ -489,7 +489,7 @@
         const btn = document.getElementById('btn-confirmar');
         const bar = document.getElementById('bottom-bar');
 
-        if(hora && nom && tel && term) {
+        if(hora && nom && tel && tel.length === 10 && term) {
             btn.disabled = false; bar.classList.add('visible');
         } else {
             btn.disabled = true; if(!hora) bar.classList.remove('visible');
