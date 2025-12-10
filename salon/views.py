@@ -50,7 +50,9 @@ def landing_saas(request):
                     nombre=nombre_negocio,
                     nombre_visible=nombre_negocio,
                     slug=slug,
-                    telefono=telefono
+                    telefono=telefono,
+                    hora_apertura=time(8,0), # Default apertura
+                    hora_cierre=time(20,0)   # Default cierre
                 )
 
                 PerfilUsuario.objects.create(user=user, peluqueria=peluqueria, es_dueño=True)
@@ -63,11 +65,12 @@ def landing_saas(request):
                     activo=True
                 )
                 
-                for dia in range(5):
+                # Horario default para el empleado
+                for dia in range(7):
                     HorarioEmpleado.objects.create(
                         empleado=empleado, dia_semana=dia,
-                        hora_inicio=time(9,0), hora_fin=time(18,0),
-                        almuerzo_inicio=time(13,0), almuerzo_fin=time(14,0)
+                        hora_inicio=time(8,0), hora_fin=time(20,0),
+                        almuerzo_inicio=None, almuerzo_fin=None
                     )
 
                 Servicio.objects.create(peluqueria=peluqueria, nombre="Corte General", precio=20000, duracion=timedelta(minutes=45))
@@ -92,30 +95,18 @@ def inicio(request):
 
     ciudades = Peluqueria.objects.values_list('ciudad', flat=True).distinct().order_by('ciudad')
 
+    # HORA COLOMBIA
     tz_colombia = pytz.timezone('America/Bogota')
     ahora_colombia = timezone.now().astimezone(tz_colombia)
-    
-    dia_actual = ahora_colombia.weekday()
     hora_actual = ahora_colombia.time()
 
     for p in peluquerias:
-        p.esta_abierto = False
-        horarios_hoy = HorarioEmpleado.objects.filter(
-            empleado__peluqueria=p,
-            empleado__activo=True,
-            dia_semana=dia_actual
-        )
-
-        for h in horarios_hoy:
-            if h.hora_inicio <= hora_actual <= h.hora_fin:
-                en_almuerzo = False
-                if h.almuerzo_inicio and h.almuerzo_fin:
-                    if h.almuerzo_inicio <= hora_actual <= h.almuerzo_fin:
-                        en_almuerzo = True
-                
-                if not en_almuerzo:
-                    p.esta_abierto = True
-                    break
+        # LOGICA SIMPLIFICADA: 
+        # Si la hora actual está dentro del horario general del negocio -> ABIERTO
+        if p.hora_apertura <= hora_actual <= p.hora_cierre:
+            p.esta_abierto = True
+        else:
+            p.esta_abierto = False
 
     return render(request, 'salon/index.html', {
         'peluquerias': peluquerias, 
@@ -302,11 +293,11 @@ def crear_empleado_con_usuario(request):
                     email_contacto=email
                 )
                 
-                for dia in range(5):
+                for dia in range(7):
                     HorarioEmpleado.objects.create(
                         empleado=empleado, dia_semana=dia,
-                        hora_inicio=time(9,0), hora_fin=time(18,0),
-                        almuerzo_inicio=time(13,0), almuerzo_fin=time(14,0)
+                        hora_inicio=time(8,0), hora_fin=time(20,0),
+                        almuerzo_inicio=None, almuerzo_fin=None
                     )
 
             return redirect('dashboard_dueño')
@@ -320,13 +311,12 @@ def mi_horario_empleado(request):
     try:
         empleado = request.user.empleado_perfil 
     except:
-        # ARREGLADO: Si eres dueño pero no tienes perfil de empleado
         if hasattr(request.user, 'perfil') and request.user.perfil.es_dueño:
              return HttpResponse("""
                  <div style='font-family:sans-serif; text-align:center; padding:50px;'>
                     <h1>👋 Hola Jefe</h1>
                     <p>Para usar el agendador visual, necesitas crear tu propia ficha de 'Empleado'.</p>
-                    <p>Ve a <b>Admin > Nuevo Talento</b> y créate a ti mismo con otro correo, o pide al soporte que asocie tu cuenta de Dueño a un perfil de Estilista.</p>
+                    <p>Ve a <b>Admin > Nuevo Talento</b> y créate a ti mismo con otro correo.</p>
                     <br>
                     <a href='/admin/'>Volver al Admin</a>
                  </div>
