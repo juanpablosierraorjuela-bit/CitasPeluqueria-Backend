@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Equipo | {{ peluqueria.nombre_visible }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: system-ui, sans-serif; background: #f8fafc; margin: 0; padding: 20px; color: #0f172a; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h1 { margin-top: 0; }
+        .btn { display: inline-block; padding: 10px 20px; background: #0f172a; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; }
+        .invite-box { background: #eff6ff; border: 1px solid #bfdbfe; padding: 20px; border-radius: 12px; margin-bottom: 30px; }
+        input[type="text"] { width: 70%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="{% url 'panel_negocio' %}" style="color: #64748b; text-decoration: none;">← Volver al Dashboard</a>
+    <h1>Gestión de Equipo</h1>
+
+    <div class="invite-box">
+        <h3 style="margin-top:0; color:#1e40af;">🔗 Invita a nuevos estilistas</h3>
+        <p style="margin-bottom:10px; color:#1e3a8a;">Comparte este enlace para que se registren ellos mismos:</p>
+        <div style="display:flex; gap:10px;">
+            <input type="text" value="{{ link_invitacion }}" id="linkInput" readonly>
+            <button onclick="copiarLink()" class="btn" style="background:#2563eb;">Copiar</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Estilistas Activos ({{ empleados.count }})</h3>
+        <ul style="list-style: none; padding: 0;">
+            {% for emp in empleados %}
+            <li style="padding: 15px 0; border-bottom: 1px solid #eee; display:flex; justify-content:space-between;">
+                <div>
+                    <strong>{{ emp.nombre }} {{ emp.apellido }}</strong><br>
+                    <small style="color:#64748b;">{{ emp.email_contacto }}</small>
+                </div>
+                <span style="background:#dcfce7; color:#166534; padding:4px 10px; border-radius:20px; font-size:0.8rem;">Activo</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<script>
+function copiarLink() {
+    var copyText = document.getElementById("linkInput");
+    copyText.select();
+    navigator.clipboard.writeText(copyText.value);
+    alert("Enlace copiado al portapapeles");
+}
+</script>
+
+</body>
+</html>
