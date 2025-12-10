@@ -1,4 +1,5 @@
 # UBICACIÓN: salon/views.py
+import logging
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -13,9 +14,13 @@ import json
 
 # Importaciones locales
 from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, HorarioEmpleado
-from .forms import ConfigNegocioForm, ServicioForm, RegistroPublicoEmpleadoForm
+# Nota: ConfigNegocioForm se eliminó porque hacemos el guardado manual para mayor control en este caso
+from .forms import ServicioForm, RegistroPublicoEmpleadoForm
 from .services import obtener_bloques_disponibles
 from salon.utils.booking_lock import BookingManager
+
+# Configurar Logger para ver errores en la consola de Render
+logger = logging.getLogger(__name__)
 
 # =======================================================
 # 1. AUTENTICACIÓN Y REGISTRO
@@ -100,7 +105,7 @@ def registro_empleado_publico(request, slug_peluqueria):
                 return redirect('mi_agenda')
 
             except Exception as e:
-                print(e)
+                logger.error(f"Error registrando empleado: {e}")
                 return render(request, 'salon/registro_empleado.html', {'peluqueria': peluqueria, 'form': form, 'error': 'Error interno al crear cuenta.'})
     else:
         form = RegistroPublicoEmpleadoForm()
@@ -147,30 +152,44 @@ def panel_negocio(request):
 @login_required
 def configuracion_negocio(request):
     """
-    CORREGIDO: Maneja errores 500 y genera la URL del Webhook automáticamente.
-    Usa la nueva plantilla negocio/configuracion.html
+    Vista protegida para guardar tokens de Bold y Telegram.
+    Maneja errores y genera Logs en caso de fallo.
     """
-    if not hasattr(request.user, 'perfil') or not request.user.perfil.peluqueria:
-        messages.error(request, "No tienes una peluquería asignada.")
+    # 1. Validación de seguridad básica
+    if not hasattr(request.user, 'perfil') or not request.user.perfil.es_dueño:
+        messages.error(request, "No tienes permisos de dueño para acceder aquí.")
+        return redirect('inicio')
+
+    if not request.user.perfil.peluqueria:
+        messages.error(request, "Tu usuario no tiene una peluquería asignada.")
         return redirect('panel_negocio')
     
     peluqueria = request.user.perfil.peluqueria
 
+    # 2. Procesamiento del Formulario (POST)
     if request.method == 'POST':
         try:
-            # Capturamos datos manualmente para evitar conflictos de validación de forms estrictos
+            # Captura de datos con .get() para evitar KeyErrors
             peluqueria.bold_api_key = request.POST.get('bold_api_key', '').strip()
             peluqueria.bold_integrity_key = request.POST.get('bold_integrity_key', '').strip()
+            peluqueria.bold_secret_key = request.POST.get('bold_secret_key', '').strip()
             peluqueria.telegram_token = request.POST.get('telegram_token', '').strip()
             peluqueria.telegram_chat_id = request.POST.get('telegram_chat_id', '').strip()
             
             peluqueria.save()
             messages.success(request, "¡Configuración guardada exitosamente!")
+            
         except Exception as e:
+            # Registrar el error real en los logs de Render
+            logger.error(f"[ERROR CONFIGURACION] Fallo al guardar datos peluqueria ID {peluqueria.id}: {str(e)}")
             messages.error(request, f"Hubo un error al guardar: {str(e)}")
 
-    # Generar la URL del Webhook automáticamente para mostrarla
-    webhook_url = request.build_absolute_uri('/webhooks/bold/') 
+    # 3. Generación de URL Webhook para mostrar en pantalla
+    # Usamos try/except por si request.build_absolute_uri falla en algunos contextos (raro, pero preventivo)
+    try:
+        webhook_url = request.build_absolute_uri('/webhooks/bold/') 
+    except Exception:
+        webhook_url = "/webhooks/bold/ (Error generando URL absoluta)"
     
     return render(request, 'negocio/configuracion.html', {
         'peluqueria': peluqueria,
@@ -179,23 +198,29 @@ def configuracion_negocio(request):
 
 @login_required
 def gestionar_servicios(request):
-    if not request.user.perfil.es_dueño: return redirect('inicio')
+    if not hasattr(request.user, 'perfil') or not request.user.perfil.es_dueño:
+        return redirect('inicio')
+        
     peluqueria = request.user.perfil.peluqueria
     
     if request.method == 'POST':
         form = ServicioForm(request.POST)
         if form.is_valid():
-            nuevo = form.save(commit=False)
-            nuevo.peluqueria = peluqueria
-            nuevo.duracion = timedelta(minutes=form.cleaned_data['duracion_minutos'])
-            nuevo.save()
-            messages.success(request, "Servicio creado.")
-            return redirect('gestionar_servicios')
+            try:
+                nuevo = form.save(commit=False)
+                nuevo.peluqueria = peluqueria
+                nuevo.duracion = timedelta(minutes=form.cleaned_data['duracion_minutos'])
+                nuevo.save()
+                messages.success(request, "Servicio creado exitosamente.")
+                return redirect('gestionar_servicios')
+            except Exception as e:
+                logger.error(f"Error creando servicio: {e}")
+                messages.error(request, "Error al guardar el servicio.")
     else:
         form = ServicioForm()
 
     servicios = peluqueria.servicios.all()
-    # Usamos panel_dueño/servicios.html si existe, o dashboard con include
+    
     return render(request, 'salon/panel_dueño/servicios.html', {
         'servicios': servicios, 
         'form': form, 
@@ -204,7 +229,9 @@ def gestionar_servicios(request):
 
 @login_required
 def eliminar_servicio(request, servicio_id):
-    if not request.user.perfil.es_dueño: return redirect('inicio')
+    if not hasattr(request.user, 'perfil') or not request.user.perfil.es_dueño:
+        return redirect('inicio')
+        
     s = get_object_or_404(Servicio, id=servicio_id, peluqueria=request.user.perfil.peluqueria)
     s.delete()
     messages.success(request, "Servicio eliminado.")
@@ -212,7 +239,9 @@ def eliminar_servicio(request, servicio_id):
 
 @login_required
 def gestionar_equipo(request):
-    if not request.user.perfil.es_dueño: return redirect('inicio')
+    if not hasattr(request.user, 'perfil') or not request.user.perfil.es_dueño:
+        return redirect('inicio')
+        
     peluqueria = request.user.perfil.peluqueria
     
     link_invitacion = request.build_absolute_uri(f"/{peluqueria.slug}/unirse-al-equipo/")
@@ -236,18 +265,23 @@ def mi_agenda(request):
     dias_semana = {0:'Lunes', 1:'Martes', 2:'Miércoles', 3:'Jueves', 4:'Viernes', 5:'Sábado', 6:'Domingo'}
 
     if request.method == 'POST':
-        # Borrar y recrear horarios es una estrategia simple y efectiva para este caso
-        HorarioEmpleado.objects.filter(empleado=empleado).delete()
-        for i in range(7):
-            if request.POST.get(f'trabaja_{i}'):
-                HorarioEmpleado.objects.create(
-                    empleado=empleado, dia_semana=i,
-                    hora_inicio=request.POST.get(f'inicio_{i}'),
-                    hora_fin=request.POST.get(f'fin_{i}'),
-                    almuerzo_inicio=request.POST.get(f'almuerzo_inicio_{i}') or None,
-                    almuerzo_fin=request.POST.get(f'almuerzo_fin_{i}') or None
-                )
-        messages.success(request, "Horario actualizado")
+        try:
+            with transaction.atomic():
+                HorarioEmpleado.objects.filter(empleado=empleado).delete()
+                for i in range(7):
+                    if request.POST.get(f'trabaja_{i}'):
+                        HorarioEmpleado.objects.create(
+                            empleado=empleado, dia_semana=i,
+                            hora_inicio=request.POST.get(f'inicio_{i}'),
+                            hora_fin=request.POST.get(f'fin_{i}'),
+                            almuerzo_inicio=request.POST.get(f'almuerzo_inicio_{i}') or None,
+                            almuerzo_fin=request.POST.get(f'almuerzo_fin_{i}') or None
+                        )
+            messages.success(request, "Horario actualizado correctamente.")
+        except Exception as e:
+            logger.error(f"Error actualizando horario empleado {empleado.id}: {e}")
+            messages.error(request, "Hubo un error al guardar tu horario.")
+            
         return redirect('mi_agenda')
 
     horarios = {h.dia_semana: h for h in HorarioEmpleado.objects.filter(empleado=empleado)}
@@ -318,17 +352,17 @@ def agendar_cita(request, slug_peluqueria):
             precio_total = sum([s.precio for s in servicios_objs])
             
             # Fecha y Hora Inicio/Fin
-            inicio = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
-            fin = inicio + duracion_total
+            inicio_dt = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
+            fin_dt = inicio_dt + duracion_total
 
             # 3. Lógica de Reserva ATÓMICA (Usando el BookingManager)
             def _crear_reserva_segura(empleado_bloqueado):
-                # Validar superposición (El BookingManager ya bloqueó la fila, así que es seguro consultar)
+                # Validar superposición
                 conflicto = Cita.objects.filter(
                     empleado=empleado_bloqueado,
                     estado__in=['P', 'C'],
-                    fecha_hora_inicio__lt=fin,
-                    fecha_hora_fin__gt=inicio
+                    fecha_hora_inicio__lt=fin_dt,
+                    fecha_hora_fin__gt=inicio_dt
                 ).exists()
                 
                 if conflicto:
@@ -340,8 +374,8 @@ def agendar_cita(request, slug_peluqueria):
                     empleado=empleado_bloqueado,
                     cliente_nombre=cliente_nombre,
                     cliente_telefono=cliente_telefono,
-                    fecha_hora_inicio=inicio,
-                    fecha_hora_fin=fin,
+                    fecha_hora_inicio=inicio_dt,
+                    fecha_hora_fin=fin_dt,
                     precio_total=precio_total,
                     estado='C' # Confirmada por defecto (luego integramos pago Bold)
                 )
@@ -352,13 +386,16 @@ def agendar_cita(request, slug_peluqueria):
             cita = BookingManager.ejecutar_reserva_segura(empleado_id, _crear_reserva_segura)
             
             # 4. Enviar Notificaciones y Redirigir
-            # IMPORTANTE: Asegúrate de tener el método enviar_notificacion_telegram en el modelo Cita
             if hasattr(cita, 'enviar_notificacion_telegram'):
-                cita.enviar_notificacion_telegram()
+                try:
+                    cita.enviar_notificacion_telegram()
+                except Exception as e:
+                    logger.warning(f"Error enviando telegram para cita {cita.id}: {e}")
             
             return redirect('confirmacion_cita', slug_peluqueria=peluqueria.slug, cita_id=cita.id)
 
         except Exception as e:
+            logger.error(f"Error al agendar cita: {e}")
             return render(request, 'salon/agendar.html', {
                 'peluqueria': peluqueria, 
                 'servicios': servicios, 
@@ -395,7 +432,7 @@ def api_obtener_horarios(request):
         horas = obtener_bloques_disponibles(emp, fecha, duracion_total)
         return JsonResponse({'horas': horas})
     except Exception as e:
-        print(f"Error horarios: {e}")
+        logger.error(f"Error API horarios: {e}")
         return JsonResponse({'horas': []})
 
 def confirmacion_cita(request, slug_peluqueria, cita_id):
