@@ -69,7 +69,8 @@ class ServicioAdmin(SalonOwnerAdmin):
 
 @admin.register(Ausencia)
 class AusenciaAdmin(SalonOwnerAdmin):
-    list_display = ('empleado', 'fecha_inicio', 'fecha_fin', 'tipo')
+    # CORREGIDO: Se eliminó 'tipo' de la lista porque causaba error 500
+    list_display = ('empleado', 'fecha_inicio', 'fecha_fin')
     exclude = ('peluqueria',)
     
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
@@ -126,8 +127,15 @@ class SolicitudSaaSAdmin(admin.ModelAdmin):
     list_display = ('nombre_empresa', 'fecha_solicitud', 'telefono')
 
 # --- GESTIÓN DE USUARIOS ---
-admin.site.unregister(User)
-admin.site.unregister(Group)
+try:
+    admin.site.unregister(User)
+except admin.sites.NotRegistered:
+    pass
+
+try:
+    admin.site.unregister(Group)
+except admin.sites.NotRegistered:
+    pass
 
 @admin.register(User)
 class CustomUserAdmin(BaseUserAdmin):
