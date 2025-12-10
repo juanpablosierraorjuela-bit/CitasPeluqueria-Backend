@@ -17,6 +17,7 @@ def proteger_api(vista_func):
         return vista_func(request, *args, **kwargs)
     return _wrapped_view
 
+@proteger_api # <--- CRÍTICO: Agregado
 def listar_servicios(request, slug_peluqueria):
     servicios = Servicio.objects.filter(peluqueria__slug=slug_peluqueria)
     data = list(servicios.values('id', 'nombre', 'duracion', 'precio'))
@@ -25,11 +26,13 @@ def listar_servicios(request, slug_peluqueria):
         s['precio'] = float(s['precio'])
     return JsonResponse(data, safe=False)
 
+@proteger_api # <--- CRÍTICO: Agregado
 def listar_empleados(request, slug_peluqueria):
     empleados = Empleado.objects.filter(peluqueria__slug=slug_peluqueria)
     data = [{'id': e.id, 'nombre': f"{e.nombre} {e.apellido}"} for e in empleados]
     return JsonResponse(data, safe=False)
 
+@proteger_api # <--- CRÍTICO: Agregado
 def consultar_disponibilidad(request, slug_peluqueria):
     fecha_str = request.GET.get('fecha')
     servicio_id = request.GET.get('service_id')
