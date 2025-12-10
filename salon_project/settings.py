@@ -45,7 +45,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # COMENTAR ESTA LÍNEA TEMPORALMENTE PARA DIAGNÓSTICO
-    # 'salon.middleware.PeluqueriaMiddleware',
+    'salon.middleware.PeluqueriaMiddleware',
 ]
 
 ROOT_URLCONF = 'salon_project.urls'
