@@ -44,11 +44,14 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'salon.middleware.PeluqueriaMiddleware', # <--- CRÍTICO: Middleware de Multi-tenancy agregado
+    # ESTE VA ANTES DE LA AUTENTICACION
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    # ESTE DEBE IR PRIMERO, ANTES DE TU MIDDLEWARE
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    # 🚨 SOLUCIÓN: El middleware de Peluqueria se mueve después de AuthenticationMiddleware 🚨
+    'salon.middleware.PeluqueriaMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
