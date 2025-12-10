@@ -3,147 +3,140 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Reserva Exitosa | PASO</title>
-    <!-- Misma fuente 'Outfit' para consistencia total -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            /* Misma paleta que el Index */
-            --bg-color: #f8fafc;
-            --text-dark: #0f172a;
-            --text-gray: #64748b;
-            --card-bg: #ffffff;
+            /* Paleta de Lujo (Coherencia con Index) */
+            --font-display: 'Cormorant Garamond', serif;
+            --font-body: 'Manrope', sans-serif;
+
+            --primary: #1e293b;
+            --secondary: #64748b;
+            --accent: #db2777;
+            --gold: #d4af37;
             
-            /* Degradados */
-            --primary-gradient: linear-gradient(135deg, #0f172a 0%, #334155 100%);
-            --accent-gradient: linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%);
+            --bg-body: #f8fafc;
+            --surface: rgba(255, 255, 255, 0.9);
             
-            /* Sombras */
-            --shadow-card: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --shadow-card: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-            color: var(--text-dark);
+            font-family: var(--font-body);
+            background-color: var(--bg-body);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; padding: 20px;
+            color: var(--primary);
+            overflow: hidden;
+        }
+
+        /* --- FONDO AMBIENTAL --- */
+        .ambient-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: 
+                radial-gradient(circle at 50% 10%, rgba(253, 226, 236, 0.5) 0%, transparent 60%),
+                radial-gradient(circle at 10% 90%, rgba(224, 231, 255, 0.5) 0%, transparent 60%);
         }
 
         /* --- TARJETA CENTRAL --- */
         .success-card {
-            background: var(--card-bg);
+            background: var(--surface);
+            backdrop-filter: blur(20px);
             padding: 60px 40px;
             border-radius: 32px;
             text-align: center;
-            max-width: 480px;
-            width: 100%;
+            max-width: 450px; width: 100%;
             box-shadow: var(--shadow-card);
             border: 1px solid rgba(255, 255, 255, 0.8);
             position: relative;
-            overflow: hidden;
-            animation: floatUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: popIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        @keyframes floatUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        /* Línea superior decorativa */
-        .success-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 6px;
-            background: var(--accent-gradient);
+        /* --- CHECK ANIMADO (SVG) --- */
+        .icon-container {
+            width: 90px; height: 90px; margin: 0 auto 30px;
+            position: relative; display: flex; align-items: center; justify-content: center;
+        }
+        
+        .circle-bg {
+            position: absolute; width: 100%; height: 100%; border-radius: 50%;
+            background: #fdf2f8; animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(219, 39, 119, 0.4); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(219, 39, 119, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(219, 39, 119, 0); }
         }
 
-        /* --- ÍCONO ELEGANTE --- */
-        .icon-wrapper {
-            width: 80px;
-            height: 80px;
-            background: rgba(236, 72, 153, 0.08); /* Fondo rosa muy sutil */
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 30px;
-        }
+        .check-svg { width: 40px; height: 40px; z-index: 2; stroke: var(--accent); stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 1s 0.5s forwards ease-in-out; }
 
-        .check-mark {
-            font-size: 32px;
-            /* El check tiene el color del gradiente */
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: 700;
-        }
+        @keyframes draw { to { stroke-dashoffset: 0; } }
 
         /* --- TIPOGRAFÍA --- */
         h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-            letter-spacing: -0.5px;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-family: var(--font-display);
+            font-size: 2.2rem; font-weight: 700; margin-bottom: 15px;
+            line-height: 1.1; color: var(--primary);
         }
 
         p {
-            color: var(--text-gray);
-            font-size: 1.05rem;
-            line-height: 1.6;
-            margin-bottom: 40px;
-            font-weight: 300;
+            color: var(--secondary); font-size: 1rem; line-height: 1.6;
+            margin-bottom: 40px; font-weight: 500;
         }
 
-        /* --- BOTÓN PREMIUM --- */
+        /* --- BOTÓN DE RETORNO --- */
         .btn-home {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 16px 40px;
-            background: var(--text-dark); /* Fondo oscuro elegante */
-            color: white;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: 500;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 16px 40px; border-radius: 50px;
+            background: var(--primary); color: white;
+            text-decoration: none; font-weight: 700; font-size: 0.95rem;
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.15);
+            transition: all 0.3s ease; position: relative; overflow: hidden;
         }
 
-        .btn-home:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.25);
-            background: black;
+        .btn-home:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(15, 23, 42, 0.25); }
+
+        .btn-home::after {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transform: skewX(-20deg); animation: shimmer 3s infinite 2s;
         }
+        @keyframes shimmer { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
 
     </style>
 </head>
 <body>
 
+    <div class="ambient-bg"></div>
+
     <div class="success-card">
-        <!-- Círculo sutil con check elegante -->
-        <div class="icon-wrapper">
-            <span class="check-mark">✓</span>
+        <div class="icon-container">
+            <div class="circle-bg"></div>
+            <svg class="check-svg" viewBox="0 0 24 24">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
         </div>
 
         <h1>¡Reserva Confirmada!</h1>
-        <p>Tu cita ha quedado agendada correctamente. Hemos notificado al estilista y todo está listo para tu llegada.</p>
+        <p>Tu cita ha quedado agendada con éxito. El estilista te espera para darte la mejor experiencia.</p>
         
-        <a href="{% url 'inicio' %}" class="btn-home">Volver al Directorio</a>
+        <a href="{% url 'inicio' %}" class="btn-home">
+            Volver al Inicio <span>✨</span>
+        </a>
     </div>
 
 </body>
