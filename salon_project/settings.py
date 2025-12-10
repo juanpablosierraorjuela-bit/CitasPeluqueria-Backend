@@ -30,8 +30,9 @@ INSTALLED_APPS = [
     'salon', 
 ]
 
-# UBICACIÓN: salon_project/settings.py
-# ...
+# ==========================================
+# 3. MIDDLEWARE
+# ==========================================
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -43,10 +44,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'salon.middleware.PeluqueriaMiddleware',  # <-- ESTA LÍNEA DEBE SER COMENTADA
+    # COMENTAR ESTA LÍNEA TEMPORALMENTE PARA DIAGNÓSTICO
+    # 'salon.middleware.PeluqueriaMiddleware',
 ]
-
-# ...
 
 ROOT_URLCONF = 'salon_project.urls'
 
