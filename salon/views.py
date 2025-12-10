@@ -11,9 +11,8 @@ from django.utils.text import slugify
 from datetime import datetime, timedelta, time
 import hashlib
 import traceback
-import pytz # Importante para la hora de Colombia
+import pytz 
 
-# IMPORTACIÓN COMPLETA DE MODELOS Y SERVICIOS
 from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, SolicitudSaaS, HorarioEmpleado
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
 
@@ -63,19 +62,15 @@ def landing_saas(request):
                     activo=True
                 )
                 
-                # CREAR HORARIO POR DEFECTO (Lunes a Viernes 9-6)
+                # Horario Default
                 for dia in range(5):
                     HorarioEmpleado.objects.create(
-                        empleado=empleado,
-                        dia_semana=dia,
-                        hora_inicio=time(9,0),
-                        hora_fin=time(18,0),
-                        almuerzo_inicio=time(13,0),
-                        almuerzo_fin=time(14,0)
+                        empleado=empleado, dia_semana=dia,
+                        hora_inicio=time(9,0), hora_fin=time(18,0),
+                        almuerzo_inicio=time(13,0), almuerzo_fin=time(14,0)
                     )
 
                 Servicio.objects.create(peluqueria=peluqueria, nombre="Corte General", precio=20000, duracion=timedelta(minutes=45))
-
                 SolicitudSaaS.objects.create(nombre_contacto=nombre_contacto, nombre_empresa=nombre_negocio, telefono=telefono, nicho="Belleza", atendido=True)
 
                 login(request, user)
@@ -88,11 +83,9 @@ def landing_saas(request):
     return render(request, 'salon/landing_saas.html')
 
 # --- VISTAS WEB PÚBLICAS ---
-
 def inicio(request):
     ciudad = request.GET.get('ciudad')
     
-    # 1. Obtener Peluquerías
     if ciudad and ciudad != 'Todas':
         peluquerias = Peluqueria.objects.filter(ciudad__iexact=ciudad)
     else:
@@ -100,27 +93,22 @@ def inicio(request):
 
     ciudades = Peluqueria.objects.values_list('ciudad', flat=True).distinct().order_by('ciudad')
 
-    # 2. Lógica Inteligente de Estado (Abierto/Cerrado) con Zona Horaria Colombia
     tz_colombia = pytz.timezone('America/Bogota')
     ahora_colombia = timezone.now().astimezone(tz_colombia)
     
-    dia_actual = ahora_colombia.weekday() # 0=Lunes, 6=Domingo
+    dia_actual = ahora_colombia.weekday()
     hora_actual = ahora_colombia.time()
 
     for p in peluquerias:
-        p.esta_abierto = False # Asumimos cerrado por defecto
-        
-        # Buscamos horarios de empleados ACTIVOS de esta peluquería para hoy
+        p.esta_abierto = False
         horarios_hoy = HorarioEmpleado.objects.filter(
             empleado__peluqueria=p,
-            empleado__activo=True, # Solo empleados que estén activos
+            empleado__activo=True,
             dia_semana=dia_actual
         )
 
         for h in horarios_hoy:
-            # Verifica si la hora actual está dentro de su turno
             if h.hora_inicio <= hora_actual <= h.hora_fin:
-                # Opcional: Verificar si está en hora de almuerzo
                 en_almuerzo = False
                 if h.almuerzo_inicio and h.almuerzo_fin:
                     if h.almuerzo_inicio <= hora_actual <= h.almuerzo_fin:
@@ -128,7 +116,7 @@ def inicio(request):
                 
                 if not en_almuerzo:
                     p.esta_abierto = True
-                    break # Con que haya UN empleado disponible, el local está abierto
+                    break
 
     return render(request, 'salon/index.html', {
         'peluquerias': peluquerias, 
@@ -175,9 +163,13 @@ def agendar_cita(request, slug_peluqueria):
             if not (nombre and empleado_id and fecha_str and hora_str): raise ValueError("Faltan datos")
 
             empleado = get_object_or_404(Empleado, id=empleado_id)
+            
+            # --- CORRECCIÓN TIMEZONE ---
             fecha_naive = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
-            try: inicio_cita = timezone.make_aware(fecha_naive) 
-            except ValueError: inicio_cita = fecha_naive
+            if timezone.is_naive(fecha_naive):
+                inicio_cita = timezone.make_aware(fecha_naive)
+            else:
+                inicio_cita = fecha_naive
 
             servicios_objs = Servicio.objects.filter(id__in=servicios_ids)
             duracion_total = sum([s.duracion for s in servicios_objs], timedelta())
@@ -205,18 +197,19 @@ def agendar_cita(request, slug_peluqueria):
                 
                 ref = f"CITA-{cita.id}-{int(datetime.now().timestamp())}"
                 cita.referencia_pago_bold = ref
-                cita.save()
+                cita.save() # Guardamos la referencia
                 
                 firma = hashlib.sha256(f"{ref}{monto}COP{peluqueria.bold_integrity_key}".encode('utf-8')).hexdigest()
                 
                 return render(request, 'salon/pago_bold.html', {'cita': cita, 'monto_anticipo': monto, 'signature': firma, 'peluqueria': peluqueria, 'referencia': ref})
             else:
+                # Notificación Telegram solo si NO es Bold (si es Bold, se envía en el retorno)
                 cita.enviar_notificacion_telegram()
                 return redirect('cita_confirmada')
             
         except Exception:
             traceback.print_exc()
-            return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados, 'error_mensaje': "Error técnico."})
+            return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados, 'error_mensaje': "Error técnico procesando la reserva."})
 
     return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados})
 
@@ -231,7 +224,7 @@ def retorno_bold(request):
             if cita.estado != 'C':
                 cita.estado = 'C'
                 cita.save()
-                cita.enviar_notificacion_telegram()
+                cita.enviar_notificacion_telegram() # Notificar tras pago exitoso
             return redirect('cita_confirmada')
         except Cita.DoesNotExist:
             return redirect('inicio')
@@ -305,7 +298,6 @@ def crear_empleado_con_usuario(request):
                     email_contacto=email
                 )
                 
-                # CREAR HORARIO BASE (Lunes a Viernes)
                 for dia in range(5):
                     HorarioEmpleado.objects.create(
                         empleado=empleado, dia_semana=dia,
@@ -330,10 +322,11 @@ def mi_horario_empleado(request):
     dias_semana = {0:'Lunes', 1:'Martes', 2:'Miércoles', 3:'Jueves', 4:'Viernes', 5:'Sábado', 6:'Domingo'}
 
     if request.method == 'POST':
-        HorarioEmpleado.objects.filter(empleado=empleado).delete() # Limpiar para reescribir
+        # Eliminamos todo para reescribir (Estrategia Full-Replace)
+        HorarioEmpleado.objects.filter(empleado=empleado).delete()
         
         for i in range(7):
-            if request.POST.get(f'trabaja_{i}'): # Checkbox envía 'on'
+            if request.POST.get(f'trabaja_{i}'): # Solo si el check está marcado
                 ini = request.POST.get(f'inicio_{i}')
                 fin = request.POST.get(f'fin_{i}')
                 l_ini = request.POST.get(f'almuerzo_inicio_{i}')
@@ -350,7 +343,6 @@ def mi_horario_empleado(request):
                     )
         return redirect('mi_horario')
 
-    # Cargar horarios existentes
     horarios_db = HorarioEmpleado.objects.filter(empleado=empleado)
     horario_dict = {h.dia_semana: h for h in horarios_db}
     
