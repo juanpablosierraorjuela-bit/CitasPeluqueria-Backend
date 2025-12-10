@@ -1,0 +1,134 @@
+{% extends 'base_negocio.html' %} {% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">Configuración de Pagos y Notificaciones</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Credenciales del Sistema</h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <h5 class="text-dark border-bottom pb-2 mb-3"><i class="fas fa-credit-card"></i> Pasarela de Pagos (Bold)</h5>
+                        
+                        <div class="form-group">
+                            <label>Integrity Key (Clave de Integridad)</label>
+                            <input type="text" name="bold_integrity_key" class="form-control" value="{{ peluqueria.bold_integrity_key|default:'' }}" placeholder="Ej: JSJD83-..." required>
+                            <small class="text-muted">Necesaria para validar que los pagos sean reales.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>API Key (Identificador de Comercio)</label>
+                            <input type="password" name="bold_api_key" class="form-control" value="{{ peluqueria.bold_api_key|default:'' }}" placeholder="Ej: P-K-JW..." required>
+                        </div>
+
+                        <h5 class="text-dark border-bottom pb-2 mb-3 mt-4"><i class="fab fa-telegram"></i> Notificaciones Telegram</h5>
+                        
+                        <div class="form-group">
+                            <label>Token del Bot</label>
+                            <input type="text" name="telegram_token" class="form-control" value="{{ peluqueria.telegram_token|default:'' }}" placeholder="Ej: 123456:ABC-Def...">
+                        </div>
+                        <div class="form-group">
+                            <label>ID del Chat (Tu ID personal)</label>
+                            <input type="text" name="telegram_chat_id" class="form-control" value="{{ peluqueria.telegram_chat_id|default:'' }}" placeholder="Ej: 987654321">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block btn-lg mt-4">Guardar Configuración</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            
+            <div class="card shadow mb-4 border-left-success">
+                <div class="card-body">
+                    <h5 class="font-weight-bold text-success">🔗 Tu URL para Bold (Webhook)</h5>
+                    <p>Copia esta dirección y pégala en tu panel de Bold para que el sistema sepa cuando te pagan:</p>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control bg-light" value="{{ webhook_url }}" id="myWebhook" readonly>
+                        <div class="input-group-append">
+                            <button class="btn btn-success" type="button" onclick="copiarWebhook()">Copiar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion" id="accordionHelp">
+                
+                <div class="card">
+                    <div class="card-header bg-white" id="headingBold">
+                        <h2 class="mb-0">
+                            <button class="btn btn-link btn-block text-left font-weight-bold" type="button" data-toggle="collapse" data-target="#collapseBold">
+                                ❓ ¿Cómo obtener mis claves de Bold?
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseBold" class="collapse show" data-parent="#accordionHelp">
+                        <div class="card-body">
+                            <ol>
+                                <li>Ingresa a <a href="https://panel.bold.co/" target="_blank">panel.bold.co</a> e inicia sesión.</li>
+                                <li>En el menú lateral, busca <strong>Desarrolladores</strong> o <strong>Integración</strong>.</li>
+                                <li>Verás una sección llamada "Mis Credenciales".</li>
+                                <li>Copia el código que dice <strong>"Integrity Key"</strong> y pégalo en el formulario de la izquierda.</li>
+                                <li>Copia el código que dice <strong>"API Key"</strong> y pégalo también.</li>
+                                <li>Finalmente, busca el campo "URL de Webhook" en Bold y pega el enlace verde que te mostramos arriba (Tu URL para Bold).</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header bg-white" id="headingTele">
+                        <h2 class="mb-0">
+                            <button class="btn btn-link btn-block text-left collapsed font-weight-bold" type="button" data-toggle="collapse" data-target="#collapseTele">
+                                ❓ ¿Cómo activar las notificaciones en Telegram?
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseTele" class="collapse" data-parent="#accordionHelp">
+                        <div class="card-body">
+                            <p>Para recibir avisos de citas en tu celular:</p>
+                            <ol>
+                                <li>Abre Telegram y busca el usuario <strong>@BotFather</strong>.</li>
+                                <li>Envía el mensaje <code>/newbot</code> y sigue los pasos (ponle un nombre a tu bot).</li>
+                                <li>BotFather te dará un <strong>TOKEN</strong> (un código largo). Cópialo y pégalo en el formulario.</li>
+                                <li>Ahora, busca en Telegram a <strong>@userinfobot</strong> y dale "Iniciar".</li>
+                                <li>Te responderá con un número (Id). Copia ese número en el campo "ID del Chat".</li>
+                                <li>¡Listo! El sistema te escribirá a través de tu nuevo bot.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copiarWebhook() {
+  var copyText = document.getElementById("myWebhook");
+  copyText.select();
+  copyText.setSelectionRange(0, 99999); 
+  document.execCommand("copy");
+  alert("URL copiada: " + copyText.value);
+}
+</script>
+{% endblock %}
