@@ -13,8 +13,8 @@ import hashlib
 import traceback
 import requests
 
-# HE ELIMINADO 'HorarioEmpleado' DE ESTA IMPORTACIÓN PARA ARREGLAR EL ERROR
-from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, SolicitudSaaS
+# IMPORTACIÓN COMPLETA DE MODELOS Y SERVICIOS
+from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, SolicitudSaaS, HorarioEmpleado
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
 from . import api
 
@@ -56,7 +56,6 @@ def landing_saas(request):
 
                 PerfilUsuario.objects.create(user=user, peluqueria=peluqueria, es_dueño=True)
 
-                # El dueño también es empleado para poder agendarse
                 empleado = Empleado.objects.create(
                     peluqueria=peluqueria,
                     user=user,
@@ -64,8 +63,17 @@ def landing_saas(request):
                     apellido=nombre_contacto.split()[-1] if ' ' in nombre_contacto else '',
                     activo=True
                 )
-
-                # HE ELIMINADO LA CREACIÓN DE HORARIOS POR DEFECTO AQUÍ PORQUE EL MODELO NO EXISTE
+                
+                # CREAR HORARIO POR DEFECTO (Lunes a Viernes 9-6)
+                for dia in range(5):
+                    HorarioEmpleado.objects.create(
+                        empleado=empleado,
+                        dia_semana=dia,
+                        hora_inicio=time(9,0),
+                        hora_fin=time(18,0),
+                        almuerzo_inicio=time(13,0),
+                        almuerzo_fin=time(14,0)
+                    )
 
                 Servicio.objects.create(peluqueria=peluqueria, nombre="Corte General", precio=20000, duracion=timedelta(minutes=45))
 
@@ -112,7 +120,7 @@ def obtener_horas_disponibles(request):
 def agendar_cita(request, slug_peluqueria):
     peluqueria = get_object_or_404(Peluqueria, slug=slug_peluqueria)
     servicios = peluqueria.servicios.all()
-    empleados = peluqueria.empleados.all()
+    empleados = peluqueria.empleados.filter(activo=True)
 
     if request.method == 'POST':
         try:
@@ -137,7 +145,6 @@ def agendar_cita(request, slug_peluqueria):
             total_precio = sum([s.precio for s in servicios_objs])
 
             usa_bold = bool(peluqueria.bold_api_key and peluqueria.bold_integrity_key)
-            # Si usa Bold, la cita nace como 'Pendiente' (P). Si no, nace 'Confirmada' (C).
             estado_inicial = 'P' if usa_bold else 'C'
 
             with transaction.atomic():
@@ -156,17 +163,14 @@ def agendar_cita(request, slug_peluqueria):
                 monto = int(total_precio * porcentaje / 100) if tipo_pago == 'abono' else int(total_precio)
                 cita.abono_pagado = monto
                 
-                # Referencia única para Bold
                 ref = f"CITA-{cita.id}-{int(datetime.now().timestamp())}"
                 cita.referencia_pago_bold = ref
                 cita.save()
                 
-                # Firma de integridad para seguridad
                 firma = hashlib.sha256(f"{ref}{monto}COP{peluqueria.bold_integrity_key}".encode('utf-8')).hexdigest()
                 
                 return render(request, 'salon/pago_bold.html', {'cita': cita, 'monto_anticipo': monto, 'signature': firma, 'peluqueria': peluqueria, 'referencia': ref})
             else:
-                # Si no usa Bold, notificamos de una vez
                 cita.enviar_notificacion_telegram()
                 return redirect('cita_confirmada')
             
@@ -178,34 +182,19 @@ def agendar_cita(request, slug_peluqueria):
 
 @csrf_exempt 
 def retorno_bold(request):
-    """
-    Recibe la respuesta de Bold tras el pago.
-    URL de ejemplo: /retorno-bold/?bold-order-id=CITA-2-1234&bold-tx-status=approved
-    """
     ref_pago = request.GET.get('bold-order-id')
     estado_tx = request.GET.get('bold-tx-status')
 
     if ref_pago and estado_tx == 'approved':
         try:
-            # Buscamos la cita por la referencia única
             cita = Cita.objects.get(referencia_pago_bold=ref_pago)
-            
-            # Solo actualizamos y notificamos si no estaba ya confirmada
             if cita.estado != 'C':
-                cita.estado = 'C'  # Cambiamos a Confirmada
+                cita.estado = 'C'
                 cita.save()
-                
-                # ¡AQUÍ ES DONDE SALE EL MENSAJE A TELEGRAM!
                 cita.enviar_notificacion_telegram()
-            
-            # Redirigimos a la pantalla de éxito
             return redirect('cita_confirmada')
-            
         except Cita.DoesNotExist:
-            # Si la referencia no existe (raro), volvemos al inicio
             return redirect('inicio')
-    
-    # Si el pago fue rechazado o cancelado
     return redirect('inicio')
 
 def cita_confirmada(request):
@@ -276,7 +265,13 @@ def crear_empleado_con_usuario(request):
                     email_contacto=email
                 )
                 
-                # HE ELIMINADO LA CREACIÓN DE HORARIOS POR DEFECTO
+                # CREAR HORARIO BASE (Lunes a Viernes)
+                for dia in range(5):
+                    HorarioEmpleado.objects.create(
+                        empleado=empleado, dia_semana=dia,
+                        hora_inicio=time(9,0), hora_fin=time(18,0),
+                        almuerzo_inicio=time(13,0), almuerzo_fin=time(14,0)
+                    )
 
             return redirect('dashboard_dueño')
         except Exception as e:
@@ -284,7 +279,7 @@ def crear_empleado_con_usuario(request):
 
     return render(request, 'salon/crear_empleado.html')
 
-# --- MI HORARIO ---
+# --- MI HORARIO (REACTIVADO) ---
 @login_required
 def mi_horario_empleado(request):
     try:
@@ -294,24 +289,43 @@ def mi_horario_empleado(request):
 
     dias_semana = {0:'Lunes', 1:'Martes', 2:'Miércoles', 3:'Jueves', 4:'Viernes', 5:'Sábado', 6:'Domingo'}
 
-    # HE DESACTIVADO LA FUNCIÓN DE GUARDAR PORQUE EL MODELO NO EXISTE
-    # SI INTENTAN GUARDAR, SIMPLEMENTE RECARGARÁ LA PÁGINA SIN HACER NADA
     if request.method == 'POST':
+        # Procesar formulario para guardar horarios
+        HorarioEmpleado.objects.filter(empleado=empleado).delete() # Limpiamos para reescribir
+        
+        for i in range(7):
+            if request.POST.get(f'trabaja_{i}') == 'on':
+                ini = request.POST.get(f'inicio_{i}')
+                fin = request.POST.get(f'fin_{i}')
+                l_ini = request.POST.get(f'almuerzo_inicio_{i}')
+                l_fin = request.POST.get(f'almuerzo_fin_{i}')
+                
+                if ini and fin:
+                    HorarioEmpleado.objects.create(
+                        empleado=empleado,
+                        dia_semana=i,
+                        hora_inicio=ini,
+                        hora_fin=fin,
+                        almuerzo_inicio=l_ini if l_ini else None,
+                        almuerzo_fin=l_fin if l_fin else None
+                    )
         return redirect('mi_horario')
 
-    # YA NO CONSULTAMOS LA BASE DE DATOS DE HORARIOS
-    horario_dict = {} 
+    # Cargar horarios existentes
+    horarios_db = HorarioEmpleado.objects.filter(empleado=empleado)
+    horario_dict = {h.dia_semana: h for h in horarios_db}
     
     lista_dias = []
     for i, nombre in dias_semana.items():
         obj = horario_dict.get(i)
         lista_dias.append({
-            'id': i, 'nombre': nombre,
-            'trabaja': False, # Por defecto sale que no trabaja porque no hay DB
-            'inicio': '09:00',
-            'fin': '18:00',
-            'l_ini': '',
-            'l_fin': '',
+            'id': i,
+            'nombre': nombre,
+            'trabaja': obj is not None,
+            'inicio': obj.hora_inicio.strftime('%H:%M') if obj else '09:00',
+            'fin': obj.hora_fin.strftime('%H:%M') if obj else '18:00',
+            'l_ini': obj.almuerzo_inicio.strftime('%H:%M') if (obj and obj.almuerzo_inicio) else '',
+            'l_fin': obj.almuerzo_fin.strftime('%H:%M') if (obj and obj.almuerzo_fin) else '',
         })
 
     return render(request, 'salon/mi_horario.html', {'dias': lista_dias, 'empleado': empleado})
