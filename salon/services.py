@@ -1,45 +1,54 @@
 from datetime import timedelta, datetime, time
 from django.utils import timezone
-# Eliminamos HorarioEmpleado de la importación
-from .models import Cita, Ausencia
+from .models import Cita, Ausencia, HorarioEmpleado
 
 def obtener_bloques_disponibles(empleado, fecha_date, duracion_servicio):
-    dia_semana = fecha_date.weekday()
+    dia_semana = fecha_date.weekday() # 0=Lunes, 6=Domingo
     
-    # COMO YA NO EXISTE EL MODELO DE HORARIOS, USAMOS UN HORARIO POR DEFECTO:
-    # Lunes (0) a Sábado (5): Trabajan de 9:00 a 18:00
-    # Domingo (6): No trabajan
-    if dia_semana == 6: # Domingo cerrado
+    # 1. Buscamos el horario específico del empleado para ese día de la semana
+    try:
+        horario = HorarioEmpleado.objects.get(empleado=empleado, dia_semana=dia_semana)
+    except HorarioEmpleado.DoesNotExist:
+        # Si no tiene horario configurado en la base de datos para este día, devuelve lista vacía (sin cupos)
         return []
 
-    # Horario fijo temporal (Hardcoded)
-    hora_inicio_turno = time(9, 0)
-    hora_fin_turno = time(18, 0)
-    almuerzo_inicio_turno = time(13, 0)
-    almuerzo_fin_turno = time(14, 0)
-
     bloques = []
-    inicio_dia = timezone.make_aware(datetime.combine(fecha_date, datetime.min.time()))
-    fin_dia = timezone.make_aware(datetime.combine(fecha_date, datetime.max.time()))
     
-    citas = Cita.objects.filter(empleado=empleado, fecha_hora_inicio__range=(inicio_dia, fin_dia), estado__in=['C', 'P'])
-    ausencias = Ausencia.objects.filter(empleado=empleado, fecha_inicio__lte=fin_dia, fecha_fin__gte=inicio_dia)
+    # Usamos las horas reales configuradas en la base de datos
+    inicio_turno = timezone.make_aware(datetime.combine(fecha_date, horario.hora_inicio))
+    fin_turno = timezone.make_aware(datetime.combine(fecha_date, horario.hora_fin))
+    
+    # Definir almuerzo si existe
+    inicio_almuerzo = None
+    fin_almuerzo = None
+    if horario.almuerzo_inicio and horario.almuerzo_fin:
+        inicio_almuerzo = timezone.make_aware(datetime.combine(fecha_date, horario.almuerzo_inicio))
+        fin_almuerzo = timezone.make_aware(datetime.combine(fecha_date, horario.almuerzo_fin))
 
-    # Definir límites del turno con los valores fijos
-    hora_actual = timezone.make_aware(datetime.combine(fecha_date, hora_inicio_turno))
-    hora_fin_turno_dt = timezone.make_aware(datetime.combine(fecha_date, hora_fin_turno))
+    # Obtenemos citas y ausencias para filtrar
+    citas = Cita.objects.filter(
+        empleado=empleado, 
+        fecha_hora_inicio__gte=inicio_turno, 
+        fecha_hora_inicio__lt=fin_turno,
+        estado__in=['C', 'P']
+    )
+    ausencias = Ausencia.objects.filter(
+        empleado=empleado, 
+        fecha_inicio__lte=fin_turno, 
+        fecha_fin__gte=inicio_turno
+    )
 
-    # Definir almuerzo
-    inicio_almuerzo = timezone.make_aware(datetime.combine(fecha_date, almuerzo_inicio_turno))
-    fin_almuerzo = timezone.make_aware(datetime.combine(fecha_date, almuerzo_fin_turno))
+    hora_actual = inicio_turno
 
-    while hora_actual + duracion_servicio <= hora_fin_turno_dt:
+    while hora_actual + duracion_servicio <= fin_turno:
         fin_bloque = hora_actual + duracion_servicio
         ocupado = False
 
         # 1. Verificar Almuerzo
-        if (hora_actual < fin_almuerzo) and (fin_bloque > inicio_almuerzo):
-            ocupado = True
+        if inicio_almuerzo and fin_almuerzo:
+            # Si el bloque choca con el almuerzo (inicia antes de que termine y termina después de que inicie)
+            if (hora_actual < fin_almuerzo) and (fin_bloque > inicio_almuerzo):
+                ocupado = True
 
         # 2. Verificar Citas
         if not ocupado:
