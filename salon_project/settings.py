@@ -14,6 +14,12 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-tu-clave-secreta-aqui
 # ------------------------------------------------------------------------------
 API_SECRET_KEY = os.environ.get('API_SECRET_KEY', 'mi-clave-super-secreta-cambiame')
 
+# ------------------------------------------------------------------------------
+# ✅ SOLUCIÓN AL 404 POST-LOGIN
+# Redirecciona a la vista 'dashboard_dueño' después de un login exitoso.
+# ------------------------------------------------------------------------------
+LOGIN_REDIRECT_URL = '/dashboard/'
+
 # SECURITY WARNING: don't run with debug turned on in production!
 # --- DEBUG activado temporalmente para ver errores ---
 # Cuando esté todo estable, cámbialo a: 'RENDER' not in os.environ
@@ -44,13 +50,12 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    # ESTE VA ANTES DE LA AUTENTICACION
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    # ESTE DEBE IR PRIMERO, ANTES DE TU MIDDLEWARE
+    # Middleware de autenticación debe ir aquí para adjuntar request.user
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    # 🚨 SOLUCIÓN: El middleware de Peluqueria se mueve después de AuthenticationMiddleware 🚨
+    # El middleware de Peluqueria se mueve después de AuthenticationMiddleware
     'salon.middleware.PeluqueriaMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
