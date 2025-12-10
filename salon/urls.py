@@ -1,19 +1,18 @@
-# UBICACIÓN: salon/urls.py - CORREGIDO
+# UBICACIÓN: salon/urls.py - FINAL CORREGIDO
 from django.urls import path
 from . import views
 
 urlpatterns = [
     
     # --- CLIENTE FINAL (RESERVAS) ---
-    # CAMBIO CLAVE: La página principal (index con peluquerías) ahora va en la raíz ('')
+    # RESTAURADO: La página principal va en la raíz ('')
     path('', views.inicio, name='inicio'), 
     
     # --- AUTENTICACIÓN ---
-    # CAMBIO CLAVE: El login ahora tiene su propia ruta explícita ('login/')
     path('login/', views.login_custom, name='login_custom'),
     path('logout/', views.logout_view, name='logout_usuario'),
     path('<slug:slug_peluqueria>/unirse-al-equipo/', views.registro_empleado_publico, name='registro_empleado'),
-
+    # ... (el resto de rutas se mantiene igual)
     path('<slug:slug_peluqueria>/reservar/', views.agendar_cita, name='agendar_cita'),
     path('<slug:slug_peluqueria>/confirmacion/<int:cita_id>/', views.confirmacion_cita, name='confirmacion_cita'),
     
