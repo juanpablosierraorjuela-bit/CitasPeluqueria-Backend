@@ -1,3 +1,4 @@
+# UBICACIÓN: salon/views.py
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
 from django.db import transaction
@@ -15,7 +16,7 @@ import pytz
 
 from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, SolicitudSaaS, HorarioEmpleado
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
-# NUEVA IMPORTACIÓN DE SEGURIDAD
+# IMPORTAMOS AL GUARDIA DE SEGURIDAD
 from salon.utils.booking_lock import BookingManager
 
 # --- VISTA PARA EL REGISTRO DE NUEVOS SALONES (SAAS) ---
@@ -183,11 +184,11 @@ def agendar_cita(request, slug_peluqueria):
             # LÓGICA DE SEGURIDAD "BOOKING LOCK" INTEGRADA
             # -------------------------------------------------------------
             
-            # Definimos la lógica de creación dentro de una función interna
+            # Definimos la lógica de creación para pasarla al Guardia
             def _logica_creacion(empleado_bloqueado, *args, **kwargs):
-                # 1. Verificación final de conflicto (dentro de la transacción de bloqueo)
+                # 1. Verificación final de conflicto (segura dentro del bloqueo)
                 if verificar_conflicto_atomic(empleado_bloqueado, inicio_cita, fin_cita):
-                    raise ValueError("⚠️ Horario ya reservado por otra persona.")
+                    raise ValueError("⚠️ Lo sentimos, ese horario acaba de ser reservado por otra persona.")
                 
                 # 2. Crear Cita
                 nueva_cita = Cita.objects.create(
@@ -203,7 +204,7 @@ def agendar_cita(request, slug_peluqueria):
                 nueva_cita.servicios.set(servicios_objs)
                 return nueva_cita
 
-            # Ejecutamos la reserva usando el Manager de Seguridad
+            # Ejecutamos la reserva usando al Guardia
             cita = BookingManager.ejecutar_reserva_segura(empleado_id, _logica_creacion)
             
             # -------------------------------------------------------------
