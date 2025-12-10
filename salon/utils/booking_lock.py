@@ -1,4 +1,3 @@
-# salon/utils/booking_lock.py
 from django.db import transaction
 from django.core.exceptions import ValidationError
 from salon.models import Empleado
