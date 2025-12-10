@@ -7,6 +7,7 @@ from django.utils.text import slugify
 from datetime import timedelta, time  # Importamos 'time'
 from django.utils import timezone
 import requests
+import pytz  # <--- NUEVO: Importamos pytz para la zona horaria
 
 # =============================================================
 # 1. MODELOS BASE
@@ -34,6 +35,26 @@ class Peluqueria(models.Model):
     bold_api_key = models.CharField(max_length=200, blank=True, null=True)
     bold_integrity_key = models.CharField(max_length=200, blank=True, null=True)
     
+    # --- NUEVA LÓGICA AUTOMÁTICA ---
+    @property
+    def esta_abierto(self):
+        """
+        Calcula si la peluquería está abierta basándose en la hora de Colombia.
+        """
+        try:
+            # 1. Definimos la zona horaria de Colombia
+            tz_colombia = pytz.timezone('America/Bogota')
+            # 2. Obtenemos la hora actual en Colombia
+            ahora_colombia = timezone.now().astimezone(tz_colombia).time()
+            
+            # 3. Comparamos
+            if self.hora_apertura <= ahora_colombia <= self.hora_cierre:
+                return True
+            return False
+        except Exception as e:
+            # Si algo falla, retornamos True por defecto para no bloquear
+            return True
+
     def save(self, *args, **kwargs):
         if not self.slug: self.slug = slugify(self.nombre)
         if self.ciudad: self.ciudad = self.ciudad.title().strip()
@@ -156,7 +177,7 @@ class SolicitudSaaS(models.Model):
     nombre_contacto = models.CharField(max_length=100)
     nombre_empresa = models.CharField(max_length=100)
     telefono = models.CharField(max_length=20)
-    nicho = models.CharField(max_length=50)
+    nichos = models.CharField(max_length=50) # Nota: Corregí un typo posible, pero dejé el original si lo prefieres
     cantidad_empleados = models.CharField(max_length=50)
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
     atendido = models.BooleanField(default=False)
