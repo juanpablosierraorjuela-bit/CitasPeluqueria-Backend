@@ -12,7 +12,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -61,11 +61,19 @@
         }
         @keyframes drift { 0% { transform: scale(1); } 100% { transform: scale(1.05); } }
 
-        /* --- NAVBAR --- */
+        /* --- NAVBAR INFINITY --- */
         .navbar {
-            position: absolute; top: 0; left: 0; width: 100%;
+            position: sticky; top: 0; left: 0; width: 100%;
             display: flex; justify-content: space-between; align-items: center;
-            padding: 20px 25px; z-index: 50;
+            padding: 15px 25px; z-index: 1000;
+            background: rgba(255,255,255,0.01); /* Casi invisible al inicio */
+            transition: background 0.3s, backdrop-filter 0.3s;
+        }
+        
+        .navbar.scrolled {
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255,255,255,0.5);
         }
 
         .brand-pill {
@@ -76,49 +84,54 @@
         }
         .dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
 
-        /* --- BOTÓN ACCESO "NIVEL DIOS" --- */
-        .btn-access {
+        /* --- BOTÓN PARTNER "NIVEL DIOS" --- */
+        .btn-partner-pro {
             text-decoration: none;
-            display: flex; align-items: center; gap: 10px;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            padding: 8px 20px 8px 16px;
+            display: flex; align-items: center; gap: 12px;
+            background: #0f172a; /* Fondo oscuro premium */
+            color: white;
+            padding: 6px 6px 6px 18px; /* Padding asimétrico para el icono */
             border-radius: 50px;
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-            transition: all 0.3s var(--ease-out);
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.2);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             position: relative; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* Brillo interno */
-        .btn-access::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 50%);
-            opacity: 0.5; border-radius: 50px; z-index: -1;
+        /* Texto del botón */
+        .partner-text {
+            display: flex; flex-direction: column; line-height: 1; text-align: right;
+        }
+        .text-small { font-size: 0.65rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+        .text-main { font-family: var(--font-body); font-size: 0.85rem; font-weight: 700; color: white; }
+
+        /* Icono del botón */
+        .partner-icon {
+            width: 32px; height: 32px; background: rgba(255,255,255,0.15);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; backdrop-filter: blur(4px);
+            transition: transform 0.3s;
         }
 
-        .btn-access:hover {
-            transform: translateY(-2px);
-            background: rgba(255, 255, 255, 0.6);
-            box-shadow: 0 10px 25px rgba(219, 39, 119, 0.15);
-            border-color: white;
+        .btn-partner-pro:hover {
+            transform: scale(1.02);
+            box-shadow: 0 15px 30px rgba(236, 72, 153, 0.25);
+            border-color: rgba(236, 72, 153, 0.5);
         }
+        .btn-partner-pro:hover .partner-icon { transform: rotate(15deg) scale(1.1); background: var(--accent); }
 
-        .access-icon {
-            width: 28px; height: 28px; background: white; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            color: var(--accent); font-size: 0.9rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        /* Estado Logueado (Dashboard) */
+        .btn-dashboard {
+            background: white; color: var(--primary);
+            border: 1px solid rgba(0,0,0,0.1);
         }
-
-        .access-text {
-            font-family: var(--font-body); font-size: 0.85rem; font-weight: 700;
-            color: var(--primary); letter-spacing: 0.5px;
-        }
+        .btn-dashboard .text-main { color: var(--primary); }
+        .btn-dashboard .text-small { color: var(--secondary); }
+        .btn-dashboard .partner-icon { background: var(--bg-body); color: var(--primary); }
 
         /* --- HERO SECTION --- */
         header {
-            padding: 130px 20px 60px;
+            padding: 100px 20px 60px;
             display: flex; flex-direction: column; align-items: center; text-align: center;
         }
 
@@ -254,9 +267,19 @@
         @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
 
         @media (max-width: 768px) {
-            .navbar { padding: 20px 15px; }
+            .navbar { padding: 15px 20px; }
             .hero-title { font-size: 2.8rem; }
             .grid-wrapper { padding: 0 20px 100px; gap: 20px; }
+            .partner-text { display: none; } /* En móvil muy pequeño solo muestra icono */
+            .btn-partner-pro { padding: 8px; border-radius: 50%; width: 45px; height: 45px; justify-content: center; }
+            .partner-icon { width: 100%; height: 100%; background: transparent; font-size: 1.2rem; }
+        }
+        
+        /* Ajuste para móviles un poco más grandes para sí mostrar texto */
+        @media (min-width: 400px) and (max-width: 768px) {
+            .partner-text { display: flex; }
+            .btn-partner-pro { padding: 6px 6px 6px 18px; border-radius: 50px; width: auto; height: auto; }
+            .partner-icon { width: 32px; height: 32px; background: rgba(255,255,255,0.15); font-size: 1rem; }
         }
     </style>
 </head>
@@ -265,27 +288,36 @@
     <div class="noise-overlay"></div>
     <div class="ambient-bg"></div>
 
-    <nav class="navbar">
+    <nav class="navbar" id="main-nav">
         <div class="brand-pill">
             <div class="dot"></div> PASO
         </div>
         
         {% if request.user.is_authenticated %}
             {% if request.user.is_staff %}
-                <a href="/admin/" class="btn-access">
-                    <span class="access-text">Mi Panel</span>
-                    <div class="access-icon">👑</div>
+                <a href="/admin/" class="btn-partner-pro btn-dashboard">
+                    <div class="partner-text">
+                        <span class="text-small">Sesión Activa</span>
+                        <span class="text-main">Mi Panel</span>
+                    </div>
+                    <div class="partner-icon">👑</div>
                 </a>
             {% else %}
-                <a href="{% url 'dashboard_dueño' %}" class="btn-access">
-                    <span class="access-text">Mi Cuenta</span>
-                    <div class="access-icon">👤</div>
+                <a href="{% url 'dashboard_dueño' %}" class="btn-partner-pro btn-dashboard">
+                    <div class="partner-text">
+                        <span class="text-small">Hola, {{ request.user.username }}</span>
+                        <span class="text-main">Mi Cuenta</span>
+                    </div>
+                    <div class="partner-icon">👤</div>
                 </a>
             {% endif %}
         {% else %}
-            <a href="{% url 'landing_saas' %}" class="btn-access">
-                <span class="access-text">Soy Aliado</span>
-                <div class="access-icon">🔐</div>
+            <a href="{% url 'landing_saas' %}" class="btn-partner-pro">
+                <div class="partner-text">
+                    <span class="text-small">Soy Negocio</span>
+                    <span class="text-main">Entrar / Registro</span>
+                </div>
+                <div class="partner-icon">🔐</div>
             </a>
         {% endif %}
     </nav>
@@ -353,6 +385,17 @@
     </div>
 
     <script>
+        // EFECTO SCROLL NAVBAR
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('main-nav');
+            if (window.scrollY > 50) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        });
+
+        // ANIMACIÓN DE ENTRADA
         document.addEventListener('DOMContentLoaded', () => {
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
