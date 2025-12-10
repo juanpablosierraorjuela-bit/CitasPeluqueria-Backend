@@ -3,174 +3,332 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PASO | Reserva tu Estilo</title>
     
     <link rel="manifest" href="{% url 'pwa_manifest' %}">
-    <meta name="theme-color" content="#ec4899">
+    <meta name="theme-color" content="#ffffff">
     <link rel="apple-touch-icon" href="{% static 'img/icon-192.png' %}">
 
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-color: #f8fafc;
-            --text-dark: #0f172a;
-            --text-gray: #64748b;
-            --card-bg: #ffffff;
-            --primary-gradient: linear-gradient(135deg, #0f172a 0%, #334155 100%);
-            --accent-gradient: linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%);
+            --primary: #0f172a;
+            --primary-light: #334155;
+            --accent: #ec4899;
+            --accent-gradient: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            --bg-body: #f8fafc;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --glass: rgba(255, 255, 255, 0.85);
             --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            --transition: cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-dark);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--primary);
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            overflow-x: hidden;
             position: relative;
         }
 
-        /* BOTÓN DUEÑO */
-        .btn-admin-access {
-            position: absolute; top: 25px; right: 25px;
-            background: #ffffff; color: #0f172a;
-            width: 50px; height: 50px; border-radius: 50%;
-            text-decoration: none; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;
-            border: 1px solid rgba(0,0,0,0.05); z-index: 1000;
+        /* --- FONDO ANIMADO (AURORA) --- */
+        .bg-blobs {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            overflow: hidden; background: #f8fafc;
         }
-        .btn-admin-access:hover { transform: translateY(-3px) rotate(15deg); box-shadow: 0 10px 20px rgba(0,0,0,0.12); color: #ec4899; }
-
-        header { text-align: center; padding: 80px 20px 40px; max-width: 900px; width: 100%; }
-        .brand-badge { display: inline-block; background: rgba(15, 23, 42, 0.05); color: var(--text-dark); padding: 8px 16px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; margin-bottom: 24px; letter-spacing: 2px; text-transform: uppercase; }
-        .header-title { font-size: 3.5rem; font-weight: 700; line-height: 1.1; margin-bottom: 20px; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -1.5px; }
-
-        .search-container { background: white; padding: 10px; border-radius: 50px; box-shadow: var(--shadow-sm); display: flex; gap: 10px; max-width: 500px; margin: 30px auto 20px; border: 1px solid #e2e8f0; align-items: center; }
-        .city-select { flex: 1; border: none; padding: 12px 20px; font-size: 1rem; border-radius: 40px; font-family: inherit; color: var(--text-dark); background: transparent; cursor: pointer; outline: none; }
-        .btn-geo { background: #f1f5f9; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.2s; color: var(--text-dark); }
-        .btn-geo:hover { background: #e2e8f0; color: #ec4899; }
-
-        .salon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 30px; max-width: 1200px; width: 100%; padding: 40px 40px 100px; }
-        .salon-card { background: var(--card-bg); border-radius: 24px; padding: 30px; text-decoration: none; color: inherit; position: relative; overflow: hidden; transition: all 0.3s ease; border: 1px solid rgba(255, 255, 255, 0.8); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between; min-height: 200px; }
-        .salon-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-hover); border-color: rgba(236, 72, 153, 0.2); }
-        .salon-card::after { content: ''; position: absolute; left: 0; bottom: 0; height: 4px; width: 0%; background: var(--accent-gradient); transition: width 0.3s ease; }
-        .salon-card:hover::after { width: 100%; }
-        .salon-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
-        .salon-city { display: inline-block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #ec4899; background: #fdf2f8; padding: 4px 10px; border-radius: 20px; margin-bottom: 15px; }
-        .info-row { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-gray); margin-bottom: 5px; }
-        .action-link { font-weight: 600; font-size: 0.9rem; color: var(--text-dark); display: flex; align-items: center; gap: 5px; margin-top: 20px; opacity: 0.7; transition: 0.3s; }
-        .salon-card:hover .action-link { opacity: 1; gap: 10px; }
-
-        /* DISEÑO PWA FLOTANTE (GLASSMORPHISM) */
-        .pwa-toast {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
-            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            padding: 12px 20px; border-radius: 50px; display: flex; align-items: center; gap: 15px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
-            z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .blob {
+            position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.6;
+            animation: float 10s infinite alternate ease-in-out;
         }
-        .pwa-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: all; }
-        .pwa-icon-box { width: 40px; height: 40px; background: linear-gradient(135deg, #ec4899, #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(236, 72, 153, 0); } 100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0); } }
-        .pwa-info { display: flex; flex-direction: column; }
-        .pwa-title { color: white; font-weight: 700; font-size: 0.95rem; }
-        .pwa-subtitle { color: #cbd5e1; font-size: 0.75rem; }
-        .btn-pwa-action { background: white; color: #0f172a; border: none; padding: 8px 18px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
-        .btn-pwa-action:hover { transform: scale(1.05); background: #ec4899; color: white; }
-        .pwa-close { background: transparent; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer; margin-left: 5px; }
+        .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: #fce7f3; animation-delay: 0s; }
+        .blob-2 { bottom: -10%; right: -10%; width: 60vw; height: 60vw; background: #e0e7ff; animation-delay: -5s; }
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, 50px) scale(1.1); }
+        }
+
+        /* --- HEADER & HERO --- */
+        header {
+            padding: 60px 20px 40px;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            position: relative; z-index: 10;
+        }
+
+        .brand-pill {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: white; padding: 6px 16px; border-radius: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px;
+            font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; color: var(--primary);
+            text-transform: uppercase; border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .hero-title {
+            font-size: 3.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 15px;
+            letter-spacing: -0.03em; color: var(--primary);
+        }
+        .hero-title span {
+            background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem; color: #64748b; margin-bottom: 40px; max-width: 400px; line-height: 1.6;
+        }
+
+        /* --- BUSCADOR FLOTANTE --- */
+        .search-glass {
+            background: var(--glass); backdrop-filter: blur(12px);
+            padding: 8px; border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08); border: 1px solid white;
+            display: flex; width: 100%; max-width: 450px; transition: transform 0.3s var(--transition);
+        }
+        .search-glass:focus-within { transform: translateY(-2px); box-shadow: 0 20px 40px rgba(236, 72, 153, 0.15); }
+
+        .city-select {
+            flex: 1; border: none; background: transparent; padding: 15px 20px;
+            font-size: 1rem; font-weight: 600; color: var(--primary); outline: none;
+            cursor: pointer; appearance: none;
+        }
         
+        .btn-location {
+            width: 50px; height: 50px; border-radius: 14px; border: none;
+            background: white; color: var(--primary); font-size: 1.2rem;
+            cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-location:hover { background: var(--accent); color: white; }
+
+        /* --- SAAS CTA CARD --- */
+        .saas-banner {
+            margin-top: 50px; width: 100%; max-width: 450px;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-radius: 24px; padding: 20px; position: relative; overflow: hidden;
+            display: flex; align-items: center; justify-content: space-between;
+            text-decoration: none; transition: transform 0.3s;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2);
+        }
+        .saas-banner:hover { transform: translateY(-3px); }
+        .saas-content { color: white; z-index: 2; }
+        .saas-tag { font-size: 0.7rem; color: #ec4899; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; display: block; }
+        .saas-text { font-size: 1rem; font-weight: 600; margin: 0; }
+        .saas-icon { font-size: 2rem; background: rgba(255,255,255,0.1); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+
+        /* --- GRID DE SALONES --- */
+        .grid-container {
+            width: 100%; max-width: 1000px; margin: 0 auto; padding: 20px 20px 120px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px;
+        }
+
+        .salon-card {
+            background: var(--card-bg); backdrop-filter: blur(5px);
+            border-radius: 24px; padding: 25px;
+            text-decoration: none; color: inherit;
+            border: 1px solid rgba(255,255,255,0.6);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.4s var(--transition);
+            opacity: 0; transform: translateY(30px); /* Para animación de entrada */
+            display: flex; flex-direction: column;
+        }
+
+        .salon-card.visible { opacity: 1; transform: translateY(0); }
+        .salon-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: var(--shadow-lg); border-color: rgba(236, 72, 153, 0.3);
+        }
+
+        .salon-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        
+        /* Avatar Generado Automáticamente */
+        .salon-avatar {
+            width: 60px; height: 60px; border-radius: 18px;
+            background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+            color: #475569; font-size: 1.5rem; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.05);
+            flex-shrink: 0;
+        }
+
+        .salon-info h2 { font-size: 1.25rem; font-weight: 800; color: var(--primary); margin: 0; line-height: 1.2; }
+        .salon-location { font-size: 0.85rem; color: #64748b; display: flex; align-items: center; gap: 5px; margin-top: 5px; }
+
+        .salon-footer {
+            margin-top: auto; padding-top: 20px; border-top: 1px solid rgba(0,0,0,0.04);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .btn-book {
+            font-size: 0.9rem; font-weight: 700; color: var(--accent);
+            display: flex; align-items: center; gap: 5px; transition: gap 0.2s;
+        }
+        .salon-card:hover .btn-book { gap: 10px; }
+
+        /* --- ADMIN BUTTON --- */
+        .admin-float {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            background: rgba(255,255,255,0.8); backdrop-filter: blur(10px);
+            width: 45px; height: 45px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none; font-size: 1.2rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+        .admin-float:hover { transform: rotate(15deg) scale(1.1); }
+
+        /* --- PWA TOAST --- */
+        .pwa-toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(150%);
+            background: #1e293b; color: white; padding: 12px 12px 12px 20px;
+            border-radius: 50px; display: flex; align-items: center; gap: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 9999; width: 90%; max-width: 400px;
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .pwa-toast.show { transform: translateX(-50%) translateY(0); }
+        .btn-install {
+            background: var(--accent-gradient); border: none; color: white;
+            padding: 10px 20px; border-radius: 30px; font-weight: 700; font-size: 0.85rem; cursor: pointer;
+        }
+
         @media (max-width: 768px) {
-            .header-title { font-size: 2.5rem; } .salon-grid { padding: 0 20px 80px; }
-            .pwa-toast { width: 90%; justify-content: space-between; border-radius: 20px; }
+            .hero-title { font-size: 2.5rem; }
+            .grid-container { padding: 0 15px 100px; gap: 15px; grid-template-columns: 1fr; }
+            .salon-card { padding: 20px; }
         }
     </style>
 </head>
 <body>
 
-    <a href="/admin/" class="btn-admin-access" title="Entrar al Panel Administrativo">
-        <span style="font-size: 1.5rem;">👑</span> 
-    </a>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    {% if request.user.is_authenticated and request.user.is_staff %}
+    <a href="/admin/" class="admin-float" title="Admin Panel">👑</a>
+    {% endif %}
 
     <header>
-        <span class="brand-badge">PASO APP</span>
-        <h1 class="header-title">Encuentra tu estilo<br>cerca de ti</h1>
+        <div class="brand-pill">
+            <span style="color:#ec4899;">●</span> PASO APP
+        </div>
         
-        <div class="search-container">
+        <h1 class="hero-title">Tu estilo,<br><span>tu tiempo.</span></h1>
+        <p class="hero-subtitle">Descubre los mejores salones, barberías y spas cerca de ti y reserva en segundos.</p>
+
+        <div class="search-glass">
             <select id="city-selector" class="city-select" onchange="filtrarCiudad(this.value)">
-                <option value="">🌎 Ver todas las ciudades</option>
+                <option value="">🌎 Explorar todas las ciudades</option>
                 {% for c in ciudades %}
                     <option value="{{ c }}" {% if c == ciudad_actual %}selected{% endif %}>📍 {{ c }}</option>
                 {% endfor %}
             </select>
-            <button class="btn-geo" onclick="usarMiUbicacion()" title="Usar mi ubicación actual">🎯</button>
+            <button class="btn-location" onclick="usarMiUbicacion()" title="Cerca de mí">
+                🎯
+            </button>
         </div>
-        <div style="margin-top: 30px;">
-            <a href="{% url 'landing_saas' %}" style="display: inline-flex; align-items: center; gap: 12px; background: white; color: #0f172a; padding: 14px 30px; border-radius: 50px; text-decoration: none; font-weight: 600; font-size: 0.95rem; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 2px solid transparent; background-image: linear-gradient(white, white), linear-gradient(90deg, #ec4899, #8b5cf6); background-origin: border-box; background-clip: padding-box, border-box; transition: all 0.3s ease; letter-spacing: 0.3px;">
-                <span style="font-size: 1.2rem;">👩‍🦱✨</span> 
-                <span>¿Tienes un salón? <span style="background: linear-gradient(90deg, #ec4899, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 700;">Automatízalo con PASO &rarr;</span></span>
-            </a>
-        </div>
+
+        <a href="{% url 'landing_saas' %}" class="saas-banner">
+            <div class="saas-content">
+                <span class="saas-tag">Para Negocios</span>
+                <p class="saas-text">¿Tienes un salón? Digitalízalo con nosotros.</p>
+            </div>
+            <div class="saas-icon">🚀</div>
+        </a>
     </header>
 
-    <div class="salon-grid">
+    <div class="grid-container">
         {% for p in peluquerias %}
             <a href="{% url 'agendar_cita' p.slug %}" class="salon-card">
-                <div class="salon-content">
-                    <span class="salon-city">{{ p.ciudad }}</span>
-                    <h2 class="salon-name">{{ p.nombre_visible }}</h2>
-                    {% if p.direccion %}<div class="info-row"><span>📍</span> {{ p.direccion }}</div>{% endif %}
+                <div class="salon-header">
+                    <div class="salon-avatar" style="background: {{ forloop.counter|divisibleby:2|yesno:'linear-gradient(135deg, #fce7f3, #fbcfe8),linear-gradient(135deg, #e0e7ff, #c7d2fe)' }}; color: {{ forloop.counter|divisibleby:2|yesno:'#db2777,#4f46e5' }};">
+                        {{ p.nombre_visible|first|upper }}
+                    </div>
+                    <div class="salon-info">
+                        <h2>{{ p.nombre_visible }}</h2>
+                        <div class="salon-location">
+                            <span>📍 {{ p.ciudad }}</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="action-link">Reservar <span>&rarr;</span></div>
+                
+                {% if p.direccion %}
+                <p style="font-size: 0.9rem; color: #64748b; margin: 0 0 15px;">{{ p.direccion }}</p>
+                {% endif %}
+                
+                <div class="salon-footer">
+                    <span style="font-size: 0.8rem; font-weight: 600; background: #f1f5f9; padding: 5px 10px; border-radius: 10px; color: #475569;">Disponible hoy</span>
+                    <div class="btn-book">Reservar <span>&rarr;</span></div>
+                </div>
             </a>
         {% empty %}
-            <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
-                <p style="color: var(--text-gray);">No encontramos salones aquí.</p>
-                <a href="/" style="color: #ec4899;">Ver todos</a>
+            <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px;">
+                <div style="font-size: 3rem; margin-bottom: 10px;">🤔</div>
+                <h3 style="color: var(--primary);">No encontramos salones aquí</h3>
+                <p style="color: #64748b;">Intenta buscar en otra ciudad o usa tu ubicación.</p>
+                <button onclick="window.location.href='/'" style="margin-top:20px; padding: 10px 25px; border:none; background:white; color:#ec4899; font-weight:700; border-radius:20px; cursor:pointer; box-shadow:0 5px 15px rgba(0,0,0,0.05);">Ver Todos</button>
             </div>
         {% endfor %}
     </div>
 
     <div id="pwa-toast" class="pwa-toast">
-        <div class="pwa-icon-box">📲</div>
-        <div class="pwa-info"><span class="pwa-title">Instalar App</span><span class="pwa-subtitle">Reserva más rápido</span></div>
-        <button id="pwa-install-btn" class="btn-pwa-action">INSTALAR</button>
-        <button id="pwa-close-btn" class="pwa-close">&times;</button>
+        <div style="flex:1;">
+            <strong style="display:block; font-size:0.95rem;">Instalar App</strong>
+            <span style="font-size:0.8rem; color:#94a3b8;">Reserva más rápido sin descargar nada.</span>
+        </div>
+        <button id="pwa-install-btn" class="btn-install">INSTALAR</button>
+        <button onclick="document.getElementById('pwa-toast').classList.remove('show')" style="background:transparent; border:none; color:#64748b; font-size:1.5rem; cursor:pointer;">&times;</button>
     </div>
 
     <script>
+        // 1. ANIMACIÓN SCROLL (INTERSECTION OBSERVER)
+        document.addEventListener('DOMContentLoaded', () => {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.salon-card').forEach(card => {
+                observer.observe(card);
+            });
+        });
+
+        // 2. GEOLOCALIZACIÓN
         function filtrarCiudad(c) { window.location.href = c ? `/?ciudad=${c}` : `/`; }
+        
         function usarMiUbicacion() {
-            const btn = document.querySelector('.btn-geo'); btn.innerHTML = '⏳'; 
-            if (!navigator.geolocation) { alert("Sin soporte Geo."); btn.innerHTML = '🎯'; return; }
+            const btn = document.querySelector('.btn-location'); 
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span style="animation:spin 1s infinite">⏳</span>';
+            
+            if (!navigator.geolocation) { alert("Tu navegador no soporta geolocalización."); btn.innerHTML = originalText; return; }
+            
             navigator.geolocation.getCurrentPosition(async (p) => {
                 try {
                     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.coords.latitude}&lon=${p.coords.longitude}`);
                     const d = await res.json();
                     const c = d.address.city || d.address.town || d.address.village;
-                    if (c) window.location.href = `/?ciudad=${c}`; else alert("Ciudad no detectada.");
-                } catch (e) { alert("Error."); } finally { btn.innerHTML = '🎯'; }
-            }, () => { alert("Permiso denegado."); btn.innerHTML = '🎯'; });
+                    if (c) window.location.href = `/?ciudad=${c}`; else alert("No pudimos detectar tu ciudad.");
+                } catch (e) { alert("Error de conexión."); } finally { btn.innerHTML = originalText; }
+            }, () => { alert("Necesitamos permiso para ver tu ubicación."); btn.innerHTML = originalText; });
         }
 
-        // PWA Logic
+        // 3. PWA INSTALL LOGIC
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('/static/js/sw.js');
         let deferredPrompt;
         const toast = document.getElementById('pwa-toast');
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault(); deferredPrompt = e;
-            setTimeout(() => toast.classList.add('show'), 2000);
+            setTimeout(() => toast.classList.add('show'), 3000); // Mostrar a los 3 seg
         });
         document.getElementById('pwa-install-btn').addEventListener('click', async () => {
             if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; toast.classList.remove('show'); }
         });
-        document.getElementById('pwa-close-btn').addEventListener('click', () => toast.classList.remove('show'));
     </script>
 </body>
 </html>
