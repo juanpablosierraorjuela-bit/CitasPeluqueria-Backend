@@ -1,12 +1,12 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from django.contrib.auth import login
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
-from django.utils.timezone import make_aware, now
+from django.utils import timezone  # Importante para zonas horarias
 from django.utils.text import slugify
 from datetime import datetime, timedelta, time
 import hashlib
@@ -89,12 +89,52 @@ def landing_saas(request):
     return render(request, 'salon/landing_saas.html')
 
 # --- VISTAS WEB PÚBLICAS ---
+
 def inicio(request):
     ciudad = request.GET.get('ciudad')
+    
+    # 1. Obtener Peluquerías
+    if ciudad and ciudad != 'Todas':
+        peluquerias = Peluqueria.objects.filter(ciudad__iexact=ciudad)
+    else:
+        peluquerias = Peluqueria.objects.all()
+
     ciudades = Peluqueria.objects.values_list('ciudad', flat=True).distinct().order_by('ciudad')
-    peluquerias = Peluqueria.objects.all()
-    if ciudad and ciudad != 'Todas': peluquerias = peluquerias.filter(ciudad__iexact=ciudad)
-    return render(request, 'salon/index.html', {'peluquerias': peluquerias, 'ciudades': ciudades, 'ciudad_actual': ciudad})
+
+    # 2. Lógica Inteligente de Estado (Abierto/Cerrado)
+    # Se basa en si hay AL MENOS UN empleado trabajando en este instante.
+    ahora = timezone.localtime(timezone.now())
+    dia_actual = ahora.weekday() # 0=Lunes, 6=Domingo
+    hora_actual = ahora.time()
+
+    for p in peluquerias:
+        p.esta_abierto = False # Asumimos cerrado
+        
+        # Buscamos horarios de empleados activos de esta peluquería para hoy
+        horarios_hoy = HorarioEmpleado.objects.filter(
+            empleado__peluqueria=p,
+            empleado__activo=True,
+            dia_semana=dia_actual
+        )
+
+        for h in horarios_hoy:
+            # Verifica si la hora actual está dentro de su turno
+            if h.hora_inicio <= hora_actual <= h.hora_fin:
+                # Opcional: Verificar si está en hora de almuerzo
+                en_almuerzo = False
+                if h.almuerzo_inicio and h.almuerzo_fin:
+                    if h.almuerzo_inicio <= hora_actual <= h.almuerzo_fin:
+                        en_almuerzo = True
+                
+                if not en_almuerzo:
+                    p.esta_abierto = True
+                    break # Con uno abierto basta
+
+    return render(request, 'salon/index.html', {
+        'peluquerias': peluquerias, 
+        'ciudades': ciudades, 
+        'ciudad_actual': ciudad
+    })
 
 def obtener_horas_disponibles(request):
     try:
@@ -136,7 +176,7 @@ def agendar_cita(request, slug_peluqueria):
 
             empleado = get_object_or_404(Empleado, id=empleado_id)
             fecha_naive = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
-            try: inicio_cita = make_aware(fecha_naive) 
+            try: inicio_cita = timezone.make_aware(fecha_naive) 
             except ValueError: inicio_cita = fecha_naive
 
             servicios_objs = Servicio.objects.filter(id__in=servicios_ids)
@@ -218,10 +258,10 @@ def dashboard_dueño(request):
     
     if not peluqueria: return HttpResponse("No tienes peluquería asignada.")
     
-    hoy = now().date()
+    hoy = timezone.now().date()
     citas_hoy = Cita.objects.filter(peluqueria=peluqueria, fecha_hora_inicio__date=hoy).count()
     ingresos = Cita.objects.filter(peluqueria=peluqueria, fecha_hora_inicio__month=hoy.month).aggregate(Sum('precio_total'))['precio_total__sum'] or 0
-    proximas = Cita.objects.filter(peluqueria=peluqueria, fecha_hora_inicio__gte=now()).order_by('fecha_hora_inicio')[:5]
+    proximas = Cita.objects.filter(peluqueria=peluqueria, fecha_hora_inicio__gte=timezone.now()).order_by('fecha_hora_inicio')[:5]
 
     return render(request, 'salon/dashboard.html', {
         'peluqueria': peluqueria,
@@ -279,7 +319,7 @@ def crear_empleado_con_usuario(request):
 
     return render(request, 'salon/crear_empleado.html')
 
-# --- MI HORARIO (REACTIVADO) ---
+# --- MI HORARIO ---
 @login_required
 def mi_horario_empleado(request):
     try:
@@ -290,11 +330,10 @@ def mi_horario_empleado(request):
     dias_semana = {0:'Lunes', 1:'Martes', 2:'Miércoles', 3:'Jueves', 4:'Viernes', 5:'Sábado', 6:'Domingo'}
 
     if request.method == 'POST':
-        # Procesar formulario para guardar horarios
-        HorarioEmpleado.objects.filter(empleado=empleado).delete() # Limpiamos para reescribir
+        HorarioEmpleado.objects.filter(empleado=empleado).delete() # Limpiar para reescribir
         
         for i in range(7):
-            if request.POST.get(f'trabaja_{i}') == 'on':
+            if request.POST.get(f'trabaja_{i}'): # Checkbox envía 'on'
                 ini = request.POST.get(f'inicio_{i}')
                 fin = request.POST.get(f'fin_{i}')
                 l_ini = request.POST.get(f'almuerzo_inicio_{i}')
