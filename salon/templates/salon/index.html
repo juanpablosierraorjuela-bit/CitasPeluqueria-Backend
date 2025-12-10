@@ -201,17 +201,26 @@
             border-top: 1px solid #f1f5f9; padding-top: 15px;
         }
 
-        /* --- LOGICA DE ESTADO (Abierto/Cerrado) --- */
+        /* --- LOGICA DE ESTADO (Psicología de Venta) --- */
         .status-pill {
-            font-size: 0.75rem; font-weight: 700; padding: 6px 12px; border-radius: 20px;
-            display: flex; align-items: center; gap: 6px;
+            font-size: 0.7rem; font-weight: 800; padding: 6px 12px; border-radius: 30px;
+            display: flex; align-items: center; gap: 6px; letter-spacing: 0.5px; text-transform: uppercase;
         }
         
-        .status-pill.open { background: #ecfdf5; color: var(--success); }
-        .status-pill.open::before { content:''; width:6px; height:6px; background:var(--success); border-radius:50%; box-shadow:0 0 0 2px rgba(16,185,129,0.2); }
+        /* Estado: Local Abierto Físicamente */
+        .status-pill.open { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+        .status-pill.open::before { 
+            content:''; width:8px; height:8px; background:#10b981; border-radius:50%; 
+            box-shadow:0 0 0 2px rgba(16,185,129,0.2); animation: latido 2s infinite;
+        }
 
-        .status-pill.closed { background: #fef2f2; color: var(--closed); }
-        .status-pill.closed::before { content:''; width:6px; height:6px; background:var(--closed); border-radius:50%; }
+        /* Estado: Local Cerrado pero Agenda Abierta */
+        .status-pill.online { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+        .status-pill.online::before { 
+            content:'🌙'; font-size: 0.8rem; line-height: 1;
+        }
+
+        @keyframes latido { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
 
         .btn-arrow {
             width: 35px; height: 35px; border-radius: 50%; background: #f8fafc;
@@ -311,9 +320,9 @@
                     
                     <div class="card-footer">
                         {% if p.esta_abierto %}
-                            <div class="status-pill open">ABIERTO</div>
+                            <div class="status-pill open">ABIERTO AHORA</div>
                         {% else %}
-                            <div class="status-pill closed">CERRADO</div>
+                            <div class="status-pill online">AGENDA DISPONIBLE</div>
                         {% endif %}
                         
                         <div class="btn-arrow">→</div>
