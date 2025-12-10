@@ -1,3 +1,4 @@
+# UBICACIÓN: salon/models.py
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
@@ -20,18 +21,14 @@ class Peluqueria(models.Model):
     # DATOS DE CONTACTO
     direccion = models.CharField(max_length=200, blank=True)
     telefono = models.CharField(max_length=20, blank=True)
+    codigo_pais_wa = models.CharField(max_length=5, default="57", help_text="Código de país para WhatsApp")
     
-    # IMPORTANTE: Nuevo campo para el código de país de WhatsApp (internacionalización)
-    codigo_pais_wa = models.CharField(max_length=5, default="57", help_text="Código de país para WhatsApp (Ej: 57 para Colombia)")
-    
-    # CONFIGURACIÓN DEL NEGOCIO
+    # CONFIGURACIÓN
     porcentaje_abono = models.IntegerField(default=50)
     
-    # INTEGRACIÓN TELEGRAM
+    # INTEGRACIONES
     telegram_token = models.CharField(max_length=200, blank=True, null=True)
     telegram_chat_id = models.CharField(max_length=100, blank=True, null=True)
-    
-    # INTEGRACIÓN BOLD
     bold_api_key = models.CharField(max_length=200, blank=True, null=True)
     bold_integrity_key = models.CharField(max_length=200, blank=True, null=True)
     
@@ -47,7 +44,6 @@ class Servicio(models.Model):
     nombre = models.CharField(max_length=100)
     duracion = models.DurationField() 
     precio = models.IntegerField()
-    # 'descripcion' FUE ELIMINADO EN MIGRACIÓN 0006
 
     @property
     def str_duracion(self):
@@ -70,20 +66,18 @@ class Empleado(models.Model):
     apellido = models.CharField(max_length=100)
     email_contacto = models.EmailField(blank=True, null=True)
     activo = models.BooleanField(default=True)
-    # 'servicios_que_realiza' FUE ELIMINADO EN MIGRACIÓN 0006
 
     def __str__(self): return f"{self.nombre} {self.apellido}"
 
 DIAS_SEMANA = ((0,'Lunes'),(1,'Martes'),(2,'Miércoles'),(3,'Jueves'),(4,'Viernes'),(5,'Sábado'),(6,'Domingo'))
 
 class HorarioEmpleado(models.Model):
-    # Reemplaza a HorarioSemanal desde la migración 0006
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, related_name='horarios')
     dia_semana = models.IntegerField(choices=DIAS_SEMANA)
     hora_inicio = models.TimeField()
     hora_fin = models.TimeField()
-    almuerzo_inicio = models.TimeField(blank=True, null=True, help_text="Inicio del descanso")
-    almuerzo_fin = models.TimeField(blank=True, null=True, help_text="Fin del descanso")
+    almuerzo_inicio = models.TimeField(blank=True, null=True)
+    almuerzo_fin = models.TimeField(blank=True, null=True)
 
     class Meta: 
         unique_together = ('empleado', 'dia_semana') 
@@ -94,7 +88,6 @@ class Ausencia(models.Model):
     fecha_inicio = models.DateTimeField()
     fecha_fin = models.DateTimeField()
     motivo = models.CharField(max_length=200, blank=True)
-    def __str__(self): return f"Ausencia {self.empleado}"
 
 class Cita(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='citas')
@@ -107,7 +100,7 @@ class Cita(models.Model):
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
     fecha_hora_inicio = models.DateTimeField()
     fecha_hora_fin = models.DateTimeField() 
-    creado_en = models.DateTimeField(auto_now_add=True) # Faltaba este campo vital
+    creado_en = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(max_length=1, choices=[('P','Pendiente Pago'),('C','Confirmada'),('A','Anulada')], default='C')
 
     def __str__(self): return f"Cita {self.cliente_nombre}"
@@ -126,38 +119,27 @@ class Cita(models.Model):
                 for s in self.servicios.all():
                     lista_servicios += f"✂️ {s.nombre}\n"
                 
-                # USO DEL NUEVO CAMPO: código de país configurable
-                codigo_pais = self.peluqueria.codigo_pais_wa
-                link_wa = f"https://wa.me/{codigo_pais}{self.cliente_telefono.replace(' ', '')}"
+                pais = self.peluqueria.codigo_pais_wa
+                link_wa = f"https://wa.me/{pais}{self.cliente_telefono.replace(' ', '')}"
 
                 msg = (
-                    f"🔥 *NUEVA RESERVA CONFIRMADA*\n"
-                    f"━━━━━━━━━━━━━━━━━━\n"
+                    f"🔥 *NUEVA RESERVA*\n"
                     f"👤 *Cliente:* {self.cliente_nombre}\n"
-                    f"📱 *Tel:* [{self.cliente_telefono}]({link_wa}) 👈(Clic para chatear)\n\n"
+                    f"📱 *Tel:* [{self.cliente_telefono}]({link_wa})\n\n"
                     f"📅 *Fecha:* {self.fecha_hora_inicio.strftime('%d/%m/%Y')}\n"
                     f"⏰ *Hora:* {self.fecha_hora_inicio.strftime('%I:%M %p')}\n"
                     f"💈 *Estilista:* {self.empleado.nombre}\n"
-                    f"━━━━━━━━━━━━━━━━━━\n"
-                    f"📝 *SERVICIOS:*\n{lista_servicios}\n"
-                    f"💰 *FINANZAS:*\n"
-                    f"• Total: ${total:,.0f}\n"
-                    f"• Pagado App: ${abono:,.0f}\n"
-                    f"• 🚨 *COBRAR EN LOCAL: ${pendiente:,.0f}* 🚨"
+                    f"📝 *Servicios:*\n{lista_servicios}\n"
+                    f"💰 *Total:* ${total:,.0f} | *Pendiente:* ${pendiente:,.0f}"
                 )
 
                 requests.post(
                     f"https://api.telegram.org/bot{token}/sendMessage", 
-                    data={
-                        "chat_id": chat_id, 
-                        "text": msg, 
-                        "parse_mode": "Markdown",
-                        "disable_web_page_preview": True
-                    },
+                    data={"chat_id": chat_id, "text": msg, "parse_mode": "Markdown", "disable_web_page_preview": True},
                     timeout=5
                 )
         except Exception as e:
-            print(f"Error enviando Telegram: {e}")
+            print(f"Error Telegram: {e}")
 
 class PerfilUsuario(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
@@ -168,10 +150,6 @@ class PerfilUsuario(models.Model):
 def crear_perfil(sender, instance, created, **kwargs):
     if created: PerfilUsuario.objects.create(user=instance)
 
-# =============================================================
-# 3. SOLICITUDES SAAS (LEADS)
-# =============================================================
-
 class SolicitudSaaS(models.Model):
     nombre_contacto = models.CharField(max_length=100)
     nombre_empresa = models.CharField(max_length=100)
@@ -180,6 +158,3 @@ class SolicitudSaaS(models.Model):
     cantidad_empleados = models.CharField(max_length=50)
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
     atendido = models.BooleanField(default=False)
-
-    def __str__(self): return f"Lead: {self.nombre_empresa}"
-    class Meta: verbose_name_plural = "Solicitudes SaaS"
