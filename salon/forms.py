@@ -24,19 +24,25 @@ class ServicioForm(forms.ModelForm):
         model = Servicio
         fields = ['nombre', 'precio']
 
+# Formulario para que el dueño agregue manualmente (opcional)
 class NuevoEmpleadoForm(forms.Form):
     nombre = forms.CharField(max_length=100)
     apellido = forms.CharField(max_length=100)
     email = forms.EmailField(label="Correo (Será su usuario)")
     password = forms.CharField(widget=forms.PasswordInput, label="Contraseña Inicial")
 
-class HorarioForm(forms.ModelForm):
-    class Meta:
-        model = HorarioEmpleado
-        fields = ['hora_inicio', 'hora_fin', 'almuerzo_inicio', 'almuerzo_fin']
-        widgets = {
-            'hora_inicio': forms.TimeInput(attrs={'type': 'time'}),
-            'hora_fin': forms.TimeInput(attrs={'type': 'time'}),
-            'almuerzo_inicio': forms.TimeInput(attrs={'type': 'time'}),
-            'almuerzo_fin': forms.TimeInput(attrs={'type': 'time'}),
-        }
+# Formulario para el auto-registro público
+class RegistroPublicoEmpleadoForm(forms.Form):
+    nombre = forms.CharField(max_length=100)
+    apellido = forms.CharField(max_length=100)
+    email = forms.EmailField()
+    password = forms.CharField(widget=forms.PasswordInput)
+    confirm_password = forms.CharField(widget=forms.PasswordInput)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        p1 = cleaned_data.get("password")
+        p2 = cleaned_data.get("confirm_password")
+        if p1 and p2 and p1 != p2:
+            raise forms.ValidationError("Las contraseñas no coinciden")
+        return cleaned_data
