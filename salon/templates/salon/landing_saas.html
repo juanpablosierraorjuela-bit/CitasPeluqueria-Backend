@@ -55,12 +55,14 @@
         button.btn-submit:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(236, 72, 153, 0.4); }
 
         .error-msg { background: #fee2e2; color: #b91c1c; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; text-align: center; }
+        .success-msg { background: #d1fae5; color: #065f46; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; text-align: center; }
 
         @media (max-width: 900px) {
             h1 { font-size: 2.5rem; }
             .hero { flex-direction: column; }
             .hero-content { padding: 40px 20px; }
             .hero-form { padding: 40px 20px; }
+            nav { padding: 20px 20px; }
             .nav-links { gap: 10px; }
             .btn-link { display: none; } /* Ocultar "Volver" en movil para espacio */
         }
@@ -99,16 +101,27 @@
                 <h2>Crea tu cuenta Gratis</h2>
                 <p>Configura tu salón en menos de 2 minutos.</p>
                 
-                {% if error %}
-                    <div class="error-msg">⚠️ {{ error }}</div>
+                {% if messages %}
+                    {% for message in messages %}
+                        {% if 'error' in message.tags %}
+                            <div class="error-msg">⚠️ {{ message }}</div>
+                        {% elif 'success' in message.tags %}
+                            <div class="success-msg">🎉 {{ message }}</div>
+                        {% else %}
+                            <div class="error-msg">ℹ️ {{ message }}</div>
+                        {% endif %}
+                    {% endfor %}
                 {% endif %}
 
-                <form method="POST">
+                <form method="POST" action="{% url 'landing_saas' %}">
                     {% csrf_token %}
-                    <input type="text" name="empresa" placeholder="Nombre del Salón / Barbería" required>
-                    <input type="text" name="nombre" placeholder="Tu Nombre Completo" required>
+                    
+                    <input type="text" name="nombre_negocio" placeholder="Nombre del Salón / Barbería" required>
+                    
                     <input type="tel" name="telefono" placeholder="WhatsApp (Ej: 3001234567)" required>
+                    
                     <input type="email" name="email" placeholder="Correo Electrónico" required>
+                    
                     <input type="password" name="password" placeholder="Crea una contraseña segura" required>
                     
                     <button type="submit" class="btn-submit">Comenzar Ahora ✨</button>
