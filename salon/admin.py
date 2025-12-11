@@ -1,4 +1,3 @@
-+# UBICACIÓN: salon/admin.py
 from django.contrib import admin
 from django.contrib.auth.models import Group, User
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -11,7 +10,7 @@ from .models import (
 # --- CONFIGURACIÓN GLOBAL ---
 @admin.register(ConfiguracionPlataforma)
 class ConfigAdmin(admin.ModelAdmin):
-    list_display = ('link_pago_bold', 'precio_mensualidad') # Mejora visual
+    list_display = ('link_pago_bold', 'precio_mensualidad')
     def has_add_permission(self, request):
         if self.model.objects.count() >= 1:
             return False
