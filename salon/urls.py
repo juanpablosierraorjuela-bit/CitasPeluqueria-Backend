@@ -7,7 +7,7 @@ urlpatterns = [
     path('', views.inicio, name='inicio'),
     path('info/', views.landing_saas, name='landing_saas'),
     
-    # --- RUTA DE COBRO SAAS (NUEVA) ---
+    # --- RUTA DE COBRO SAAS ---
     path('suscripcion/pago/', views.pago_suscripcion_saas, name='pago_suscripcion_saas'),
 
     # --- AUTENTICACIÓN ---
