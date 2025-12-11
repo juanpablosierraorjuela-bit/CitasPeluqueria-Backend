@@ -7,3 +7,4 @@ requests==2.32.3
 django-cors-headers==4.6.0
 django-jazzmin==3.0.1
 pytz==2024.2
+django-multitenant==3.0.0
