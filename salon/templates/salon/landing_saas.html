@@ -4,128 +4,208 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PASO Business | Tu Salón en Autopiloto</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <title>Crear Cuenta de Negocio | PASO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         :root {
             --primary: #0f172a;
-            --accent: #ec4899;
-            --accent-grad: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
-            --bg-light: #f8fafc;
-            --white: #ffffff;
+            --accent: #db2777;
+            --gradient: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+        }
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #f1f5f9; margin: 0; min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(236, 72, 153, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
         }
 
-        body { font-family: 'Outfit', sans-serif; margin: 0; padding: 0; background-color: var(--bg-light); color: var(--primary); overflow-x: hidden; }
-        
-        /* Navbar Simple */
-        nav { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; background: white; box-shadow: 0 4px 20px rgba(0,0,0,0.03); position: relative; z-index: 10; }
-        .logo { font-weight: 800; font-size: 1.5rem; background: var(--accent-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        .nav-links { display: flex; gap: 20px; align-items: center; }
-        .btn-link { text-decoration: none; color: var(--primary); font-weight: 600; font-size: 0.95rem; }
-        .btn-login { text-decoration: none; padding: 10px 20px; background: #f1f5f9; color: var(--primary); border-radius: 50px; font-weight: 700; font-size: 0.9rem; transition: 0.2s; }
-        .btn-login:hover { background: #e2e8f0; }
+        .container {
+            display: flex; width: 100%; max-width: 1100px;
+            background: white; border-radius: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1);
+            overflow: hidden; margin: 20px; min-height: 650px;
+        }
 
-        /* Hero Section Split */
-        .hero { display: flex; flex-wrap: wrap; min-height: 100vh; }
+        /* LADO IZQUIERDO (VISUAL) */
+        .visual-side {
+            flex: 1; background: var(--primary); color: white;
+            padding: 60px; display: flex; flex-direction: column; justify-content: space-between;
+            position: relative; overflow: hidden;
+        }
         
-        /* Lado Izquierdo: Contenido */
-        .hero-content { flex: 1; padding: 60px; display: flex; flex-direction: column; justify-content: center; min-width: 350px; }
-        .badge { background: #fdf2f8; color: var(--accent); padding: 8px 16px; border-radius: 50px; font-weight: 700; font-size: 0.8rem; display: inline-block; width: fit-content; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
-        h1 { font-size: 3.5rem; line-height: 1.1; margin-bottom: 20px; letter-spacing: -1px; }
-        p.lead { font-size: 1.2rem; color: #64748b; margin-bottom: 40px; line-height: 1.6; max-width: 500px; }
+        .visual-side::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1974&auto=format&fit=crop') center/cover;
+            opacity: 0.2; mix-blend-mode: overlay;
+        }
+
+        .content-over { position: relative; z-index: 2; }
         
-        .features-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 40px; }
-        .feat-item { display: flex; align-items: center; gap: 10px; font-weight: 600; }
-        .check { color: #10b981; font-size: 1.2rem; }
+        .brand { font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+        .quote { font-size: 2.2rem; font-weight: 700; line-height: 1.2; margin-top: auto; }
+        .quote span { color: #f472b6; }
 
-        /* Lado Derecho: Formulario */
-        .hero-form { flex: 1; background: var(--primary); color: white; padding: 60px; display: flex; align-items: center; justify-content: center; min-width: 350px; position: relative; }
-        .hero-form::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('https://img.freepik.com/foto-gratis/interior-peluqueria-moderna-estilista-trabajando_155003-13837.jpg') center/cover; opacity: 0.1; }
+        /* LADO DERECHO (FORMULARIO) */
+        .form-side {
+            flex: 1.1; padding: 50px; overflow-y: auto;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+
+        h2 { font-size: 1.8rem; font-weight: 800; color: var(--primary); margin-bottom: 5px; }
+        .subtitle { color: #64748b; margin-bottom: 30px; font-size: 0.95rem; }
+
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         
-        .form-card { position: relative; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 40px; border-radius: 24px; width: 100%; max-width: 450px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        .input-group { margin-bottom: 15px; position: relative; }
+        .input-group.full { grid-column: span 2; }
         
-        .form-card h2 { margin-top: 0; font-size: 1.8rem; margin-bottom: 10px; }
-        .form-card p { color: #94a3b8; margin-bottom: 25px; }
+        .input-group label {
+            display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 5px; margin-left: 5px;
+        }
+        
+        .input-wrapper { position: relative; }
+        .input-wrapper i {
+            position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
+            color: #94a3b8; font-size: 0.9rem;
+        }
+        
+        input {
+            width: 100%; padding: 12px 12px 12px 40px; border-radius: 12px;
+            border: 2px solid #e2e8f0; font-family: inherit; font-size: 0.95rem;
+            transition: 0.3s; background: #f8fafc; color: var(--primary);
+            box-sizing: border-box;
+        }
+        input:focus { border-color: var(--accent); background: white; outline: none; }
 
-        input { width: 100%; padding: 14px; margin-bottom: 15px; background: rgba(255,255,255,0.9); border: none; border-radius: 12px; font-family: inherit; font-size: 1rem; box-sizing: border-box; color: #0f172a; }
-        input:focus { outline: 3px solid var(--accent); }
+        .btn-submit {
+            width: 100%; padding: 15px; background: var(--primary); color: white;
+            border: none; border-radius: 12px; font-weight: 700; font-size: 1rem;
+            cursor: pointer; transition: 0.3s; margin-top: 10px;
+        }
+        .btn-submit:hover { background: #334155; transform: translateY(-2px); }
 
-        button.btn-submit { width: 100%; padding: 16px; background: var(--accent-grad); color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s; box-shadow: 0 10px 20px rgba(236, 72, 153, 0.3); }
-        button.btn-submit:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(236, 72, 153, 0.4); }
-
-        .error-msg { background: #fee2e2; color: #b91c1c; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; text-align: center; }
-        .success-msg { background: #d1fae5; color: #065f46; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; text-align: center; }
+        .alert-error {
+            background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 10px;
+            font-size: 0.9rem; margin-bottom: 20px; border-left: 4px solid #ef4444;
+        }
 
         @media (max-width: 900px) {
-            h1 { font-size: 2.5rem; }
-            .hero { flex-direction: column; }
-            .hero-content { padding: 40px 20px; }
-            .hero-form { padding: 40px 20px; }
-            nav { padding: 20px 20px; }
-            .nav-links { gap: 10px; }
-            .btn-link { display: none; } /* Ocultar "Volver" en movil para espacio */
+            .container { flex-direction: column; margin: 0; border-radius: 0; min-height: 100vh; }
+            .visual-side { padding: 40px; min-height: 200px; flex: none; }
+            .quote { font-size: 1.5rem; }
+            .form-side { padding: 30px; }
         }
     </style>
 </head>
 <body>
 
-    <nav>
-        <div class="logo">PASO Business</div>
-        <div class="nav-links">
-            <a href="{% url 'inicio' %}" class="btn-link">Volver al Inicio</a>
-            <a href="{% url 'login_custom' %}" class="btn-login">Iniciar Sesión</a>
-        </div>
-    </nav>
-
-    <div class="hero">
-        <div class="hero-content">
-            <span class="badge">🚀 Software para Belleza</span>
-            <h1>Automatiza tu Salón.<br>Recibe Citas 24/7.</h1>
-            <p class="lead">Deja de responder WhatsApps todo el día. Obtén tu propia página de reservas, gestiona tu equipo y cobra anticipos automáticos en minutos.</p>
-            
-            <div class="features-grid">
-                <div class="feat-item"><span class="check">✓</span> Agenda Online Propia</div>
-                <div class="feat-item"><span class="check">✓</span> Pagos con Bold</div>
-                <div class="feat-item"><span class="check">✓</span> Gestión de Equipo</div>
-                <div class="feat-item"><span class="check">✓</span> Notificaciones Telegram</div>
+    <div class="container">
+        <div class="visual-side">
+            <div class="content-over brand">
+                <div style="width:10px; height:10px; background:white; border-radius:50%;"></div> PASO Business
             </div>
-
-            <div style="margin-top: 20px;">
-                <p style="font-size: 0.9rem; color: #94a3b8;">Confían en nosotros más de 50 salones en Colombia.</p>
+            <div class="content-over quote">
+                Gestiona tu salón<br>como un <span>profesional.</span>
             </div>
         </div>
 
-        <div class="hero-form">
-            <div class="form-card">
-                <h2>Crea tu cuenta Gratis</h2>
-                <p>Configura tu salón en menos de 2 minutos.</p>
+        <div class="form-side">
+            <div style="max-width: 450px; margin: 0 auto; width: 100%;">
                 
+                <h2>Comienza Gratis</h2>
+                <p class="subtitle">Configura tu espacio en segundos. No requerimos tarjeta.</p>
+
                 {% if messages %}
                     {% for message in messages %}
-                        {% if 'error' in message.tags %}
-                            <div class="error-msg">⚠️ {{ message }}</div>
-                        {% elif 'success' in message.tags %}
-                            <div class="success-msg">🎉 {{ message }}</div>
-                        {% else %}
-                            <div class="error-msg">ℹ️ {{ message }}</div>
-                        {% endif %}
+                        <div class="alert-error">
+                            <i class="fas fa-exclamation-circle"></i> {{ message }}
+                        </div>
                     {% endfor %}
                 {% endif %}
 
                 <form method="POST" action="{% url 'landing_saas' %}">
                     {% csrf_token %}
                     
-                    <input type="text" name="nombre_negocio" placeholder="Nombre del Salón / Barbería" required>
+                    <div class="input-group full">
+                        <label>Nombre del Negocio</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-store"></i>
+                            <input type="text" name="nombre_negocio" placeholder="Ej: Barbería Elite" required>
+                        </div>
+                    </div>
+
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>Tu Nombre</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-user"></i>
+                                <input type="text" name="nombre_owner" placeholder="Juan" required>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Tu Apellido</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-user"></i>
+                                <input type="text" name="apellido_owner" placeholder="Pérez" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-group full">
+                        <label>Nombre de Usuario</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-at"></i>
+                            <input type="text" name="username_owner" placeholder="Ej: juan.elite (Único)" required>
+                        </div>
+                    </div>
+
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>Correo Electrónico</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-envelope"></i>
+                                <input type="email" name="email" placeholder="hola@ejemplo.com" required>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>WhatsApp / Teléfono</label>
+                            <div class="input-wrapper">
+                                <i class="fab fa-whatsapp"></i>
+                                <input type="tel" name="telefono" placeholder="300 123 4567" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>Contraseña</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" name="password" placeholder="••••••••" required>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Confirmar</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-check-circle"></i>
+                                <input type="password" name="confirm_password" placeholder="••••••••" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Crear mi cuenta 🚀</button>
                     
-                    <input type="tel" name="telefono" placeholder="WhatsApp (Ej: 3001234567)" required>
-                    
-                    <input type="email" name="email" placeholder="Correo Electrónico" required>
-                    
-                    <input type="password" name="password" placeholder="Crea una contraseña segura" required>
-                    
-                    <button type="submit" class="btn-submit">Comenzar Ahora ✨</button>
-                    <p style="text-align: center; margin-top: 15px; font-size: 0.8rem; color:rgba(255,255,255,0.7);">Sin tarjeta de crédito requerida.</p>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <a href="{% url 'login_custom' %}" style="color: #64748b; text-decoration: none; font-size: 0.9rem;">
+                            ¿Ya tienes cuenta? <strong style="color: var(--primary);">Inicia Sesión</strong>
+                        </a>
+                    </div>
+
                 </form>
             </div>
         </div>
