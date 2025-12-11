@@ -22,7 +22,7 @@ class ConfiguracionPlataforma(models.Model):
     link_pago_bold = models.URLField(
         "Link de Pago Bold", 
         default="https://checkout.bold.co/payment/LNK_QZ5NWWY82P", 
-        help_text="Pega aquí el Link de Pago Único de Bold."
+        help_text="https://checkout.bold.co/payment/LNK_QZ5NWWY82P"
     )
     
     # Telegram
