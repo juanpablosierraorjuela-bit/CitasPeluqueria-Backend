@@ -1,4 +1,3 @@
-# UBICACIÓN: salon/urls.py
 from django.urls import path
 from . import views
 
@@ -7,7 +6,7 @@ urlpatterns = [
     path('', views.inicio, name='inicio'),
     path('info/', views.landing_saas, name='landing_saas'),
     
-    # --- RUTA DE COBRO SAAS ---
+    # --- RUTA DE COBRO SAAS (IMPORTANTE PARA EL PAGO) ---
     path('suscripcion/pago/', views.pago_suscripcion_saas, name='pago_suscripcion_saas'),
 
     # --- AUTENTICACIÓN ---
@@ -25,6 +24,7 @@ urlpatterns = [
 
     # --- PANEL DE CONTROL (DUEÑO) ---
     path('negocio/dashboard/', views.panel_negocio, name='panel_negocio'),
+    path('negocio/configuracion/', views.configuracion_negocio, name='config_negocio'),
     path('negocio/servicios/', views.gestionar_servicios, name='gestionar_servicios'),
     path('negocio/servicios/eliminar/<int:servicio_id>/', views.eliminar_servicio, name='eliminar_servicio'),
     path('negocio/equipo/', views.gestionar_equipo, name='gestionar_equipo'),
