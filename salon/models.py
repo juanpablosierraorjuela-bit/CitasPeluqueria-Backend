@@ -13,26 +13,30 @@ import pytz
 # 1. CONFIGURACIÓN GLOBAL DE LA PLATAFORMA (SaaS)
 # =============================================================
 class ConfiguracionPlataforma(models.Model):
-    """Aquí pones TUS credenciales para cobrar la mensualidad"""
-    solo_un_registro = models.CharField(max_length=1, default='X', editable=False, help_text="Solo debe haber 1 registro aquí")
+    """
+    Aquí configuras TUS datos como dueño de la plataforma PASO.
+    Estas credenciales se usan para cobrar la mensualidad a las peluquerías.
+    """
+    solo_un_registro = models.CharField(max_length=1, default='X', editable=False, help_text="Configuración única del sistema")
     
     # TUS CREDENCIALES BOLD (Para cobrar los 130k)
-    bold_api_key = models.CharField(max_length=255, default="g4XAZfPD4hH2e5WXhiKfZjGPLRxrzbPH9rOxaqJhDTw")
-    bold_secret_key = models.CharField(max_length=255, default="te4T6sOL43wDlcGwCGHfGA")
-    bold_integrity_key = models.CharField(max_length=255, default="TU_INTEGRITY_KEY_AQUI", help_text="Busca esto en tu panel Bold")
+    # He puesto las que me diste como default, pero verifícalas en el admin
+    bold_api_key = models.CharField("Tu API Key (Identity)", max_length=255, default="g4XAZfPD4hH2e5WXhiKfZjGPLRxrzbPH9rOxaqJhDTw")
+    bold_secret_key = models.CharField("Tu Secret Key", max_length=255, default="te4T6sOL43wDlcGwCGHfGA")
+    bold_integrity_key = models.CharField("Tu Integrity Key", max_length=255, default="CAMBIAR_ESTO_EN_ADMIN", help_text="Busca la 'Llave de Integridad' en tu panel de Bold y pégala aquí")
     
-    # TU TELEGRAM (Para que te avise)
+    # TU TELEGRAM (Para que te avise de nuevos registros)
     telegram_token = models.CharField(max_length=255, blank=True, help_text="Token de tu Bot de Telegram")
     telegram_chat_id = models.CharField(max_length=255, blank=True, help_text="Tu ID de Chat para recibir alertas")
     
     precio_mensualidad = models.IntegerField(default=130000, help_text="Valor a cobrar mensualmente")
 
     class Meta:
-        verbose_name = "Configuración del Dueño de PASO"
-        verbose_name_plural = "Configuración del Dueño de PASO"
+        verbose_name = "Configuración Dueño PASO"
+        verbose_name_plural = "Configuración Dueño PASO"
 
     def __str__(self):
-        return "Credenciales y Configuración General"
+        return "Credenciales Maestras y Configuración"
 
 # =============================================================
 # 2. MODELOS BASE
@@ -49,30 +53,29 @@ class Peluqueria(models.Model):
     telefono = models.CharField(max_length=20, blank=True)
     codigo_pais_wa = models.CharField(max_length=5, default="57", help_text="Cód. País WhatsApp")
     
-    # GEO-LOCALIZACIÓN (Nuevo para filtro de 1km)
-    latitud = models.FloatField(default=5.5353) # Default Tunja
-    longitud = models.FloatField(default=-73.3678) # Default Tunja
+    # GEO-LOCALIZACIÓN
+    latitud = models.FloatField(default=5.5353) 
+    longitud = models.FloatField(default=-73.3678) 
     
     # CONFIGURACIÓN GENERAL
     hora_apertura = models.TimeField(default="08:00", help_text="Hora de apertura")
     hora_cierre = models.TimeField(default="20:00", help_text="Hora de cierre")
     porcentaje_abono = models.IntegerField(default=50, help_text="Porcentaje para reservar")
     
-    # DATOS DEL CONTRATO SAAS
+    # DATOS DEL CONTRATO SAAS (NUEVO)
     fecha_inicio_contrato = models.DateTimeField(default=timezone.now, help_text="Fecha de registro/inicio suscripción")
-    activo_saas = models.BooleanField(default=True, help_text="Si no paga, lo desactivas aquí")
+    activo_saas = models.BooleanField(default=True, help_text="Desmarcar si no paga la mensualidad")
 
-    # INTEGRACIONES DEL CLIENTE (Telegram y Bold de la Peluquería)
+    # INTEGRACIONES DEL CLIENTE (Sus propias claves para cobrar a SUS clientes)
     telegram_token = models.CharField(max_length=200, blank=True, null=True)
     telegram_chat_id = models.CharField(max_length=100, blank=True, null=True)
     
-    bold_api_key = models.CharField("Bold API Key", max_length=255, blank=True, null=True)
-    bold_integrity_key = models.CharField("Bold Integrity Key", max_length=255, blank=True, null=True)
-    bold_secret_key = models.CharField("Bold Secret Key", max_length=255, blank=True, null=True)
+    bold_api_key = models.CharField("Bold API Key (Cliente)", max_length=255, blank=True, null=True)
+    bold_integrity_key = models.CharField("Bold Integrity Key (Cliente)", max_length=255, blank=True, null=True)
+    bold_secret_key = models.CharField("Bold Secret Key (Cliente)", max_length=255, blank=True, null=True)
     
     @property
     def esta_abierto(self):
-        """Calcula si la peluquería está abierta basándose en la hora de Colombia."""
         try:
             tz_colombia = pytz.timezone('America/Bogota')
             ahora_colombia = timezone.now().astimezone(tz_colombia).time()
@@ -93,9 +96,8 @@ class Peluqueria(models.Model):
         return f"{self.nombre_visible} ({self.ciudad})"
 
 class Cupon(models.Model):
-    """Sistema de Descuentos para Fidelización"""
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='cupones')
-    codigo = models.CharField(max_length=50) # Ej: APERTURA2025
+    codigo = models.CharField(max_length=50) 
     porcentaje_descuento = models.IntegerField(default=10)
     activo = models.BooleanField(default=True)
     usos_restantes = models.IntegerField(default=100)
@@ -120,10 +122,6 @@ class Servicio(models.Model):
 
     def __str__(self): 
         return f"{self.nombre} - ${self.precio:,.0f}"
-
-# =============================================================
-# 3. EMPLEADOS Y CITA
-# =============================================================
 
 class Empleado(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='empleados')
@@ -164,7 +162,6 @@ class Cita(models.Model):
     cliente_telefono = models.CharField(max_length=20)
     servicios = models.ManyToManyField(Servicio) 
     
-    # Precios
     precio_total = models.IntegerField(default=0)
     descuento_aplicado = models.IntegerField(default=0) 
     abono_pagado = models.IntegerField(default=0)
@@ -232,7 +229,6 @@ class SolicitudSaaS(models.Model):
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
     atendido = models.BooleanField(default=False)
 
-# SEÑAL OPTIMIZADA
 @receiver(post_save, sender=User)
 def crear_perfil(sender, instance, created, **kwargs):
     if created: 
