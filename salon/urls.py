@@ -1,3 +1,4 @@
+# UBICACIÓN: salon/urls.py
 from django.urls import path
 from . import views
 
@@ -24,7 +25,7 @@ urlpatterns = [
 
     # --- PANEL DE CONTROL (DUEÑO) ---
     path('negocio/dashboard/', views.panel_negocio, name='panel_negocio'),
-    path('negocio/configuracion/', views.configuracion_negocio, name='config_negocio'),
+    # LA LÍNEA DE CONFIGURACIÓN SE ELIMINÓ AQUÍ
     path('negocio/servicios/', views.gestionar_servicios, name='gestionar_servicios'),
     path('negocio/servicios/eliminar/<int:servicio_id>/', views.eliminar_servicio, name='eliminar_servicio'),
     path('negocio/equipo/', views.gestionar_equipo, name='gestionar_equipo'),
