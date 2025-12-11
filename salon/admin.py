@@ -8,16 +8,13 @@ from .models import (
     Ausencia, SolicitudSaaS, HorarioEmpleado, ConfiguracionPlataforma
 )
 
-# --- CONFIGURACIÓN GLOBAL (TUS CREDENCIALES) ---
 @admin.register(ConfiguracionPlataforma)
 class ConfigAdmin(admin.ModelAdmin):
+    # Solo permite 1 registro
     def has_add_permission(self, request):
-        # Solo permite crear una configuración
-        if self.model.objects.count() >= 1:
-            return False
+        if self.model.objects.count() >= 1: return False
         return super().has_add_permission(request)
 
-# --- PERMISOS DE DUEÑOS DE SALÓN ---
 class SalonOwnerAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
