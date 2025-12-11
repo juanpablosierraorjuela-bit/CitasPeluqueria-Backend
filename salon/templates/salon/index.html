@@ -3,20 +3,25 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PASO | Tu estilo, tu tiempo</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 font-weight=%22bold%22 fill=%22black%22>P</text></svg>">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         :root {
             --font-main: 'Plus Jakarta Sans', sans-serif;
-            --primary: #0f172a;   
-            --accent: #ec4899;    
+            --primary: #0f172a;
+            --secondary: #64748b;
+            --accent: #ec4899;
+            --accent-glow: rgba(236, 72, 153, 0.4);
             --bg-body: #f8fafc;
+            --glass: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.8);
         }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             font-family: var(--font-main);
@@ -25,40 +30,63 @@
             min-height: 100vh;
             margin: 0; padding: 0;
             overflow-x: hidden;
+            position: relative;
         }
 
+        /* --- FONDO ANIMADO "AURORA" --- */
         .ambient-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
-            background: radial-gradient(circle at 50% 0%, rgba(236, 72, 153, 0.08) 0%, transparent 60%);
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            overflow: hidden;
+        }
+        .blob {
+            position: absolute; filter: blur(80px); opacity: 0.6;
+            animation: float 10s infinite alternate ease-in-out;
+        }
+        .blob-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: #fce7f3; animation-delay: 0s; }
+        .blob-2 { bottom: -10%; right: -10%; width: 600px; height: 600px; background: #e0e7ff; animation-delay: -5s; }
+        .blob-3 { top: 40%; left: 40%; width: 300px; height: 300px; background: #fae8ff; animation-delay: -2s; }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, 50px) scale(1.1); }
         }
 
-        /* NAVBAR */
+        /* --- NAVBAR FLOTANTE --- */
         .navbar {
             padding: 20px 40px; display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; z-index: 100; backdrop-filter: blur(12px); background: rgba(255,255,255,0.8);
-            border-bottom: 1px solid rgba(0,0,0,0.03);
+            position: sticky; top: 0; z-index: 100; 
+            background: rgba(255,255,255,0.05); backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s;
         }
+        .navbar.scrolled { background: rgba(255,255,255,0.9); box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
 
         .brand-pill {
-            text-decoration: none; font-weight: 800; color: var(--primary); font-size: 1.1rem;
+            text-decoration: none; font-weight: 800; color: var(--primary); font-size: 1.2rem;
             display: flex; align-items: center; gap: 8px; letter-spacing: -0.5px;
         }
-        .dot { width: 8px; height: 8px; background: black; border-radius: 50%; }
+        .dot { width: 8px; height: 8px; background: var(--primary); border-radius: 50%; }
 
         .btn-access {
-            text-decoration: none; background: #1e293b; color: white;
-            padding: 10px 20px; border-radius: 50px; font-size: 0.9rem; font-weight: 600;
-            transition: transform 0.2s;
+            text-decoration: none; background: var(--primary); color: white;
+            padding: 10px 24px; border-radius: 50px; font-size: 0.9rem; font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2);
         }
-        .btn-access:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .btn-access:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(15, 23, 42, 0.3); }
 
-        /* HERO SECTION - EL ALMA DE LA PÁGINA */
-        header { text-align: center; padding: 80px 20px 60px; max-width: 800px; margin: 0 auto; }
+        /* --- HERO SECTION --- */
+        header { 
+            text-align: center; padding: 100px 20px 60px; max-width: 900px; margin: 0 auto; 
+            position: relative;
+        }
         
         .hero-title { 
-            font-size: 4rem; font-weight: 800; margin: 0 0 15px; line-height: 1.05; letter-spacing: -2px;
-            background: linear-gradient(180deg, #0f172a 0%, #334155 100%);
+            font-size: 4.5rem; font-weight: 800; margin: 0 0 15px; line-height: 1.05; letter-spacing: -2px;
+            background: linear-gradient(180deg, #0f172a 20%, #475569 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            opacity: 0; animation: fadeUp 0.8s ease-out forwards;
         }
         .hero-title span { 
             background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
@@ -66,74 +94,124 @@
         }
 
         .hero-subtitle {
-            font-size: 1.25rem; color: #64748b; margin-bottom: 30px; line-height: 1.6;
+            font-size: 1.25rem; color: var(--secondary); margin-bottom: 30px; line-height: 1.6;
+            opacity: 0; animation: fadeUp 0.8s ease-out 0.2s forwards;
         }
 
-        /* BOTÓN LEGADO - SUTIL Y ELEGANTE */
+        /* BOTÓN LEGADO - EFECTO CRISTAL */
         .btn-legado {
-            display: inline-flex; align-items: center; gap: 8px;
-            background: rgba(255, 255, 255, 0.6); border: 1px solid rgba(0,0,0,0.1);
-            padding: 10px 24px; border-radius: 50px; text-decoration: none;
+            display: inline-flex; align-items: center; gap: 10px;
+            background: rgba(255, 255, 255, 0.4); border: 1px solid rgba(255,255,255,0.6);
+            padding: 12px 28px; border-radius: 50px; text-decoration: none;
             color: #475569; font-weight: 600; font-size: 0.95rem;
-            transition: all 0.3s ease; backdrop-filter: blur(5px);
-            margin-bottom: 40px;
+            transition: all 0.3s ease; backdrop-filter: blur(10px);
+            margin-bottom: 50px;
+            opacity: 0; animation: fadeUp 0.8s ease-out 0.3s forwards;
         }
         .btn-legado:hover {
             background: white; border-color: #d4af37; color: #d4af37;
-            box-shadow: 0 10px 30px -10px rgba(212, 175, 55, 0.3); transform: translateY(-2px);
+            box-shadow: 0 10px 30px -10px rgba(212, 175, 55, 0.2); transform: translateY(-3px);
         }
 
-        /* CONTROLES GEO */
-        .search-area { display: flex; justify-content: center; gap: 12px; margin-bottom: 50px; }
+        /* --- BARRA DE BÚSQUEDA FLOTANTE (SUPER WOW) --- */
+        .search-container {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px);
+            padding: 8px; border-radius: 50px;
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08);
+            border: 1px solid white; width: fit-content; margin: 0 auto 60px;
+            opacity: 0; animation: fadeUp 0.8s ease-out 0.4s forwards;
+            transition: transform 0.3s;
+        }
+        .search-container:hover { transform: translateY(-5px); box-shadow: 0 25px 50px -10px rgba(0,0,0,0.12); }
+
+        .city-select {
+            border: none; background: transparent; padding: 12px 20px;
+            font-family: var(--font-main); font-size: 1rem; color: var(--primary);
+            font-weight: 600; outline: none; cursor: pointer; min-width: 200px;
+        }
+
         .btn-geo {
-            background: white; border: 1px solid rgba(0,0,0,0.05); padding: 12px 25px; border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.03); cursor: pointer; font-weight: 600; color: var(--primary);
-            display: flex; align-items: center; gap: 8px; transition: 0.2s; font-size: 0.95rem;
+            width: 48px; height: 48px; border-radius: 50%; border: none;
+            background: var(--primary); color: white; font-size: 1.2rem;
+            cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
         }
-        .btn-geo:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.06); }
-        .btn-geo.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .btn-geo:hover { background: var(--accent); transform: rotate(15deg); }
+        .btn-geo::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 50%; border: 2px solid rgba(255,255,255,0.5);
+            animation: pulse-ring 2s infinite; opacity: 0;
+        }
+        .btn-geo.searching::after { opacity: 1; }
 
-        /* GRID SALONES */
+        @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+
+        /* --- GRID DE SALONES --- */
         .grid-wrapper {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 30px; max-width: 1100px; margin: 0 auto; padding: 0 20px 100px;
         }
 
         .salon-card {
-            background: white; border-radius: 24px; padding: 25px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02); text-decoration: none; color: inherit;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(0,0,0,0.04);
-            display: block; position: relative; overflow: hidden;
+            background: white; border-radius: 28px; padding: 25px;
+            box-shadow: 0 10px 30px -5px rgba(0,0,0,0.03); text-decoration: none; color: inherit;
+            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            border: 1px solid rgba(255,255,255,0.8); position: relative; overflow: hidden;
+            display: block; opacity: 0; animation: fadeUp 0.6s ease-out forwards;
         }
-        .salon-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08); }
+        
+        .salon-card:hover { transform: translateY(-10px) scale(1.02); box-shadow: 0 25px 50px -10px rgba(0,0,0,0.08); z-index: 10; }
         .salon-card.hidden { display: none; }
 
-        .salon-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .card-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        
         .salon-avatar {
-            width: 56px; height: 56px; background: #f8fafc; border-radius: 18px;
-            display: flex; align-items: center; justify-content: center; font-weight: 800;
-            color: var(--primary); font-size: 1.2rem; border: 1px solid rgba(0,0,0,0.05);
+            width: 54px; height: 54px; background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+            border-radius: 18px; display: flex; align-items: center; justify-content: center;
+            font-weight: 800; color: #64748b; font-size: 1.4rem; box-shadow: inset 0 2px 5px rgba(255,255,255,0.5);
         }
+
+        .salon-info h3 { margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--primary); }
+        .salon-info span { font-size: 0.85rem; color: #94a3b8; font-weight: 600; }
+
+        .address { font-size: 0.95rem; color: var(--secondary); margin-bottom: 20px; line-height: 1.5; }
 
         .status-pill {
-            font-size: 0.75rem; font-weight: 700; padding: 6px 12px; border-radius: 30px;
-            display: inline-flex; align-items: center; gap: 6px; margin-top: 20px; letter-spacing: 0.5px;
+            font-size: 0.75rem; font-weight: 800; padding: 8px 16px; border-radius: 30px;
+            display: inline-flex; align-items: center; gap: 8px; letter-spacing: 0.5px;
         }
-        .status-pill.open { background: #dcfce7; color: #15803d; }
-        .status-pill.closed-online { background: #f3e8ff; color: #7e22ce; }
+        .status-pill.open { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .status-pill.open::before { content:''; width:8px; height:8px; background:#16a34a; border-radius:50%; box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2); }
+        
+        .status-pill.closed-online { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
 
-        footer { text-align: center; padding: 40px; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(0,0,0,0.05); }
+        /* FOOTER */
+        footer { text-align: center; padding: 40px; color: #94a3b8; font-size: 0.85rem; position: relative; z-index: 1; }
+
+        /* ANIMACIONES */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
         @media (max-width: 768px) {
-            .hero-title { font-size: 2.8rem; }
+            .hero-title { font-size: 3rem; }
+            .search-container { width: 100%; }
+            .city-select { width: 100%; flex: 1; }
             .navbar { padding: 15px 20px; }
         }
     </style>
 </head>
 <body>
-    <div class="ambient-bg"></div>
 
-    <nav class="navbar">
+    <div class="ambient-bg">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <nav class="navbar" id="navbar">
         <a href="https://pasotunja.com" target="_blank" class="brand-pill">
             <div class="dot"></div> PASO
         </a>
@@ -157,12 +235,16 @@
             📖 Conoce nuestro legado
         </a>
 
-        <div class="search-area">
-            <button class="btn-geo" onclick="filtrarCerca(this)">
-                <span>📍</span> Cerca de mí (< 1km)
-            </button>
-            <button class="btn-geo active" onclick="resetFiltro(this)">
-                <span>🌎</span> Ver todos
+        <div class="search-container">
+            <select id="city-selector" class="city-select" onchange="filtrarCiudad(this.value)">
+                <option value="">🌎 Ver todas las ciudades</option>
+                {% for c in ciudades %}
+                    <option value="{{ c }}">📍 {{ c }}</option>
+                {% endfor %}
+            </select>
+            
+            <button class="btn-geo" onclick="usarUbicacion()" title="Buscar cerca de mí">
+                📍
             </button>
         </div>
     </header>
@@ -171,30 +253,35 @@
         {% for p in peluquerias %}
             <a href="{% url 'agendar_cita' p.slug %}" class="salon-card" 
                data-lat="{{ p.latitud|stringformat:'.6f' }}" 
-               data-lon="{{ p.longitud|stringformat:'.6f' }}">
+               data-lon="{{ p.longitud|stringformat:'.6f' }}"
+               data-ciudad="{{ p.ciudad }}">
                 
-                <div class="salon-header">
+                <div class="card-header">
                     <div class="salon-avatar">{{ p.nombre_visible|first|upper }}</div>
-                    <span style="font-size:0.85rem; font-weight:600; color:#94a3b8; background:#f8fafc; padding:5px 10px; border-radius:20px;">
-                        {{ p.ciudad }}
-                    </span>
+                    <div class="salon-info">
+                        <h3>{{ p.nombre_visible }}</h3>
+                        <span>{{ p.ciudad }}</span>
+                    </div>
                 </div>
                 
-                <h3 style="margin:0 0 5px; font-size:1.3rem; font-weight:800;">{{ p.nombre_visible }}</h3>
-                <p style="font-size:0.95rem; color:#64748b; margin:0; line-height:1.5;">{{ p.direccion|default:"Ubicación pendiente" }}</p>
+                <p class="address">{{ p.direccion|default:"Ubicación pendiente" }}</p>
                 
-                <div style="display:flex; gap:8px;">
-                    {% if p.esta_abierto %}
-                        <div class="status-pill open">● ABIERTO</div>
-                    {% else %}
-                        <div class="status-pill" style="background:#fee2e2; color:#b91c1c;">CERRADO</div>
-                        <div class="status-pill closed-online">🌙 AGENDA 24/7</div>
-                    {% endif %}
+                <div style="display:flex; justify-content: space-between; align-items: center;">
+                    <div style="display:flex; gap:8px;">
+                        {% if p.esta_abierto %}
+                            <div class="status-pill open">ABIERTO</div>
+                        {% else %}
+                            <div class="status-pill" style="background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;">CERRADO</div>
+                            <div class="status-pill closed-online">🌙 AGENDA 24/7</div>
+                        {% endif %}
+                    </div>
+                    <span style="font-size:1.2rem; color:#cbd5e1;">→</span>
                 </div>
             </a>
         {% empty %}
-            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #94a3b8;">
-                No hay salones registrados aún.
+            <div style="grid-column: 1/-1; text-align: center; padding: 60px; color: #94a3b8;">
+                <div style="font-size: 3rem; margin-bottom: 20px;">☕</div>
+                <p>No hay salones registrados aún.</p>
             </div>
         {% endfor %}
     </div>
@@ -204,6 +291,24 @@
     </footer>
 
     <script>
+        // Efecto Navbar
+        window.addEventListener('scroll', () => {
+            document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20);
+        });
+
+        // 1. Filtrar por Ciudad (Dropdown)
+        function filtrarCiudad(ciudad) {
+            document.querySelectorAll('.salon-card').forEach(card => {
+                const cardCity = card.dataset.ciudad;
+                if (ciudad === "" || cardCity === ciudad) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        }
+
+        // 2. Filtrar por Geolocalización (Botón Icono)
         function getDistance(lat1, lon1, lat2, lon2) {
             const R = 6371; 
             const dLat = (lat2-lat1) * Math.PI/180;
@@ -213,40 +318,45 @@
             return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
         }
 
-        function filtrarCerca(btn) {
-            document.querySelectorAll('.btn-geo').forEach(b => b.classList.remove('active'));
-            btn.innerHTML = '⏳ Buscando...';
+        function usarUbicacion() {
+            const btn = document.querySelector('.btn-geo');
+            btn.classList.add('searching'); // Activa animación
             
-            if(!navigator.geolocation) { alert("Tu dispositivo no soporta GPS."); return; }
+            if(!navigator.geolocation) { 
+                alert("GPS no soportado."); 
+                btn.classList.remove('searching');
+                return; 
+            }
             
             navigator.geolocation.getCurrentPosition(pos => {
                 const myLat = pos.coords.latitude;
                 const myLon = pos.coords.longitude;
                 let count = 0;
 
+                // Resetear dropdown visualmente
+                document.getElementById('city-selector').value = "";
+
                 document.querySelectorAll('.salon-card').forEach(card => {
                     const sLat = parseFloat(card.dataset.lat);
                     const sLon = parseFloat(card.dataset.lon);
                     const dist = getDistance(myLat, myLon, sLat, sLon);
                     
-                    if(dist <= 1.0) { card.classList.remove('hidden'); count++; }
-                    else card.classList.add('hidden');
+                    // Radio de 1.5 km para ser un poco más flexible
+                    if(dist <= 1.5) { 
+                        card.classList.remove('hidden'); 
+                        count++; 
+                    } else {
+                        card.classList.add('hidden');
+                    }
                 });
                 
-                btn.innerHTML = '📍 Cerca de mí (< 1km)';
-                btn.classList.add('active');
-                if(count === 0) alert("No encontramos salones a menos de 1km de ti.");
+                btn.classList.remove('searching');
+                if(count === 0) alert("No encontramos salones a menos de 1.5km.");
                 
             }, err => {
                 alert("Necesitamos permiso de ubicación.");
-                btn.innerHTML = '📍 Cerca de mí (< 1km)';
+                btn.classList.remove('searching');
             });
-        }
-
-        function resetFiltro(btn) {
-            document.querySelectorAll('.btn-geo').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            document.querySelectorAll('.salon-card').forEach(c => c.classList.remove('hidden'));
         }
     </script>
 </body>
