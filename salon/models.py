@@ -10,32 +10,29 @@ import requests
 import pytz 
 
 # =============================================================
-# 1. CONFIGURACIÓN GLOBAL DE LA PLATAFORMA (SaaS)
+# 1. CONFIGURACIÓN GLOBAL (SOLO 2 LLAVES)
 # =============================================================
 class ConfiguracionPlataforma(models.Model):
     """
-    Aquí configuras TUS datos como dueño de la plataforma PASO.
-    Estas credenciales se usan para cobrar la mensualidad a las peluquerías.
+    Configuración simplificada. Solo requiere las 2 llaves de Bold.
     """
-    solo_un_registro = models.CharField(max_length=1, default='X', editable=False, help_text="Configuración única del sistema")
+    solo_un_registro = models.CharField(max_length=1, default='X', editable=False)
     
-    # TUS CREDENCIALES BOLD (Para cobrar los 130k)
-    bold_api_key = models.CharField("Tu API Key (Identity)", max_length=255, default="g4XAZfPD4hH2e5WXhiKfZjGPLRxrzbPH9rOxaqJhDTw")
-    bold_secret_key = models.CharField("Tu Secret Key", max_length=255, default="te4T6sOL43wDlcGwCGHfGA")
-    bold_integrity_key = models.CharField("Tu Integrity Key", max_length=255, default="CAMBIAR_EN_ADMIN", help_text="Busca la 'Llave de Integridad' en tu panel de Bold y pégala aquí")
+    # SOLO ESTAS DOS LLAVES SON NECESARIAS
+    bold_api_key = models.CharField("Bold Identidad (API Key)", max_length=255, default="g4XAZfPD4hH2e5WXhiKfZjGPLRxrzbPH9rOxaqJhDTw", help_text="La llave pública")
+    bold_secret_key = models.CharField("Bold Llave Secreta", max_length=255, default="te4T6sOL43wDlcGwCGHfGA", help_text="La llave oculta (empieza con sk_...)")
     
-    # TU TELEGRAM (Para que te avise de nuevos registros)
-    telegram_token = models.CharField(max_length=255, blank=True, help_text="Token de tu Bot de Telegram")
-    telegram_chat_id = models.CharField(max_length=255, blank=True, help_text="Tu ID de Chat para recibir alertas")
+    # Telegram
+    telegram_token = models.CharField(max_length=255, blank=True)
+    telegram_chat_id = models.CharField(max_length=255, blank=True)
     
-    precio_mensualidad = models.IntegerField(default=130000, help_text="Valor a cobrar mensualmente")
+    precio_mensualidad = models.IntegerField(default=130000)
 
     class Meta:
         verbose_name = "Configuración Dueño PASO"
         verbose_name_plural = "Configuración Dueño PASO"
 
-    def __str__(self):
-        return "Credenciales Maestras y Configuración"
+    def __str__(self): return "Credenciales de Pago"
 
 # =============================================================
 # 2. MODELOS BASE
@@ -43,84 +40,63 @@ class ConfiguracionPlataforma(models.Model):
 
 class Peluqueria(models.Model):
     nombre = models.CharField(max_length=200)
-    slug = models.SlugField(unique=True, help_text="Identificador único en la URL", blank=True)
+    slug = models.SlugField(unique=True, blank=True)
     nombre_visible = models.CharField(max_length=200, default="Mi Salón")
     ciudad = models.CharField(max_length=100, default="Tunja")
-    
-    # DATOS DE CONTACTO Y UBICACIÓN
     direccion = models.CharField(max_length=200, blank=True)
     telefono = models.CharField(max_length=20, blank=True)
-    codigo_pais_wa = models.CharField(max_length=5, default="57", help_text="Cód. País WhatsApp")
+    codigo_pais_wa = models.CharField(max_length=5, default="57")
     
-    # GEO-LOCALIZACIÓN
-    latitud = models.FloatField(default=5.5353) 
-    longitud = models.FloatField(default=-73.3678) 
+    latitud = models.FloatField(default=5.5353)
+    longitud = models.FloatField(default=-73.3678)
     
-    # CONFIGURACIÓN GENERAL
-    hora_apertura = models.TimeField(default="08:00", help_text="Hora de apertura")
-    hora_cierre = models.TimeField(default="20:00", help_text="Hora de cierre")
-    porcentaje_abono = models.IntegerField(default=50, help_text="Porcentaje para reservar")
+    hora_apertura = models.TimeField(default="08:00")
+    hora_cierre = models.TimeField(default="20:00")
+    porcentaje_abono = models.IntegerField(default=50)
     
-    # DATOS DEL CONTRATO SAAS (NUEVO)
-    fecha_inicio_contrato = models.DateTimeField(default=timezone.now, help_text="Fecha de registro/inicio suscripción")
-    activo_saas = models.BooleanField(default=True, help_text="Desmarcar si no paga la mensualidad")
+    # DATOS DE SUSCRIPCIÓN
+    fecha_inicio_contrato = models.DateTimeField(default=timezone.now)
+    activo_saas = models.BooleanField(default=True)
 
-    # INTEGRACIONES DEL CLIENTE (Sus propias claves para cobrar a SUS clientes)
+    # Integraciones del Cliente (Peluquería)
     telegram_token = models.CharField(max_length=200, blank=True, null=True)
     telegram_chat_id = models.CharField(max_length=100, blank=True, null=True)
-    
-    bold_api_key = models.CharField("Bold API Key (Cliente)", max_length=255, blank=True, null=True)
-    bold_integrity_key = models.CharField("Bold Integrity Key (Cliente)", max_length=255, blank=True, null=True)
-    bold_secret_key = models.CharField("Bold Secret Key (Cliente)", max_length=255, blank=True, null=True)
+    bold_api_key = models.CharField(max_length=255, blank=True, null=True)
+    bold_integrity_key = models.CharField(max_length=255, blank=True, null=True) # Mantenemos por compatibilidad, pero no se usa
+    bold_secret_key = models.CharField(max_length=255, blank=True, null=True)
     
     @property
     def esta_abierto(self):
         try:
-            tz_colombia = pytz.timezone('America/Bogota')
-            ahora_colombia = timezone.now().astimezone(tz_colombia).time()
-            if self.hora_apertura <= ahora_colombia <= self.hora_cierre:
-                return True
-            return False
-        except Exception:
-            return True
+            tz = pytz.timezone('America/Bogota')
+            ahora = timezone.now().astimezone(tz).time()
+            return self.hora_apertura <= ahora <= self.hora_cierre
+        except: return True
 
     def save(self, *args, **kwargs):
-        if not self.slug: 
-            self.slug = slugify(self.nombre)
-        if self.ciudad: 
-            self.ciudad = self.ciudad.title().strip()
+        if not self.slug: self.slug = slugify(self.nombre)
+        if self.ciudad: self.ciudad = self.ciudad.title().strip()
         super().save(*args, **kwargs)
 
-    def __str__(self): 
-        return f"{self.nombre_visible} ({self.ciudad})"
+    def __str__(self): return self.nombre_visible
 
 class Cupon(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='cupones')
-    codigo = models.CharField(max_length=50) 
+    codigo = models.CharField(max_length=50)
     porcentaje_descuento = models.IntegerField(default=10)
     activo = models.BooleanField(default=True)
     usos_restantes = models.IntegerField(default=100)
 
-    def __str__(self):
-        return f"{self.codigo} - {self.porcentaje_descuento}%"
-
 class Servicio(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='servicios')
     nombre = models.CharField(max_length=100)
-    duracion = models.DurationField() 
+    duracion = models.DurationField()
     precio = models.IntegerField()
-
     @property
     def str_duracion(self):
-        total_seconds = int(self.duracion.total_seconds())
-        hours = total_seconds // 3600
-        minutes = (total_seconds % 3600) // 60
-        if hours > 0: 
-            return f"{hours}h {minutes}m" if minutes > 0 else f"{hours}h"
-        return f"{minutes} min"
-
-    def __str__(self): 
-        return f"{self.nombre} - ${self.precio:,.0f}"
+        ts = int(self.duracion.total_seconds())
+        return f"{ts//3600}h {(ts%3600)//60}m" if ts//3600 > 0 else f"{(ts%3600)//60} min"
+    def __str__(self): return f"{self.nombre} - ${self.precio}"
 
 class Empleado(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='empleados')
@@ -129,95 +105,51 @@ class Empleado(models.Model):
     apellido = models.CharField(max_length=100)
     email_contacto = models.EmailField(blank=True, null=True)
     activo = models.BooleanField(default=True)
+    def __str__(self): return f"{self.nombre} {self.apellido}"
 
-    def __str__(self): 
-        return f"{self.nombre} {self.apellido}"
-
-DIAS_SEMANA = ((0,'Lunes'),(1,'Martes'),(2,'Miércoles'),(3,'Jueves'),(4,'Viernes'),(5,'Sábado'),(6,'Domingo'))
-
+DIAS = ((0,'L'),(1,'M'),(2,'X'),(3,'J'),(4,'V'),(5,'S'),(6,'D'))
 class HorarioEmpleado(models.Model):
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, related_name='horarios')
-    dia_semana = models.IntegerField(choices=DIAS_SEMANA)
+    dia_semana = models.IntegerField(choices=DIAS)
     hora_inicio = models.TimeField()
     hora_fin = models.TimeField()
     almuerzo_inicio = models.TimeField(blank=True, null=True)
     almuerzo_fin = models.TimeField(blank=True, null=True)
-
-    class Meta: 
-        unique_together = ('empleado', 'dia_semana') 
-        ordering = ['dia_semana', 'hora_inicio']
+    class Meta: unique_together = ('empleado', 'dia_semana')
 
 class Ausencia(models.Model):
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
     fecha_inicio = models.DateTimeField()
     fecha_fin = models.DateTimeField()
-    motivo = models.CharField(max_length=200, blank=True) 
+    motivo = models.CharField(max_length=200, blank=True)
 
 class Cita(models.Model):
-    ESTADOS = [('P', 'Pendiente Pago'), ('C', 'Confirmada'), ('X', 'Cancelada')]
-
+    ESTADOS = [('P', 'Pendiente'), ('C', 'Confirmada'), ('X', 'Cancelada')]
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='citas')
     cliente_nombre = models.CharField(max_length=150)
     cliente_telefono = models.CharField(max_length=20)
-    servicios = models.ManyToManyField(Servicio) 
-    
+    servicios = models.ManyToManyField(Servicio)
     precio_total = models.IntegerField(default=0)
-    descuento_aplicado = models.IntegerField(default=0) 
+    descuento_aplicado = models.IntegerField(default=0)
     abono_pagado = models.IntegerField(default=0)
-    
     referencia_pago_bold = models.CharField(max_length=100, blank=True, null=True)
-    
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
     fecha_hora_inicio = models.DateTimeField()
-    fecha_hora_fin = models.DateTimeField() 
+    fecha_hora_fin = models.DateTimeField()
     creado_en = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(max_length=1, choices=ESTADOS, default='C')
-
-    def __str__(self): 
-        return f"Cita {self.cliente_nombre}"
     
     def enviar_notificacion_telegram(self):
         try:
-            token = self.peluqueria.telegram_token
-            chat_id = self.peluqueria.telegram_chat_id
-            
-            if token and chat_id:
-                total = self.precio_total
-                abono = self.abono_pagado
-                
-                lista_servicios = ""
-                for s in self.servicios.all():
-                    lista_servicios += f"✂️ {s.nombre}\n"
-                
-                pais = self.peluqueria.codigo_pais_wa
-                link_wa = f"https://wa.me/{pais}{self.cliente_telefono.replace(' ', '')}"
-
-                msg = (
-                    f"🔥 *NUEVA RESERVA*\n"
-                    f"👤 *Cliente:* {self.cliente_nombre}\n"
-                    f"📱 *Tel:* [{self.cliente_telefono}]({link_wa})\n\n"
-                    f"📅 *Fecha:* {self.fecha_hora_inicio.strftime('%d/%m/%Y')}\n"
-                    f"⏰ *Hora:* {self.fecha_hora_inicio.strftime('%I:%M %p')}\n"
-                    f"💈 *Estilista:* {self.empleado.nombre}\n"
-                    f"📝 *Servicios:*\n{lista_servicios}\n"
-                    f"💰 *Total:* ${total:,.0f} | *Abono:* ${abono:,.0f}"
-                )
-
-                requests.post(
-                    f"https://api.telegram.org/bot{token}/sendMessage", 
-                    data={"chat_id": chat_id, "text": msg, "parse_mode": "Markdown", "disable_web_page_preview": True},
-                    timeout=5
-                )
-        except Exception as e:
-            print(f"Error Telegram: {e}")
+            if self.peluqueria.telegram_token and self.peluqueria.telegram_chat_id:
+                msg = f"🔥 *NUEVA CITA*\nCliente: {self.cliente_nombre}\nTotal: ${self.precio_total}"
+                requests.post(f"https://api.telegram.org/bot{self.peluqueria.telegram_token}/sendMessage", data={"chat_id": self.peluqueria.telegram_chat_id, "text": msg, "parse_mode": "Markdown"})
+        except: pass
 
 class PerfilUsuario(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.SET_NULL, null=True, blank=True)
     es_dueño = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"Perfil de {self.user.username}"
 
 class SolicitudSaaS(models.Model):
     nombre_contacto = models.CharField(max_length=100)
@@ -230,5 +162,4 @@ class SolicitudSaaS(models.Model):
 
 @receiver(post_save, sender=User)
 def crear_perfil(sender, instance, created, **kwargs):
-    if created: 
-        PerfilUsuario.objects.get_or_create(user=instance)
+    if created: PerfilUsuario.objects.get_or_create(user=instance)
