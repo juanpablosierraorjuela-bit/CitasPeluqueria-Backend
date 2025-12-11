@@ -15,7 +15,6 @@ from django.contrib import messages
 from django.utils import timezone
 from django.utils.text import slugify 
 
-# Importaciones locales
 from .models import Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, HorarioEmpleado, Cupon, ConfiguracionPlataforma
 from .forms import ServicioForm, RegistroPublicoEmpleadoForm
 from .services import obtener_bloques_disponibles
@@ -67,8 +66,7 @@ def logout_view(request):
 
 def landing_saas(request):
     """
-    Registro de nuevos clientes. Ya no es gratis.
-    Redirige al pago de $130.000 COP inmediatamente.
+    Registro de nuevos clientes. Redirige al pago de $130.000 COP inmediatamente.
     """
     if request.method == 'POST':
         nombre_negocio = request.POST.get('nombre_negocio')
@@ -122,7 +120,7 @@ def landing_saas(request):
             if config and config.telegram_token and config.telegram_chat_id:
                 try:
                     msg = (
-                        f"💰 *NUEVO CLIENTE PENDIENTE PAGO*\n"
+                        f"💰 *NUEVO CLIENTE - PENDIENTE PAGO*\n"
                         f"🏢 *Negocio:* {nombre_negocio}\n"
                         f"👤 *Usuario:* {first_name} {last_name}\n"
                         f"📞 *Tel:* {telefono}\n"
@@ -160,14 +158,13 @@ def pago_suscripcion_saas(request):
     
     # Valores por defecto (Demo) o desde DB
     api_key = config.bold_api_key if config else "g4XAZfPD4hH2e5WXhiKfZjGPLRxrzbPH9rOxaqJhDTw"
-    integrity_key = config.bold_integrity_key if config else "" # IMPORTANTE: Debes poner esto en el admin
+    integrity_key = config.bold_integrity_key if config else "" 
     monto = config.precio_mensualidad if config else 130000
     
     peluqueria = request.user.perfil.peluqueria
     referencia = f"SUSCRIPCION-PASO-{peluqueria.id}-{int(datetime.now().timestamp())}"
     
     # Generar Hash de Integridad para Bold (SHA256)
-    # Concatenación: Reference + Amount + Currency + IntegrityKey
     cadena_concatenada = f"{referencia}{monto}COP{integrity_key}"
     hash_hex = hashlib.sha256(cadena_concatenada.encode()).hexdigest()
 
@@ -202,7 +199,7 @@ def panel_negocio(request):
                 peluqueria.hora_cierre = request.POST.get('hora_cierre')
                 peluqueria.porcentaje_abono = int(request.POST.get('porcentaje_abono', 50))
                 
-                # Credenciales del DUEÑO DE LA PELUQUERÍA (Para cobrar a sus clientes)
+                # Credenciales del DUEÑO DE LA PELUQUERÍA
                 peluqueria.bold_api_key = request.POST.get('bold_api_key')
                 peluqueria.bold_integrity_key = request.POST.get('bold_integrity_key')
                 peluqueria.bold_secret_key = request.POST.get('bold_secret_key')
