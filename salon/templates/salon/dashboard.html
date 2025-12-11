@@ -3,290 +3,182 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dashboard | {{ peluqueria.nombre_visible }}</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control | PASO</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --font-display: 'Cormorant Garamond', serif;
-            --font-body: 'Manrope', sans-serif;
-
-            --primary: #0f172a;
-            --secondary: #64748b;
-            --accent: #db2777;
-            --gold: #d4af37;
-            --success: #10b981;
-            
-            --bg-body: #f8fafc;
-            --surface: rgba(255, 255, 255, 0.7);
-            --glass: rgba(255, 255, 255, 0.6);
-            
-            --shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
-            --shadow-hover: 0 20px 40px -5px rgba(0, 0, 0, 0.1);
-            
-            --radius-xl: 32px;
-            --radius-lg: 20px;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: var(--font-body);
-            background-color: var(--bg-body);
-            color: var(--primary);
-            min-height: 100vh;
-        }
-
-        /* --- FONDO AMBIENTAL --- */
-        .ambient-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            background: 
-                radial-gradient(circle at 10% 10%, rgba(219, 39, 119, 0.05) 0%, transparent 60%),
-                radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.05) 0%, transparent 60%);
-        }
-
-        /* --- NAVBAR SUPERIOR --- */
-        .nav-glass {
-            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px);
-            padding: 15px 30px; display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100;
-        }
-
-        .brand-logo {
-            font-family: var(--font-display); font-size: 1.5rem; font-weight: 700;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-
-        .nav-actions { display: flex; gap: 10px; }
-
-        .btn-nav {
-            padding: 8px 16px; border-radius: 50px; text-decoration: none;
-            font-size: 0.85rem; font-weight: 600; transition: all 0.2s;
-            display: flex; align-items: center; gap: 6px;
-        }
-        
-        .btn-ghost { background: transparent; color: var(--secondary); border: 1px solid rgba(0,0,0,0.1); }
-        .btn-ghost:hover { background: white; color: var(--primary); border-color: var(--primary); }
-        
-        .btn-solid { background: var(--primary); color: white; border: 1px solid var(--primary); }
-        .btn-solid:hover { background: transparent; color: var(--primary); }
-
-        /* --- LAYOUT PRINCIPAL --- */
-        .dashboard-container {
-            max-width: 1200px; margin: 40px auto; padding: 0 20px 80px;
-        }
-
-        .dash-header { margin-bottom: 40px; animation: fadeDown 0.8s ease; }
-        .dash-header h1 { font-family: var(--font-display); font-size: 2.5rem; margin-bottom: 5px; }
-        .dash-header p { color: var(--secondary); font-size: 1rem; }
-
-        /* --- GRID DE KPIS --- */
-        .kpi-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .kpi-card {
-            background: var(--surface); backdrop-filter: blur(10px);
-            padding: 25px; border-radius: var(--radius-lg);
-            border: 1px solid rgba(255,255,255,0.5); box-shadow: var(--shadow-card);
-            transition: transform 0.3s ease; position: relative; overflow: hidden;
-            opacity: 0; animation: fadeUp 0.6s ease forwards;
-        }
-        .kpi-card:nth-child(1) { animation-delay: 0.1s; }
-        .kpi-card:nth-child(2) { animation-delay: 0.2s; }
-        .kpi-card:nth-child(3) { animation-delay: 0.3s; }
-
-        .kpi-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-hover); }
-
-        .kpi-icon {
-            font-size: 1.8rem; margin-bottom: 15px; display: inline-block;
-            background: white; padding: 10px; border-radius: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-
-        .kpi-value {
-            font-family: var(--font-display); font-size: 2.8rem; font-weight: 700;
-            color: var(--primary); line-height: 1; margin-bottom: 5px;
-        }
-
-        .kpi-label { font-size: 0.9rem; color: var(--secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-
-        /* Decoración de Ingresos */
-        .kpi-card.money .kpi-value { color: #059669; }
-        .kpi-card.money::after {
-            content: ''; position: absolute; right: -20px; top: -20px; width: 100px; height: 100px;
-            background: radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%); border-radius: 50%;
-        }
-
-        /* --- TABLA DE CITAS --- */
-        .table-panel {
-            background: var(--surface); backdrop-filter: blur(15px);
-            border-radius: var(--radius-xl); padding: 30px;
-            box-shadow: var(--shadow-card); border: 1px solid rgba(255,255,255,0.6);
-            opacity: 0; animation: fadeUp 0.8s ease 0.4s forwards;
-        }
-
-        .panel-header {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;
-        }
-        .panel-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; }
-
-        .custom-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
-
-        .custom-table th {
-            text-align: left; padding: 0 20px 10px; color: var(--secondary);
-            font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
-        }
-
-        .custom-table td {
-            background: white; padding: 20px; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;
-            transition: transform 0.2s;
-        }
-
-        .custom-table tr:hover td { transform: scale(1.01); z-index: 10; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-
-        .custom-table td:first-child { border-top-left-radius: 16px; border-bottom-left-radius: 16px; border-left: 1px solid #f1f5f9; }
-        .custom-table td:last-child { border-top-right-radius: 16px; border-bottom-right-radius: 16px; border-right: 1px solid #f1f5f9; }
-
-        /* Estilos de Celda */
-        .client-cell { display: flex; align-items: center; gap: 15px; }
-        
-        .client-avatar {
-            width: 45px; height: 45px; border-radius: 50%;
-            background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
-            color: var(--secondary); font-weight: 700; display: flex; align-items: center; justify-content: center;
-            font-size: 1rem; border: 2px solid #f8fafc;
-        }
-        
-        .client-info div:first-child { font-weight: 700; color: var(--primary); font-size: 0.95rem; }
-        .client-info div:last-child { font-size: 0.8rem; color: var(--secondary); }
-
-        .time-badge {
-            background: #eff6ff; color: #3b82f6; padding: 6px 12px; border-radius: 8px;
-            font-weight: 600; font-size: 0.85rem; display: inline-block;
-        }
-
-        .price-text { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; color: var(--primary); }
-
-        .empty-view { text-align: center; padding: 50px; color: var(--secondary); }
-        .empty-icon { font-size: 3rem; margin-bottom: 15px; opacity: 0.5; }
-
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-
-        @media (max-width: 768px) {
-            .nav-glass { padding: 15px; flex-direction: column; gap: 15px; align-items: flex-start; }
-            .nav-actions { width: 100%; overflow-x: auto; padding-bottom: 5px; }
-            .custom-table td { padding: 15px 10px; }
-            .client-avatar { width: 35px; height: 35px; font-size: 0.8rem; }
-        }
+        body { background: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; color: #0f172a; padding-bottom: 80px; }
+        .nav-tabs .nav-link { border: none; color: #64748b; font-weight: 600; padding: 15px 20px; }
+        .nav-tabs .nav-link.active { color: #db2777; border-bottom: 3px solid #db2777; background: transparent; }
+        .card { border: none; border-radius: 20px; box-shadow: 0 10px 30px -5px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .form-control { border-radius: 12px; padding: 12px; border: 1px solid #e2e8f0; background: #f8fafc; }
+        .form-control:focus { background: white; border-color: #db2777; box-shadow: 0 0 0 4px rgba(219,39,119,0.1); }
+        .btn-primary { background: #db2777; border: none; padding: 12px 25px; border-radius: 12px; font-weight: 700; }
+        .btn-danger-soft { background: #fef2f2; color: #ef4444; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 600; }
+        .header-dash { padding: 40px 0; }
     </style>
 </head>
 <body>
-
-    <div class="ambient-bg"></div>
-
-    <nav class="nav-glass">
-        <div class="brand-logo">{{ peluqueria.nombre_visible }}</div>
-        <div class="nav-actions">
-            <a href="{% url 'mi_agenda' %}" class="btn-nav btn-ghost">
-                <span>📅</span> Mi Horario
-            </a>
-            <a href="{% url 'gestionar_equipo' %}" class="btn-nav btn-ghost">
-                <span>👥</span> Equipo
-            </a>
-            <a href="/admin/" class="btn-nav btn-solid">
-                <span>⚙️</span> Admin
-            </a>
-        </div>
-    </nav>
-
-    <main class="dashboard-container">
-        
-        <header class="dash-header">
-            <h1>Panel de Control</h1>
-            <p>Bienvenido de nuevo. Aquí está el pulso de tu negocio hoy.</p>
-        </header>
-
-        <div class="kpi-grid">
-            <div class="kpi-card">
-                <div class="kpi-icon">📅</div>
-                <div class="kpi-value">{{ citas_hoy }}</div>
-                <div class="kpi-label">Citas para Hoy</div>
+    <div class="container header-dash">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 style="font-weight: 800;">{{ peluqueria.nombre_visible }}</h1>
+                <p class="text-muted">Panel de Control Inteligente</p>
             </div>
-
-            <div class="kpi-card money">
-                <div class="kpi-icon">💰</div>
-                <div class="kpi-value">${{ ingresos_mes }}</div>
-                <div class="kpi-label">Ingresos del Mes</div>
-            </div>
-
-            <div class="kpi-card">
-                <div class="kpi-icon">⚡</div>
-                <div class="kpi-value">Activo</div>
-                <div class="kpi-label">Estado del Sistema</div>
-            </div>
+            <a href="{% url 'logout_usuario' %}" class="btn btn-outline-danger rounded-pill">Salir</a>
         </div>
 
-        <div class="table-panel">
-            <div class="panel-header">
-                <div class="panel-title">Próximas Citas</div>
-                <div style="font-size:0.9rem; color:var(--secondary);">{{ proximas_citas|length }} pendientes</div>
+        {% if messages %}
+            {% for m in messages %}
+                <div class="alert alert-{{ m.tags }} rounded-4">{{ m }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#resumen">📊 Resumen</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#config">⚙️ Configuración</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#cupones">🎟️ Cupones</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#ayuda">❓ Ayuda</button></li>
+            <li class="nav-item"><a href="{% url 'gestionar_servicios' %}" class="nav-link">💇 Servicios</a></li>
+        </ul>
+
+        <div class="tab-content">
+            
+            <div class="tab-pane fade show active" id="resumen">
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="card p-4">
+                            <h3 class="fw-bold">{{ citas_hoy }}</h3>
+                            <span class="text-muted">Citas Hoy</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card p-4">
+                            <h3 class="fw-bold text-success">${{ ingresos_mes|default:"0" }}</h3>
+                            <span class="text-muted">Ingresos Mes (Estimado)</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card p-4">
+                            <h5 class="fw-bold">Invitar Equipo</h5>
+                            <input type="text" value="{{ link_invitacion }}" class="form-control form-control-sm mt-2" readonly onclick="this.select()">
+                            <small class="text-muted">Comparte este link con tus estilistas</small>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <table class="custom-table">
-                <thead>
-                    <tr>
-                        <th>Cliente</th>
-                        <th>Horario</th>
-                        <th>Estilista</th>
-                        <th>Valor Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for cita in proximas_citas %}
-                    <tr>
-                        <td>
-                            <div class="client-cell">
-                                <div class="client-avatar">
-                                    {{ cita.cliente_nombre|first|upper }}
-                                </div>
-                                <div class="client-info">
-                                    <div>{{ cita.cliente_nombre }}</div>
-                                    <div>{{ cita.cliente_telefono }}</div>
-                                </div>
+            <div class="tab-pane fade" id="config">
+                <div class="card p-4">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="guardar_config">
+                        
+                        <h5 class="mb-3 fw-bold">📍 Datos y Horarios</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6"><label>Dirección</label><input type="text" name="direccion" class="form-control" value="{{ peluqueria.direccion }}"></div>
+                            <div class="col-md-6"><label>Teléfono</label><input type="text" name="telefono" class="form-control" value="{{ peluqueria.telefono }}"></div>
+                            <div class="col-md-4"><label>Apertura</label><input type="time" name="hora_apertura" class="form-control" value="{{ peluqueria.hora_apertura|time:'H:i' }}"></div>
+                            <div class="col-md-4"><label>Cierre</label><input type="time" name="hora_cierre" class="form-control" value="{{ peluqueria.hora_cierre|time:'H:i' }}"></div>
+                            <div class="col-md-4">
+                                <label>% Abono para Reservar</label>
+                                <select name="porcentaje_abono" class="form-control">
+                                    <option value="30" {% if peluqueria.porcentaje_abono == 30 %}selected{% endif %}>30%</option>
+                                    <option value="50" {% if peluqueria.porcentaje_abono == 50 %}selected{% endif %}>50% (Recomendado)</option>
+                                    <option value="100" {% if peluqueria.porcentaje_abono == 100 %}selected{% endif %}>100%</option>
+                                </select>
                             </div>
-                        </td>
-                        <td>
-                            <span class="time-badge">{{ cita.fecha_hora_inicio|date:"D d, H:i" }}</span>
-                        </td>
-                        <td style="font-weight:600; color:var(--secondary);">
-                            {{ cita.empleado.nombre }}
-                        </td>
-                        <td>
-                            <span class="price-text">${{ cita.precio_total }}</span>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4">
-                            <div class="empty-view">
-                                <div class="empty-icon">☕</div>
-                                <h3>Todo tranquilo por ahora</h3>
-                                <p>No hay citas próximas agendadas en el sistema.</p>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </main>
+                        </div>
 
+                        <h5 class="mb-3 fw-bold">💳 Pagos Bold y Notificaciones</h5>
+                        <div class="row g-3">
+                            <div class="col-md-12"><label>Bold API Key</label><input type="password" name="bold_api_key" class="form-control" value="{{ peluqueria.bold_api_key|default:'' }}"></div>
+                            <div class="col-md-6"><label>Integrity Key</label><input type="password" name="bold_integrity_key" class="form-control" value="{{ peluqueria.bold_integrity_key|default:'' }}"></div>
+                            <div class="col-md-6"><label>Secret Key</label><input type="password" name="bold_secret_key" class="form-control" value="{{ peluqueria.bold_secret_key|default:'' }}"></div>
+                            <div class="col-md-6"><label>Telegram Token</label><input type="text" name="telegram_token" class="form-control" value="{{ peluqueria.telegram_token|default:'' }}"></div>
+                            <div class="col-md-6"><label>Telegram Chat ID</label><input type="text" name="telegram_chat_id" class="form-control" value="{{ peluqueria.telegram_chat_id|default:'' }}"></div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary mt-4 w-100">Guardar Cambios</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="cupones">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card p-4">
+                            <h5>Crear Nuevo Cupón</h5>
+                            <form method="POST">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="crear_cupon">
+                                <div class="mb-2"><input type="text" name="codigo_cupon" class="form-control" placeholder="Ej: VERANO2025" required></div>
+                                <div class="mb-2"><input type="number" name="porcentaje" class="form-control" placeholder="% Descuento" required></div>
+                                <div class="mb-2"><input type="number" name="cantidad" class="form-control" placeholder="Cantidad de usos" value="100"></div>
+                                <button type="submit" class="btn btn-dark w-100">Crear Cupón</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card p-4">
+                            <table class="table">
+                                <thead><tr><th>Código</th><th>Desc.</th><th>Usos</th><th>Acción</th></tr></thead>
+                                <tbody>
+                                    {% for c in cupones %}
+                                    <tr>
+                                        <td><strong>{{ c.codigo }}</strong></td>
+                                        <td>{{ c.porcentaje_descuento }}%</td>
+                                        <td>{{ c.usos_restantes }}</td>
+                                        <td>
+                                            <form method="POST">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="accion" value="eliminar_cupon">
+                                                <input type="hidden" name="cupon_id" value="{{ c.id }}">
+                                                <button class="btn-danger-soft btn-sm">Eliminar</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="4" class="text-center">No hay cupones activos.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="ayuda">
+                <div class="accordion" id="accordionExample">
+                    <div class="accordion-item border-0 mb-2 shadow-sm rounded-3">
+                        <h2 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">💳 ¿Cómo configurar pagos con Bold?</button></h2>
+                        <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
+                            <div class="accordion-body">
+                                1. Entra a tu panel de <a href="https://bold.co" target="_blank">Bold.co</a>.<br>
+                                2. Ve a la sección de Desarrolladores/Integración.<br>
+                                3. Copia el "API Key" y el "Integrity Key".<br>
+                                4. Pégalos en la pestaña <strong>Configuración</strong> de este panel.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item border-0 mb-2 shadow-sm rounded-3">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">📱 ¿Cómo activar notificaciones Telegram?</button></h2>
+                        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                            <div class="accordion-body">
+                                1. En Telegram, busca a <strong>@BotFather</strong> y escribe <code>/newbot</code>.<br>
+                                2. Ponle nombre a tu bot. Te dará un <strong>TOKEN</strong> largo. Cópialo.<br>
+                                3. Busca a tu nuevo bot y dale "Iniciar".<br>
+                                4. Busca a <strong>@userinfobot</strong> para saber tu "ID".<br>
+                                5. Pega el Token y el ID en la Configuración.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
