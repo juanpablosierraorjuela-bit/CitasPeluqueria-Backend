@@ -1,4 +1,4 @@
-# UBICACIÓN: salon/admin.py
++# UBICACIÓN: salon/admin.py
 from django.contrib import admin
 from django.contrib.auth.models import Group, User
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -8,13 +8,16 @@ from .models import (
     Ausencia, SolicitudSaaS, HorarioEmpleado, ConfiguracionPlataforma
 )
 
+# --- CONFIGURACIÓN GLOBAL ---
 @admin.register(ConfiguracionPlataforma)
 class ConfigAdmin(admin.ModelAdmin):
-    # Solo permite 1 registro
+    list_display = ('link_pago_bold', 'precio_mensualidad') # Mejora visual
     def has_add_permission(self, request):
-        if self.model.objects.count() >= 1: return False
+        if self.model.objects.count() >= 1:
+            return False
         return super().has_add_permission(request)
 
+# --- PERMISOS DE DUEÑOS DE SALÓN ---
 class SalonOwnerAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
