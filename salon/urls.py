@@ -5,8 +5,6 @@ from . import views
 urlpatterns = [
     # --- PÁGINA DE INICIO ---
     path('', views.inicio, name='inicio'),
-    
-    # --- RUTA FALTANTE QUE CAUSABA EL ERROR 500 ---
     path('info/', views.landing_saas, name='landing_saas'),
 
     # --- AUTENTICACIÓN ---
@@ -24,7 +22,7 @@ urlpatterns = [
 
     # --- PANEL DE CONTROL (DUEÑO) ---
     path('negocio/dashboard/', views.panel_negocio, name='panel_negocio'),
-    # path('negocio/configuracion/', views.configuracion_negocio, name='config_negocio'), <--- ELIMINADA
+    # NOTA: Se eliminó 'negocio/configuracion/' porque ahora está integrada en el dashboard
     path('negocio/servicios/', views.gestionar_servicios, name='gestionar_servicios'),
     path('negocio/servicios/eliminar/<int:servicio_id>/', views.eliminar_servicio, name='eliminar_servicio'),
     path('negocio/equipo/', views.gestionar_equipo, name='gestionar_equipo'),
