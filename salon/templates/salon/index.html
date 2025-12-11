@@ -16,7 +16,6 @@
             --primary: #0f172a;   
             --accent: #ec4899;    
             --bg-body: #f8fafc;
-            --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
         body {
@@ -30,92 +29,104 @@
 
         .ambient-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
-            background: radial-gradient(circle at 50% 0%, rgba(236, 72, 153, 0.1) 0%, transparent 60%);
+            background: radial-gradient(circle at 50% 0%, rgba(236, 72, 153, 0.08) 0%, transparent 60%);
         }
 
         /* NAVBAR */
         .navbar {
-            padding: 20px; display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); background: rgba(255,255,255,0.7);
+            padding: 20px 40px; display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100; backdrop-filter: blur(12px); background: rgba(255,255,255,0.8);
+            border-bottom: 1px solid rgba(0,0,0,0.03);
         }
 
         .brand-pill {
-            text-decoration: none; font-weight: 800; color: var(--primary);
-            background: white; padding: 10px 20px; border-radius: 30px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 8px;
-            transition: transform 0.2s;
+            text-decoration: none; font-weight: 800; color: var(--primary); font-size: 1.1rem;
+            display: flex; align-items: center; gap: 8px; letter-spacing: -0.5px;
         }
-        .brand-pill:hover { transform: scale(1.05); }
         .dot { width: 8px; height: 8px; background: black; border-radius: 50%; }
 
         .btn-access {
             text-decoration: none; background: #1e293b; color: white;
-            padding: 8px 15px; border-radius: 50px; font-size: 0.85rem; font-weight: 700;
+            padding: 10px 20px; border-radius: 50px; font-size: 0.9rem; font-weight: 600;
+            transition: transform 0.2s;
         }
+        .btn-access:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
 
-        /* HERO & BUTTON LIBRO */
-        header { text-align: center; padding: 60px 20px 40px; }
+        /* HERO SECTION - EL ALMA DE LA PÁGINA */
+        header { text-align: center; padding: 80px 20px 60px; max-width: 800px; margin: 0 auto; }
         
-        .hero-title { font-size: 3rem; font-weight: 800; margin-bottom: 10px; line-height: 1.1; }
-        .hero-title span { color: var(--accent); }
-
-        .btn-libro {
-            display: inline-flex; align-items: center; gap: 10px;
-            background: linear-gradient(135deg, #000 0%, #333 100%);
-            color: #d4af37; /* Dorado */
-            padding: 15px 30px; border-radius: 50px; text-decoration: none;
-            font-weight: 700; font-size: 1rem; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-            margin-bottom: 40px; transition: all 0.3s; position: relative; overflow: hidden;
-            border: 1px solid #d4af37;
+        .hero-title { 
+            font-size: 4rem; font-weight: 800; margin: 0 0 15px; line-height: 1.05; letter-spacing: -2px;
+            background: linear-gradient(180deg, #0f172a 0%, #334155 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-        .btn-libro:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(0,0,0,0.4); }
-        .btn-libro::after {
-            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.4), transparent);
-            transform: skewX(-20deg); animation: brillo 3s infinite;
+        .hero-title span { 
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-        @keyframes brillo { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
 
-        /* GEO BOTON */
-        .search-area { display: flex; justify-content: center; gap: 10px; margin-bottom: 40px; }
+        .hero-subtitle {
+            font-size: 1.25rem; color: #64748b; margin-bottom: 30px; line-height: 1.6;
+        }
+
+        /* BOTÓN LEGADO - SUTIL Y ELEGANTE */
+        .btn-legado {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(255, 255, 255, 0.6); border: 1px solid rgba(0,0,0,0.1);
+            padding: 10px 24px; border-radius: 50px; text-decoration: none;
+            color: #475569; font-weight: 600; font-size: 0.95rem;
+            transition: all 0.3s ease; backdrop-filter: blur(5px);
+            margin-bottom: 40px;
+        }
+        .btn-legado:hover {
+            background: white; border-color: #d4af37; color: #d4af37;
+            box-shadow: 0 10px 30px -10px rgba(212, 175, 55, 0.3); transform: translateY(-2px);
+        }
+
+        /* CONTROLES GEO */
+        .search-area { display: flex; justify-content: center; gap: 12px; margin-bottom: 50px; }
         .btn-geo {
-            background: white; border: none; padding: 12px 25px; border-radius: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); cursor: pointer; font-weight: 600;
-            display: flex; align-items: center; gap: 8px; transition: 0.2s;
+            background: white; border: 1px solid rgba(0,0,0,0.05); padding: 12px 25px; border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03); cursor: pointer; font-weight: 600; color: var(--primary);
+            display: flex; align-items: center; gap: 8px; transition: 0.2s; font-size: 0.95rem;
         }
-        .btn-geo.active { background: var(--accent); color: white; }
+        .btn-geo:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.06); }
+        .btn-geo.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* GRID */
+        /* GRID SALONES */
         .grid-wrapper {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 25px; max-width: 1000px; margin: 0 auto; padding: 0 20px 100px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 30px; max-width: 1100px; margin: 0 auto; padding: 0 20px 100px;
         }
 
         .salon-card {
             background: white; border-radius: 24px; padding: 25px;
-            box-shadow: 0 10px 30px -5px rgba(0,0,0,0.05); text-decoration: none; color: inherit;
-            transition: transform 0.3s; position: relative; display: block;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02); text-decoration: none; color: inherit;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(0,0,0,0.04);
+            display: block; position: relative; overflow: hidden;
         }
-        .salon-card:hover { transform: translateY(-5px); }
+        .salon-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08); }
         .salon-card.hidden { display: none; }
 
+        .salon-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
         .salon-avatar {
-            width: 50px; height: 50px; background: #f1f5f9; border-radius: 15px;
+            width: 56px; height: 56px; background: #f8fafc; border-radius: 18px;
             display: flex; align-items: center; justify-content: center; font-weight: 800;
-            margin-bottom: 15px; color: #64748b;
+            color: var(--primary); font-size: 1.2rem; border: 1px solid rgba(0,0,0,0.05);
         }
-        
-        .status-pill {
-            font-size: 0.7rem; font-weight: 800; padding: 5px 10px; border-radius: 20px;
-            display: inline-flex; align-items: center; gap: 5px; margin-top: 15px;
-        }
-        .status-pill.open { background: #ecfdf5; color: #059669; }
-        .status-pill.closed-online { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
 
-        /* FOOTER */
-        footer {
-            text-align: center; padding: 30px; color: #94a3b8; font-size: 0.8rem;
-            border-top: 1px solid rgba(0,0,0,0.05);
+        .status-pill {
+            font-size: 0.75rem; font-weight: 700; padding: 6px 12px; border-radius: 30px;
+            display: inline-flex; align-items: center; gap: 6px; margin-top: 20px; letter-spacing: 0.5px;
+        }
+        .status-pill.open { background: #dcfce7; color: #15803d; }
+        .status-pill.closed-online { background: #f3e8ff; color: #7e22ce; }
+
+        footer { text-align: center; padding: 40px; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(0,0,0,0.05); }
+
+        @media (max-width: 768px) {
+            .hero-title { font-size: 2.8rem; }
+            .navbar { padding: 15px 20px; }
         }
     </style>
 </head>
@@ -134,23 +145,24 @@
                 <a href="{% url 'mi_agenda' %}" class="btn-access">Mi Agenda</a>
             {% endif %}
         {% else %}
-            <a href="{% url 'landing_saas' %}" class="btn-access">Ingreso Dueños</a>
+            <a href="{% url 'landing_saas' %}" class="btn-access">Soy Dueño</a>
         {% endif %}
     </nav>
 
     <header>
         <h1 class="hero-title">Tu estilo,<br><span>tu tiempo.</span></h1>
+        <p class="hero-subtitle">Reserva en los mejores salones y barberías cerca de ti.<br>Sin llamadas, sin esperas.</p>
         
-        <a href="https://pasotunja.com/nuestro-legado/?v=9d69c558f982" target="_blank" class="btn-libro">
-            <span>📖</span> Descargar "Nuestro Legado"
+        <a href="https://pasotunja.com/nuestro-legado/?v=9d69c558f982" target="_blank" class="btn-legado">
+            📖 Conoce nuestro legado
         </a>
 
         <div class="search-area">
-            <button class="btn-geo" onclick="filtrarCerca()">
-                📍 Ver salones a < 1km
+            <button class="btn-geo" onclick="filtrarCerca(this)">
+                <span>📍</span> Cerca de mí (< 1km)
             </button>
-            <button class="btn-geo" onclick="resetFiltro()">
-                🌎 Ver todos
+            <button class="btn-geo active" onclick="resetFiltro(this)">
+                <span>🌎</span> Ver todos
             </button>
         </div>
     </header>
@@ -161,23 +173,29 @@
                data-lat="{{ p.latitud|stringformat:'.6f' }}" 
                data-lon="{{ p.longitud|stringformat:'.6f' }}">
                 
-                <div style="display:flex; justify-content:space-between;">
+                <div class="salon-header">
                     <div class="salon-avatar">{{ p.nombre_visible|first|upper }}</div>
-                    <div style="font-size:0.8rem; color:#94a3b8;">{{ p.ciudad }}</div>
+                    <span style="font-size:0.85rem; font-weight:600; color:#94a3b8; background:#f8fafc; padding:5px 10px; border-radius:20px;">
+                        {{ p.ciudad }}
+                    </span>
                 </div>
                 
-                <h3 style="margin:0; font-size:1.2rem;">{{ p.nombre_visible }}</h3>
-                <p style="font-size:0.9rem; color:#64748b; margin-top:5px;">{{ p.direccion|default:"Ubicación pendiente" }}</p>
+                <h3 style="margin:0 0 5px; font-size:1.3rem; font-weight:800;">{{ p.nombre_visible }}</h3>
+                <p style="font-size:0.95rem; color:#64748b; margin:0; line-height:1.5;">{{ p.direccion|default:"Ubicación pendiente" }}</p>
                 
-                <div style="display:flex; gap:5px;">
+                <div style="display:flex; gap:8px;">
                     {% if p.esta_abierto %}
                         <div class="status-pill open">● ABIERTO</div>
                     {% else %}
-                        <div class="status-pill" style="background:#fef2f2; color:#ef4444;">CERRADO</div>
+                        <div class="status-pill" style="background:#fee2e2; color:#b91c1c;">CERRADO</div>
                         <div class="status-pill closed-online">🌙 AGENDA 24/7</div>
                     {% endif %}
                 </div>
             </a>
+        {% empty %}
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #94a3b8;">
+                No hay salones registrados aún.
+            </div>
         {% endfor %}
     </div>
 
@@ -187,34 +205,47 @@
 
     <script>
         function getDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Radio tierra km
+            const R = 6371; 
             const dLat = (lat2-lat1) * Math.PI/180;
             const dLon = (lon2-lon1) * Math.PI/180;
             const a = Math.sin(dLat/2)*Math.sin(dLat/2) +
                       Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)* Math.sin(dLon/2)*Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
+            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
         }
 
-        function filtrarCerca() {
-            if(!navigator.geolocation) return alert("Geolocalización no soportada");
+        function filtrarCerca(btn) {
+            document.querySelectorAll('.btn-geo').forEach(b => b.classList.remove('active'));
+            btn.innerHTML = '⏳ Buscando...';
+            
+            if(!navigator.geolocation) { alert("Tu dispositivo no soporta GPS."); return; }
             
             navigator.geolocation.getCurrentPosition(pos => {
                 const myLat = pos.coords.latitude;
                 const myLon = pos.coords.longitude;
-                
+                let count = 0;
+
                 document.querySelectorAll('.salon-card').forEach(card => {
                     const sLat = parseFloat(card.dataset.lat);
                     const sLon = parseFloat(card.dataset.lon);
                     const dist = getDistance(myLat, myLon, sLat, sLon);
                     
-                    if(dist <= 1.0) card.classList.remove('hidden'); // Menos de 1km
+                    if(dist <= 1.0) { card.classList.remove('hidden'); count++; }
                     else card.classList.add('hidden');
                 });
-            }, err => alert("Necesitamos permiso de ubicación."));
+                
+                btn.innerHTML = '📍 Cerca de mí (< 1km)';
+                btn.classList.add('active');
+                if(count === 0) alert("No encontramos salones a menos de 1km de ti.");
+                
+            }, err => {
+                alert("Necesitamos permiso de ubicación.");
+                btn.innerHTML = '📍 Cerca de mí (< 1km)';
+            });
         }
 
-        function resetFiltro() {
+        function resetFiltro(btn) {
+            document.querySelectorAll('.btn-geo').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
             document.querySelectorAll('.salon-card').forEach(c => c.classList.remove('hidden'));
         }
     </script>
