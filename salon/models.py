@@ -10,7 +10,32 @@ import requests
 import pytz 
 
 # =============================================================
-# 1. MODELOS BASE
+# 1. CONFIGURACIÓN GLOBAL DE LA PLATAFORMA (SaaS)
+# =============================================================
+class ConfiguracionPlataforma(models.Model):
+    """Aquí pones TUS credenciales para cobrar la mensualidad"""
+    solo_un_registro = models.CharField(max_length=1, default='X', editable=False, help_text="Solo debe haber 1 registro aquí")
+    
+    # TUS CREDENCIALES BOLD (Para cobrar los 130k)
+    bold_api_key = models.CharField(max_length=255, default="g4XAZfPD4hH2e5WXhiKfZjGPLRxrzbPH9rOxaqJhDTw")
+    bold_secret_key = models.CharField(max_length=255, default="te4T6sOL43wDlcGwCGHfGA")
+    bold_integrity_key = models.CharField(max_length=255, default="TU_INTEGRITY_KEY_AQUI", help_text="Busca esto en tu panel Bold")
+    
+    # TU TELEGRAM (Para que te avise)
+    telegram_token = models.CharField(max_length=255, blank=True, help_text="Token de tu Bot de Telegram")
+    telegram_chat_id = models.CharField(max_length=255, blank=True, help_text="Tu ID de Chat para recibir alertas")
+    
+    precio_mensualidad = models.IntegerField(default=130000, help_text="Valor a cobrar mensualmente")
+
+    class Meta:
+        verbose_name = "Configuración del Dueño de PASO"
+        verbose_name_plural = "Configuración del Dueño de PASO"
+
+    def __str__(self):
+        return "Credenciales y Configuración General"
+
+# =============================================================
+# 2. MODELOS BASE
 # =============================================================
 
 class Peluqueria(models.Model):
@@ -33,7 +58,11 @@ class Peluqueria(models.Model):
     hora_cierre = models.TimeField(default="20:00", help_text="Hora de cierre")
     porcentaje_abono = models.IntegerField(default=50, help_text="Porcentaje para reservar")
     
-    # INTEGRACIONES (Telegram y Bold)
+    # DATOS DEL CONTRATO SAAS
+    fecha_inicio_contrato = models.DateTimeField(default=timezone.now, help_text="Fecha de registro/inicio suscripción")
+    activo_saas = models.BooleanField(default=True, help_text="Si no paga, lo desactivas aquí")
+
+    # INTEGRACIONES DEL CLIENTE (Telegram y Bold de la Peluquería)
     telegram_token = models.CharField(max_length=200, blank=True, null=True)
     telegram_chat_id = models.CharField(max_length=100, blank=True, null=True)
     
@@ -93,7 +122,7 @@ class Servicio(models.Model):
         return f"{self.nombre} - ${self.precio:,.0f}"
 
 # =============================================================
-# 2. EMPLEADOS Y CITA
+# 3. EMPLEADOS Y CITA
 # =============================================================
 
 class Empleado(models.Model):
@@ -137,7 +166,7 @@ class Cita(models.Model):
     
     # Precios
     precio_total = models.IntegerField(default=0)
-    descuento_aplicado = models.IntegerField(default=0) # Nuevo
+    descuento_aplicado = models.IntegerField(default=0) 
     abono_pagado = models.IntegerField(default=0)
     
     referencia_pago_bold = models.CharField(max_length=100, blank=True, null=True)
@@ -159,7 +188,6 @@ class Cita(models.Model):
             if token and chat_id:
                 total = self.precio_total
                 abono = self.abono_pagado
-                pendiente = total - abono
                 
                 lista_servicios = ""
                 for s in self.servicios.all():
@@ -204,9 +232,8 @@ class SolicitudSaaS(models.Model):
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
     atendido = models.BooleanField(default=False)
 
-# SEÑAL OPTIMIZADA (Para evitar el error de "duplicate key")
+# SEÑAL OPTIMIZADA
 @receiver(post_save, sender=User)
 def crear_perfil(sender, instance, created, **kwargs):
     if created: 
-        # Solo crea si no existe, usando get_or_create para seguridad extra
         PerfilUsuario.objects.get_or_create(user=instance)
