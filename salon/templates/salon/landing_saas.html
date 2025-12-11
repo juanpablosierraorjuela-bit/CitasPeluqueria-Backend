@@ -12,67 +12,46 @@
         :root {
             --primary: #0f172a;
             --accent: #db2777;
-            --gradient: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
         }
-        
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background: #f1f5f9; margin: 0; min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(236, 72, 153, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
         }
-
         .container {
             display: flex; width: 100%; max-width: 1100px;
             background: white; border-radius: 30px;
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1);
             overflow: hidden; margin: 20px; min-height: 650px;
         }
-
-        /* LADO IZQUIERDO (VISUAL) */
         .visual-side {
             flex: 1; background: var(--primary); color: white;
-            padding: 60px; display: flex; flex-direction: column; justify-content: space-between;
-            position: relative; overflow: hidden;
+            padding: 60px; display: flex; flex-direction: column;
+            justify-content: center; position: relative; overflow: hidden;
         }
-        
         .visual-side::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1974&auto=format&fit=crop') center/cover;
-            opacity: 0.2; mix-blend-mode: overlay;
+            background: url('https://images.unsplash.com/photo-1521590832169-ae7593634361?q=80&w=1974&auto=format&fit=crop') center/cover;
+            opacity: 0.15; mix-blend-mode: overlay;
         }
-
         .content-over { position: relative; z-index: 2; }
+        .brand { font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 10px; margin-bottom: 40px; }
         
-        .brand { font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-        .quote { font-size: 2.2rem; font-weight: 700; line-height: 1.2; margin-top: auto; }
-        .quote span { color: #f472b6; }
-
-        /* LADO DERECHO (FORMULARIO) */
-        .form-side {
-            flex: 1.1; padding: 50px; overflow-y: auto;
-            display: flex; flex-direction: column; justify-content: center;
+        .benefit-list { list-style: none; padding: 0; margin: 0; }
+        .benefit-list li { margin-bottom: 25px; display: flex; align-items: center; gap: 15px; font-size: 1.1rem; font-weight: 500; }
+        .benefit-icon {
+            width: 45px; height: 45px; background: rgba(255,255,255,0.1);
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; color: var(--accent); backdrop-filter: blur(5px);
         }
 
+        .form-side { flex: 1.1; padding: 50px; overflow-y: auto; display: flex; flex-direction: column; justify-content: center; }
         h2 { font-size: 1.8rem; font-weight: 800; color: var(--primary); margin-bottom: 5px; }
         .subtitle { color: #64748b; margin-bottom: 30px; font-size: 0.95rem; }
-
-        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .input-group { margin-bottom: 15px; position: relative; }
         .input-group.full { grid-column: span 2; }
-        
-        .input-group label {
-            display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 5px; margin-left: 5px;
-        }
-        
-        .input-wrapper { position: relative; }
-        .input-wrapper i {
-            position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
-            color: #94a3b8; font-size: 0.9rem;
-        }
         
         input {
             width: 100%; padding: 12px 12px 12px 40px; border-radius: 12px;
@@ -80,6 +59,7 @@
             transition: 0.3s; background: #f8fafc; color: var(--primary);
             box-sizing: border-box;
         }
+        .input-wrapper i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
         input:focus { border-color: var(--accent); background: white; outline: none; }
 
         .btn-submit {
@@ -88,128 +68,64 @@
             cursor: pointer; transition: 0.3s; margin-top: 10px;
         }
         .btn-submit:hover { background: #334155; transform: translateY(-2px); }
+        .alert-error { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 10px; margin-bottom: 20px; }
 
-        .alert-error {
-            background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 10px;
-            font-size: 0.9rem; margin-bottom: 20px; border-left: 4px solid #ef4444;
-        }
-
-        @media (max-width: 900px) {
-            .container { flex-direction: column; margin: 0; border-radius: 0; min-height: 100vh; }
-            .visual-side { padding: 40px; min-height: 200px; flex: none; }
-            .quote { font-size: 1.5rem; }
-            .form-side { padding: 30px; }
-        }
+        @media (max-width: 900px) { .container { flex-direction: column; } .visual-side { padding: 40px; min-height: 300px; } }
     </style>
 </head>
 <body>
-
     <div class="container">
         <div class="visual-side">
-            <div class="content-over brand">
-                <div style="width:10px; height:10px; background:white; border-radius:50%;"></div> PASO Business
-            </div>
-            <div class="content-over quote">
-                Gestiona tu salón<br>como un <span>profesional.</span>
+            <div class="content-over">
+                <div class="brand"><div style="width:10px; height:10px; background:white; border-radius:50%;"></div> PASO Business</div>
+                
+                <ul class="benefit-list">
+                    <li><div class="benefit-icon">🚀</div> <div><strong>Agenda 24/7</strong><br><span style="font-size:0.85rem; opacity:0.8;">Tu negocio nunca duerme.</span></div></li>
+                    <li><div class="benefit-icon">📱</div> <div><strong>Recordatorios Auto</strong><br><span style="font-size:0.85rem; opacity:0.8;">WhatsApp y Telegram integrados.</span></div></li>
+                    <li><div class="benefit-icon">💳</div> <div><strong>Pagos Digitales</strong><br><span style="font-size:0.85rem; opacity:0.8;">Recaudo seguro con Bold.</span></div></li>
+                    <li><div class="benefit-icon">📊</div> <div><strong>Control Total</strong><br><span style="font-size:0.85rem; opacity:0.8;">Finanzas claras y métricas reales.</span></div></li>
+                </ul>
             </div>
         </div>
 
         <div class="form-side">
             <div style="max-width: 450px; margin: 0 auto; width: 100%;">
-                
-                <h2>Comienza Gratis</h2>
-                <p class="subtitle">Configura tu espacio en segundos. No requerimos tarjeta.</p>
+                <h2>Únete a la Élite</h2>
+                <p class="subtitle">Suscripción mensual: <strong>$130.000 COP</strong></p>
 
                 {% if messages %}
                     {% for message in messages %}
-                        <div class="alert-error">
-                            <i class="fas fa-exclamation-circle"></i> {{ message }}
-                        </div>
+                        <div class="alert-error"><i class="fas fa-exclamation-circle"></i> {{ message }}</div>
                     {% endfor %}
                 {% endif %}
 
                 <form method="POST" action="{% url 'landing_saas' %}">
                     {% csrf_token %}
-                    
                     <div class="input-group full">
-                        <label>Nombre del Negocio</label>
-                        <div class="input-wrapper">
-                            <i class="fas fa-store"></i>
-                            <input type="text" name="nombre_negocio" placeholder="Ej: Barbería Elite" required>
-                        </div>
+                        <div class="input-wrapper"><i class="fas fa-store"></i><input type="text" name="nombre_negocio" placeholder="Nombre del Negocio" required></div>
                     </div>
-
                     <div class="input-grid">
-                        <div class="input-group">
-                            <label>Tu Nombre</label>
-                            <div class="input-wrapper">
-                                <i class="fas fa-user"></i>
-                                <input type="text" name="nombre_owner" placeholder="Juan" required>
-                            </div>
-                        </div>
-                        <div class="input-group">
-                            <label>Tu Apellido</label>
-                            <div class="input-wrapper">
-                                <i class="fas fa-user"></i>
-                                <input type="text" name="apellido_owner" placeholder="Pérez" required>
-                            </div>
-                        </div>
+                        <div class="input-group"><div class="input-wrapper"><i class="fas fa-user"></i><input type="text" name="nombre_owner" placeholder="Tu Nombre" required></div></div>
+                        <div class="input-group"><div class="input-wrapper"><i class="fas fa-user"></i><input type="text" name="apellido_owner" placeholder="Tu Apellido" required></div></div>
                     </div>
-
                     <div class="input-group full">
-                        <label>Nombre de Usuario</label>
-                        <div class="input-wrapper">
-                            <i class="fas fa-at"></i>
-                            <input type="text" name="username_owner" placeholder="Ej: juan.elite (Único)" required>
-                        </div>
+                        <div class="input-wrapper"><i class="fas fa-at"></i><input type="text" name="username_owner" placeholder="Usuario (Ej: juan.elite)" required></div>
                     </div>
-
                     <div class="input-grid">
-                        <div class="input-group">
-                            <label>Correo Electrónico</label>
-                            <div class="input-wrapper">
-                                <i class="fas fa-envelope"></i>
-                                <input type="email" name="email" placeholder="hola@ejemplo.com" required>
-                            </div>
-                        </div>
-                        <div class="input-group">
-                            <label>WhatsApp / Teléfono</label>
-                            <div class="input-wrapper">
-                                <i class="fab fa-whatsapp"></i>
-                                <input type="tel" name="telefono" placeholder="300 123 4567" required>
-                            </div>
-                        </div>
+                        <div class="input-group"><div class="input-wrapper"><i class="fas fa-envelope"></i><input type="email" name="email" placeholder="Correo Electrónico" required></div></div>
+                        <div class="input-group"><div class="input-wrapper"><i class="fab fa-whatsapp"></i><input type="tel" name="telefono" placeholder="WhatsApp" required></div></div>
                     </div>
-
                     <div class="input-grid">
-                        <div class="input-group">
-                            <label>Contraseña</label>
-                            <div class="input-wrapper">
-                                <i class="fas fa-lock"></i>
-                                <input type="password" name="password" placeholder="••••••••" required>
-                            </div>
-                        </div>
-                        <div class="input-group">
-                            <label>Confirmar</label>
-                            <div class="input-wrapper">
-                                <i class="fas fa-check-circle"></i>
-                                <input type="password" name="confirm_password" placeholder="••••••••" required>
-                            </div>
-                        </div>
+                        <div class="input-group"><div class="input-wrapper"><i class="fas fa-lock"></i><input type="password" name="password" placeholder="Contraseña" required></div></div>
+                        <div class="input-group"><div class="input-wrapper"><i class="fas fa-check-circle"></i><input type="password" name="confirm_password" placeholder="Confirmar" required></div></div>
                     </div>
-
-                    <button type="submit" class="btn-submit">Crear mi cuenta 🚀</button>
-                    
+                    <button type="submit" class="btn-submit">Registrarme y Pagar 💳</button>
                     <div style="text-align: center; margin-top: 20px;">
-                        <a href="{% url 'login_custom' %}" style="color: #64748b; text-decoration: none; font-size: 0.9rem;">
-                            ¿Ya tienes cuenta? <strong style="color: var(--primary);">Inicia Sesión</strong>
-                        </a>
+                        <a href="{% url 'login_custom' %}" style="color: #64748b; text-decoration: none; font-size: 0.9rem;">¿Ya tienes cuenta? <strong style="color: var(--primary);">Inicia Sesión</strong></a>
                     </div>
-
                 </form>
             </div>
         </div>
     </div>
-
 </body>
 </html>
