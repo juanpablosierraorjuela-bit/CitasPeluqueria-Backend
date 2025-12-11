@@ -7,29 +7,44 @@
     <title>Panel de Control | PASO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { background: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; color: #0f172a; padding-bottom: 80px; }
+        .nav-tabs .nav-link { border: none; color: #64748b; font-weight: 600; padding: 15px 20px; }
+        .nav-tabs .nav-link.active { color: #db2777; border-bottom: 3px solid #db2777; background: transparent; }
         .card { border: none; border-radius: 20px; box-shadow: 0 10px 30px -5px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .form-control, .form-select { border-radius: 12px; padding: 12px; border: 1px solid #e2e8f0; background: #f8fafc; }
+        .form-control:focus, .form-select:focus { background: white; border-color: #db2777; box-shadow: 0 0 0 4px rgba(219,39,119,0.1); }
+        .btn-primary { background: #db2777; border: none; padding: 12px 25px; border-radius: 12px; font-weight: 700; }
+        .btn-danger-soft { background: #fef2f2; color: #ef4444; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 600; }
         .btn-pay-now { background: #ef4444; color: white; border: none; width: 100%; padding: 10px; border-radius: 12px; font-weight: 700; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        .header-dash { padding: 40px 0; }
         .alert-custom { border-radius: 15px; border: none; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; }
         .alert-warning-custom { background: #fff7ed; color: #c2410c; border-left: 5px solid #f97316; }
         .alert-danger-custom { background: #fef2f2; color: #b91c1c; border-left: 5px solid #ef4444; }
     </style>
 </head>
 <body>
-    <div class="container py-5">
+    <div class="container header-dash">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="fw-bold">{{ peluqueria.nombre_visible }}</h1>
+            <div>
+                <h1 style="font-weight: 800;">{{ peluqueria.nombre_visible }}</h1>
+                <p class="text-muted">Panel de Control Inteligente</p>
+            </div>
             <a href="{% url 'logout_usuario' %}" class="btn btn-outline-danger rounded-pill">Salir</a>
         </div>
+
+        {% if messages %}
+            {% for m in messages %}
+                <div class="alert alert-{{ m.tags }} rounded-4">{{ m }}</div>
+            {% endfor %}
+        {% endif %}
 
         {% if alerta_pago %}
             <div class="alert alert-custom {% if estado_cuenta == 'advertencia' %}alert-warning-custom{% else %}alert-danger-custom{% endif %} p-3 mb-4">
                 <i class="fas fa-exclamation-circle fa-lg"></i>
-                <div style="flex: 1;">
-                    <strong>Atención:</strong> {{ alerta_pago }}
-                </div>
+                <div style="flex: 1;"><strong>Atención:</strong> {{ alerta_pago }}</div>
                 <a href="{% url 'pago_suscripcion_saas' %}" class="btn btn-sm btn-dark rounded-pill px-3">Pagar Ahora</a>
             </div>
         {% endif %}
@@ -37,9 +52,14 @@
         <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
             <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#resumen">📊 Resumen</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#config">⚙️ Configuración</button></li>
-            </ul>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#cupones">🎟️ Cupones</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#ayuda">❓ Ayuda</button></li>
+            <li class="nav-item"><a href="{% url 'gestionar_servicios' %}" class="nav-link">💇 Servicios</a></li>
+            <li class="nav-item"><a href="{% url 'gestionar_equipo' %}" class="nav-link">👥 Equipo</a></li>
+        </ul>
 
         <div class="tab-content">
+            
             <div class="tab-pane fade show active" id="resumen">
                 <div class="row g-4">
                     <div class="col-md-4">
@@ -50,35 +70,136 @@
                     </div>
                     <div class="col-md-4">
                         <div class="card p-4">
-                            <h5 class="fw-bold">Estado de Cuenta</h5>
-                            <hr class="my-2">
-                            <div class="d-flex align-items-center gap-2 text-muted" style="font-size: 0.9rem;">
-                                <i class="fas fa-calendar-alt"></i>
-                                <div>Inicio contrato: <strong>{{ peluqueria.fecha_inicio_contrato|date:"d M, Y" }}</strong></div>
-                            </div>
-                            <div class="d-flex align-items-center gap-2 text-muted mt-2" style="font-size: 0.9rem;">
-                                <i class="fas fa-clock"></i>
-                                <div>Próximo pago: <strong>{{ proximo_pago|date:"d M, Y" }}</strong></div>
+                            <h3 class="fw-bold text-success">${{ ingresos_mes|default:"0" }}</h3>
+                            <span class="text-muted">Ingresos Mes (Estimado)</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card p-4">
+                            <h5 class="fw-bold">Invitar Equipo</h5>
+                            <input type="text" value="{{ link_invitacion }}" class="form-control form-control-sm mt-2" readonly onclick="this.select()">
+                            <small class="text-muted">Comparte este link con tus estilistas</small>
+                            <hr style="opacity: 0.1; margin: 15px 0;">
+                            <div class="d-flex align-items-center gap-2 text-muted" style="font-size: 0.85rem;">
+                                <i class="fas fa-calendar-check" style="font-size: 1.1rem;"></i>
+                                <div>Miembro desde: <strong>{{ peluqueria.fecha_inicio_contrato|date:"d M, Y" }}</strong></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            
+
             <div class="tab-pane fade" id="config">
                 <div class="card p-4">
                     <form method="POST">
                         {% csrf_token %}
                         <input type="hidden" name="accion" value="guardar_config">
+                        
                         <h5 class="mb-3 fw-bold">📍 Datos del Negocio</h5>
-                        <div class="mb-3">
-                            <label>Dirección</label>
-                            <input type="text" name="direccion" class="form-control" value="{{ peluqueria.direccion }}">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6"><label>Dirección</label><input type="text" name="direccion" class="form-control" value="{{ peluqueria.direccion }}"></div>
+                            <div class="col-md-6"><label>Teléfono</label><input type="text" name="telefono" class="form-control" value="{{ peluqueria.telefono }}"></div>
+                            <div class="col-md-4"><label>Apertura</label><input type="time" name="hora_apertura" class="form-control" value="{{ peluqueria.hora_apertura|time:'H:i' }}"></div>
+                            <div class="col-md-4"><label>Cierre</label><input type="time" name="hora_cierre" class="form-control" value="{{ peluqueria.hora_cierre|time:'H:i' }}"></div>
+                            <div class="col-md-4">
+                                <label>% Abono para Reservar</label>
+                                <select name="porcentaje_abono" class="form-select">
+                                    <option value="30" {% if peluqueria.porcentaje_abono == 30 %}selected{% endif %}>30%</option>
+                                    <option value="50" {% if peluqueria.porcentaje_abono == 50 %}selected{% endif %}>50% (Recomendado)</option>
+                                    <option value="100" {% if peluqueria.porcentaje_abono == 100 %}selected{% endif %}>100% (Pago Total)</option>
+                                </select>
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">Guardar</button>
+
+                        <h5 class="mb-3 fw-bold">💳 Tus Pagos (Bold)</h5>
+                        <p class="text-muted small">Configura esto para recibir dinero de tus clientes.</p>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-12"><label>Bold Identidad (API Key)</label><input type="text" name="bold_api_key" class="form-control" value="{{ peluqueria.bold_api_key|default:'' }}" placeholder="Ej: g4XAZ..."></div>
+                            <div class="col-md-6"><label>Bold Llave Secreta</label><input type="password" name="bold_secret_key" class="form-control" value="{{ peluqueria.bold_secret_key|default:'' }}" placeholder="Ej: te4T6..."></div>
+                            <div class="col-md-6"><label>Bold Integrity Key</label><input type="password" name="bold_integrity_key" class="form-control" value="{{ peluqueria.bold_integrity_key|default:'' }}" placeholder="(Opcional)"></div>
+                        </div>
+
+                        <h5 class="mb-3 fw-bold">📱 Notificaciones (Telegram)</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6"><label>Bot Token</label><input type="text" name="telegram_token" class="form-control" value="{{ peluqueria.telegram_token|default:'' }}"></div>
+                            <div class="col-md-6"><label>Chat ID</label><input type="text" name="telegram_chat_id" class="form-control" value="{{ peluqueria.telegram_chat_id|default:'' }}"></div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary mt-4 w-100">Guardar Cambios</button>
                     </form>
                 </div>
             </div>
+
+            <div class="tab-pane fade" id="cupones">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card p-4">
+                            <h5>Crear Nuevo Cupón</h5>
+                            <form method="POST">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="crear_cupon">
+                                <div class="mb-2"><input type="text" name="codigo_cupon" class="form-control" placeholder="Ej: VERANO2025" required></div>
+                                <div class="mb-2"><input type="number" name="porcentaje" class="form-control" placeholder="% Descuento" required></div>
+                                <div class="mb-2"><input type="number" name="cantidad" class="form-control" placeholder="Cantidad de usos" value="100"></div>
+                                <button type="submit" class="btn btn-dark w-100">Crear Cupón</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card p-4">
+                            <table class="table">
+                                <thead><tr><th>Código</th><th>Desc.</th><th>Usos</th><th>Acción</th></tr></thead>
+                                <tbody>
+                                    {% for c in cupones %}
+                                    <tr>
+                                        <td><strong>{{ c.codigo }}</strong></td>
+                                        <td>{{ c.porcentaje_descuento }}%</td>
+                                        <td>{{ c.usos_restantes }}</td>
+                                        <td>
+                                            <form method="POST">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="accion" value="eliminar_cupon">
+                                                <input type="hidden" name="cupon_id" value="{{ c.id }}">
+                                                <button class="btn-danger-soft btn-sm">Eliminar</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="4" class="text-center">No hay cupones activos.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="ayuda">
+                <div class="accordion" id="accordionExample">
+                    <div class="accordion-item border-0 mb-2 shadow-sm rounded-3">
+                        <h2 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">💳 ¿Cómo configurar pagos con Bold?</button></h2>
+                        <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
+                            <div class="accordion-body">
+                                1. Entra a <a href="https://bold.co" target="_blank">Bold.co</a> > Integraciones > Botón de Pagos.<br>
+                                2. Copia la "Llave de Identidad" y pégala en <strong>Bold API Key</strong>.<br>
+                                3. Copia la "Llave Secreta" y pégala en <strong>Bold Llave Secreta</strong>.<br>
+                                4. Si tienes "Integrity Key", ponla. Si no, deja vacío o repite la secreta.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item border-0 mb-2 shadow-sm rounded-3">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">📱 ¿Cómo activar Telegram?</button></h2>
+                        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                            <div class="accordion-body">
+                                1. Busca a <strong>@BotFather</strong> en Telegram -> <code>/newbot</code> -> Copia el Token.<br>
+                                2. Busca a <strong>@userinfobot</strong> -> Copia tu ID.<br>
+                                3. Pégalos en la pestaña Configuración.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
