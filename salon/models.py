@@ -20,10 +20,9 @@ class ConfiguracionPlataforma(models.Model):
     solo_un_registro = models.CharField(max_length=1, default='X', editable=False, help_text="Configuración única del sistema")
     
     # TUS CREDENCIALES BOLD (Para cobrar los 130k)
-    # He puesto las que me diste como default, pero verifícalas en el admin
     bold_api_key = models.CharField("Tu API Key (Identity)", max_length=255, default="g4XAZfPD4hH2e5WXhiKfZjGPLRxrzbPH9rOxaqJhDTw")
     bold_secret_key = models.CharField("Tu Secret Key", max_length=255, default="te4T6sOL43wDlcGwCGHfGA")
-    bold_integrity_key = models.CharField("Tu Integrity Key", max_length=255, default="CAMBIAR_ESTO_EN_ADMIN", help_text="Busca la 'Llave de Integridad' en tu panel de Bold y pégala aquí")
+    bold_integrity_key = models.CharField("Tu Integrity Key", max_length=255, default="CAMBIAR_EN_ADMIN", help_text="Busca la 'Llave de Integridad' en tu panel de Bold y pégala aquí")
     
     # TU TELEGRAM (Para que te avise de nuevos registros)
     telegram_token = models.CharField(max_length=255, blank=True, help_text="Token de tu Bot de Telegram")
