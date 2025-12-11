@@ -19,15 +19,19 @@ class Peluqueria(models.Model):
     nombre_visible = models.CharField(max_length=200, default="Mi Salón")
     ciudad = models.CharField(max_length=100, default="Tunja")
     
-    # DATOS DE CONTACTO
+    # DATOS DE CONTACTO Y UBICACIÓN
     direccion = models.CharField(max_length=200, blank=True)
     telefono = models.CharField(max_length=20, blank=True)
     codigo_pais_wa = models.CharField(max_length=5, default="57", help_text="Cód. País WhatsApp")
     
+    # GEO-LOCALIZACIÓN (Nuevo para filtro de 1km)
+    latitud = models.FloatField(default=5.5353) # Default Tunja
+    longitud = models.FloatField(default=-73.3678) # Default Tunja
+    
     # CONFIGURACIÓN GENERAL
-    hora_apertura = models.TimeField(default="06:00", help_text="Hora de apertura del local")
-    hora_cierre = models.TimeField(default="21:00", help_text="Hora de cierre del local")
-    porcentaje_abono = models.IntegerField(default=50)
+    hora_apertura = models.TimeField(default="08:00", help_text="Hora de apertura")
+    hora_cierre = models.TimeField(default="20:00", help_text="Hora de cierre")
+    porcentaje_abono = models.IntegerField(default=50, help_text="Porcentaje para reservar")
     
     # INTEGRACIONES (Telegram y Bold)
     telegram_token = models.CharField(max_length=200, blank=True, null=True)
@@ -35,9 +39,8 @@ class Peluqueria(models.Model):
     
     bold_api_key = models.CharField("Bold API Key", max_length=255, blank=True, null=True)
     bold_integrity_key = models.CharField("Bold Integrity Key", max_length=255, blank=True, null=True)
-    bold_secret_key = models.CharField("Bold Secret Key", max_length=255, blank=True, null=True) # <--- AGREGADO OBLIGATORIO
+    bold_secret_key = models.CharField("Bold Secret Key", max_length=255, blank=True, null=True)
     
-    # --- LÓGICA DE APERTURA ---
     @property
     def esta_abierto(self):
         """Calcula si la peluquería está abierta basándose en la hora de Colombia."""
@@ -59,6 +62,17 @@ class Peluqueria(models.Model):
 
     def __str__(self): 
         return f"{self.nombre_visible} ({self.ciudad})"
+
+class Cupon(models.Model):
+    """Sistema de Descuentos para Fidelización"""
+    peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='cupones')
+    codigo = models.CharField(max_length=50) # Ej: APERTURA2025
+    porcentaje_descuento = models.IntegerField(default=10)
+    activo = models.BooleanField(default=True)
+    usos_restantes = models.IntegerField(default=100)
+
+    def __str__(self):
+        return f"{self.codigo} - {self.porcentaje_descuento}%"
 
 class Servicio(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='servicios')
@@ -111,7 +125,7 @@ class Ausencia(models.Model):
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
     fecha_inicio = models.DateTimeField()
     fecha_fin = models.DateTimeField()
-    motivo = models.CharField(max_length=200, blank=True) # Antes tenías 'tipo', ahora usamos 'motivo'
+    motivo = models.CharField(max_length=200, blank=True) 
 
 class Cita(models.Model):
     ESTADOS = [('P', 'Pendiente Pago'), ('C', 'Confirmada'), ('X', 'Cancelada')]
@@ -121,8 +135,11 @@ class Cita(models.Model):
     cliente_telefono = models.CharField(max_length=20)
     servicios = models.ManyToManyField(Servicio) 
     
+    # Precios
     precio_total = models.IntegerField(default=0)
+    descuento_aplicado = models.IntegerField(default=0) # Nuevo
     abono_pagado = models.IntegerField(default=0)
+    
     referencia_pago_bold = models.CharField(max_length=100, blank=True, null=True)
     
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
@@ -159,7 +176,7 @@ class Cita(models.Model):
                     f"⏰ *Hora:* {self.fecha_hora_inicio.strftime('%I:%M %p')}\n"
                     f"💈 *Estilista:* {self.empleado.nombre}\n"
                     f"📝 *Servicios:*\n{lista_servicios}\n"
-                    f"💰 *Total:* ${total:,.0f} | *Pendiente:* ${pendiente:,.0f}"
+                    f"💰 *Total:* ${total:,.0f} | *Abono:* ${abono:,.0f}"
                 )
 
                 requests.post(
@@ -178,11 +195,6 @@ class PerfilUsuario(models.Model):
     def __str__(self):
         return f"Perfil de {self.user.username}"
 
-@receiver(post_save, sender=User)
-def crear_perfil(sender, instance, created, **kwargs):
-    if created: 
-        PerfilUsuario.objects.create(user=instance)
-
 class SolicitudSaaS(models.Model):
     nombre_contacto = models.CharField(max_length=100)
     nombre_empresa = models.CharField(max_length=100)
@@ -191,3 +203,10 @@ class SolicitudSaaS(models.Model):
     cantidad_empleados = models.CharField(max_length=50)
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
     atendido = models.BooleanField(default=False)
+
+# SEÑAL OPTIMIZADA (Para evitar el error de "duplicate key")
+@receiver(post_save, sender=User)
+def crear_perfil(sender, instance, created, **kwargs):
+    if created: 
+        # Solo crea si no existe, usando get_or_create para seguridad extra
+        PerfilUsuario.objects.get_or_create(user=instance)
