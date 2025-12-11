@@ -7,7 +7,7 @@ urlpatterns = [
     path('', views.inicio, name='inicio'),
     path('info/', views.landing_saas, name='landing_saas'),
     
-    # --- RUTA DE COBRO SAAS (IMPORTANTE PARA EL PAGO) ---
+    # --- RUTA DE COBRO SAAS (CRUCIAL PARA EL PAGO) ---
     path('suscripcion/pago/', views.pago_suscripcion_saas, name='pago_suscripcion_saas'),
 
     # --- AUTENTICACIÓN ---
@@ -25,7 +25,6 @@ urlpatterns = [
 
     # --- PANEL DE CONTROL (DUEÑO) ---
     path('negocio/dashboard/', views.panel_negocio, name='panel_negocio'),
-    # LA LÍNEA DE CONFIGURACIÓN SE ELIMINÓ AQUÍ
     path('negocio/servicios/', views.gestionar_servicios, name='gestionar_servicios'),
     path('negocio/servicios/eliminar/<int:servicio_id>/', views.eliminar_servicio, name='eliminar_servicio'),
     path('negocio/equipo/', views.gestionar_equipo, name='gestionar_equipo'),
