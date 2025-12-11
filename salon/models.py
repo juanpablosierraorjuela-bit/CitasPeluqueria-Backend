@@ -4,23 +4,26 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.text import slugify
-from datetime import timedelta, time
 from django.utils import timezone
 import requests
 import pytz 
 
 # =============================================================
-# 1. CONFIGURACIÓN GLOBAL (SOLO 2 LLAVES)
+# 1. CONFIGURACIÓN GLOBAL (TU PAGO COMO DUEÑO)
 # =============================================================
 class ConfiguracionPlataforma(models.Model):
     """
-    Configuración simplificada. Solo requiere las 2 llaves de Bold.
+    Configuración simplificada. 
+    Usamos un Link de Pago Único de Bold para evitar problemas de API.
     """
     solo_un_registro = models.CharField(max_length=1, default='X', editable=False)
     
-    # SOLO ESTAS DOS LLAVES SON NECESARIAS
-    bold_api_key = models.CharField("Bold Identidad (API Key)", max_length=255, default="g4XAZfPD4hH2e5WXhiKfZjGPLRxrzbPH9rOxaqJhDTw", help_text="La llave pública")
-    bold_secret_key = models.CharField("Bold Llave Secreta", max_length=255, default="te4T6sOL43wDlcGwCGHfGA", help_text="La llave oculta (empieza con sk_...)")
+    # ESTE ES EL CAMPO CLAVE
+    link_pago_bold = models.URLField(
+        "Link de Pago Bold", 
+        default="https://checkout.bold.co/payment/LNK_QZ5NWWY82P", 
+        help_text="Pega aquí el Link de Pago Único de Bold."
+    )
     
     # Telegram
     telegram_token = models.CharField(max_length=255, blank=True)
@@ -32,10 +35,10 @@ class ConfiguracionPlataforma(models.Model):
         verbose_name = "Configuración Dueño PASO"
         verbose_name_plural = "Configuración Dueño PASO"
 
-    def __str__(self): return "Credenciales de Pago"
+    def __str__(self): return "Configuración de Pagos"
 
 # =============================================================
-# 2. MODELOS BASE
+# 2. MODELOS BASE (PELUQUERÍAS, CITAS, ETC.)
 # =============================================================
 
 class Peluqueria(models.Model):
@@ -58,11 +61,11 @@ class Peluqueria(models.Model):
     fecha_inicio_contrato = models.DateTimeField(default=timezone.now)
     activo_saas = models.BooleanField(default=True)
 
-    # Integraciones del Cliente (Peluquería)
+    # Integraciones del Cliente (Para que ELLOS cobren)
     telegram_token = models.CharField(max_length=200, blank=True, null=True)
     telegram_chat_id = models.CharField(max_length=100, blank=True, null=True)
     bold_api_key = models.CharField(max_length=255, blank=True, null=True)
-    bold_integrity_key = models.CharField(max_length=255, blank=True, null=True) # Mantenemos por compatibilidad, pero no se usa
+    bold_integrity_key = models.CharField(max_length=255, blank=True, null=True)
     bold_secret_key = models.CharField(max_length=255, blank=True, null=True)
     
     @property
