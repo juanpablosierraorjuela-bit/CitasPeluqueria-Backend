@@ -86,7 +86,6 @@ def registro_empleado_publico(request, slug_peluqueria):
                     user.save()
 
                     # 2. ACTUALIZAR Perfil existente (Corrección del error duplicate key)
-                    # La señal post_save ya creó el perfil, solo lo actualizamos
                     perfil = user.perfil
                     perfil.peluqueria = peluqueria
                     perfil.es_dueño = False
@@ -243,7 +242,6 @@ def eliminar_servicio(request, servicio_id):
 def gestionar_equipo(request):
     """
     Vista para ver el listado de empleados y el link de invitación.
-    (Esta era la vista que faltaba)
     """
     if not hasattr(request.user, 'perfil') or not request.user.perfil.es_dueño:
         return redirect('inicio')
@@ -324,23 +322,40 @@ def inicio(request):
 def landing_saas(request):
     """
     Vista de registro para NUEVOS DUEÑOS de peluquerías (SaaS).
-    Crea Usuario, Peluquería y Empleado Admin automáticamente.
+    AHORA CON FORMULARIO COMPLETO: Nombre, Apellido, Username, etc.
     """
     if request.method == 'POST':
+        # Datos del negocio
         nombre_negocio = request.POST.get('nombre_negocio')
+        telefono = request.POST.get('telefono', '') 
+        
+        # Datos del dueño
+        first_name = request.POST.get('nombre_owner')
+        last_name = request.POST.get('apellido_owner')
+        username = request.POST.get('username_owner')
         email = request.POST.get('email')
         password = request.POST.get('password')
-        telefono = request.POST.get('telefono', '') 
+        confirm_password = request.POST.get('confirm_password')
 
-        if User.objects.filter(username=email).exists():
-            messages.error(request, "Este correo ya está registrado.")
+        # VALIDACIONES
+        if password != confirm_password:
+            messages.error(request, "Las contraseñas no coinciden.")
+            return render(request, 'salon/landing_saas.html')
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, f"El usuario '{username}' ya existe. Intenta con otro.")
+            return render(request, 'salon/landing_saas.html')
+            
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "Ese correo ya está registrado.")
             return render(request, 'salon/landing_saas.html')
 
         try:
             with transaction.atomic():
-                # 1. Crear el Usuario (Dueño)
-                user = User.objects.create_user(username=email, email=email, password=password)
-                user.first_name = "Dueño" 
+                # 1. Crear el Usuario (Dueño) con sus datos reales
+                user = User.objects.create_user(username=username, email=email, password=password)
+                user.first_name = first_name
+                user.last_name = last_name
                 user.save()
 
                 # 2. Crear la Peluquería
@@ -368,20 +383,20 @@ def landing_saas(request):
                 Empleado.objects.create(
                     user=user,
                     peluqueria=peluqueria,
-                    nombre="Administrador",
-                    apellido="(Dueño)",
+                    nombre=first_name,
+                    apellido=last_name,
                     email_contacto=email,
                     activo=True
                 )
 
             # 5. LOGUEAR Y REDIRIGIR
             login(request, user)
-            messages.success(request, "¡Bienvenido! Configura tu negocio.")
+            messages.success(request, "¡Bienvenido! Tu cuenta ha sido creada exitosamente.")
             return redirect('panel_negocio')
 
         except Exception as e:
             logger.error(f"Error en registro SaaS: {e}")
-            messages.error(request, f"Error al registrar: {str(e)}")
+            messages.error(request, f"Error interno: {str(e)}")
             return render(request, 'salon/landing_saas.html')
 
     return render(request, 'salon/landing_saas.html')
