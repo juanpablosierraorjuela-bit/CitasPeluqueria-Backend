@@ -2,7 +2,7 @@
 import logging
 import json
 import requests
-from datetime import timedelta, time, datetime
+from datetime import timedelta, datetime
 from dateutil.relativedelta import relativedelta
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import authenticate, login, logout
@@ -39,9 +39,8 @@ def redirigir_segun_rol(user):
 
 def logout_view(request): logout(request); return redirect('inicio')
 
-# --- SAAS Y COBROS (LÓGICA MEJORADA) ---
+# --- SAAS Y COBROS (FLUJO DIRECTO) ---
 def landing_saas(request):
-    """ Registro de clientes nuevos. Redirige OBLIGATORIAMENTE al pago. """
     if request.method == 'POST':
         try:
             with transaction.atomic():
@@ -49,7 +48,6 @@ def landing_saas(request):
                 slug = slugify(request.POST.get('nombre_negocio'))
                 if Peluqueria.objects.filter(slug=slug).exists(): slug += f"-{int(datetime.now().timestamp())}"
                 
-                # Guardamos la fecha de inicio para calcular los cortes
                 peluqueria = Peluqueria.objects.create(
                     nombre=request.POST.get('nombre_negocio'), 
                     slug=slug, 
@@ -59,14 +57,10 @@ def landing_saas(request):
                 user.perfil.peluqueria = peluqueria; user.perfil.es_dueño = True; user.perfil.save()
                 Empleado.objects.create(user=user, peluqueria=peluqueria, nombre=user.first_name, apellido=user.last_name, email_contacto=user.email, activo=True)
             
-            # Notificación Telegram
-            config = ConfiguracionPlataforma.objects.first()
-            if config and config.telegram_token:
-                msg = f"💰 *NUEVO CLIENTE*\nNegocio: {peluqueria.nombre}\nUsuario: {user.email}\nEstado: Pendiente Pago"
-                requests.post(f"https://api.telegram.org/bot{config.telegram_token}/sendMessage", data={"chat_id": config.telegram_chat_id, "text": msg, "parse_mode": "Markdown"})
-            
             login(request, user)
+            # AL REGISTRARSE, LO MANDAMOS DIRECTO A LA LÓGICA DE PAGO
             return redirect('pago_suscripcion_saas')
+
         except Exception as e:
             messages.error(request, f"Error: {e}")
     return render(request, 'salon/landing_saas.html')
@@ -74,91 +68,96 @@ def landing_saas(request):
 @login_required
 def pago_suscripcion_saas(request):
     """
-    Genera Link de Pago con API Bold (Server-to-Server).
-    NO USA INTEGRITY KEY. Solo Secret Key.
+    Genera Link de Pago Bold y REDIRIGE automáticamente.
     """
     if not request.user.perfil.es_dueño: return redirect('inicio')
     
     config = ConfiguracionPlataforma.objects.first()
     peluqueria = request.user.perfil.peluqueria
     
-    # Credenciales del DUEÑO DE LA PLATAFORMA (TÚ)
-    secret_key = config.bold_secret_key if config else "te4T6sOL43wDlcGwCGHfGA"
+    # IMPORTANTE: Asegúrate en /admin que esta sea la LLAVE SECRETA (no la de identidad)
+    secret_key = config.bold_secret_key if config else ""
     monto = config.precio_mensualidad if config else 130000
     
     if request.method == 'POST':
-        # Generar Link
+        if not secret_key:
+            messages.error(request, "Falta configurar la Llave Secreta en el Admin.")
+            return render(request, 'salon/pago_suscripcion.html', {'monto': monto, 'peluqueria': peluqueria})
+
+        # Referencia única
         ref = f"SUB-{peluqueria.id}-{int(datetime.now().timestamp())}"
         
-        headers = {"Authorization": f"x-api-key {secret_key}", "Content-Type": "application/json"}
+        # Fecha de vencimiento del link (24 horas)
+        expiracion = (datetime.now() + timedelta(days=1)).isoformat()
+
+        url_bold = "https://integrations.api.bold.co/online/link/v1"
+        headers = {
+            "Authorization": f"x-api-key {secret_key}", # Formato estándar Bold
+            "Content-Type": "application/json"
+        }
         payload = {
-            "name": "Suscripción Mensual PASO",
-            "description": f"Pago mensual {peluqueria.nombre}",
+            "name": "Suscripción PASO Manager",
+            "description": f"Mensualidad salón {peluqueria.nombre}",
             "amount": monto,
             "currency": "COP",
             "sku": ref,
+            "expiration_date": expiracion, # ¡Aquí está lo que pediste!
             "redirection_url": f"{'https' if request.is_secure() else 'http'}://{request.get_host()}/negocio/dashboard/"
         }
         
         try:
-            # Llamada directa a Bold (sin pasar por el navegador del cliente)
-            r = requests.post("https://integrations.api.bold.co/online/link/v1", json=payload, headers=headers)
+            r = requests.post(url_bold, json=payload, headers=headers)
             if r.status_code == 201: 
-                return redirect(r.json()["payload"]["url"]) # Redirige a Bold
+                # ¡ÉXITO! Redirigir al usuario a Bold
+                return redirect(r.json()["payload"]["url"])
             else: 
-                messages.error(request, "Error generando link."); logger.error(r.text)
-        except Exception as e: messages.error(request, "Error de conexión."); logger.error(e)
+                # Error de credenciales o datos
+                err_msg = r.json().get('Message') or r.text
+                messages.error(request, f"Error Bold ({r.status_code}): {err_msg}")
+        except Exception as e: 
+            messages.error(request, "Error de conexión.")
+            logger.error(e)
 
+    # Si entra por GET o falla el POST, muestra el botón para reintentar
     return render(request, 'salon/pago_suscripcion.html', {'monto': monto, 'peluqueria': peluqueria})
 
-# --- PANEL DUEÑO (Lógica de Alertas) ---
+# --- PANEL DUEÑO (Con Alertas de Corte) ---
 @login_required
 def panel_negocio(request):
     if not request.user.perfil.es_dueño: return redirect('inicio')
     peluqueria = request.user.perfil.peluqueria
     hoy = timezone.localdate()
     
-    # Lógica Fechas de Corte
+    # Calcular cortes
     inicio = peluqueria.fecha_inicio_contrato.date()
-    # Encontrar el próximo pago futuro
     proximo = inicio
-    while proximo <= hoy: 
-        proximo += relativedelta(months=1)
+    while proximo <= hoy: proximo += relativedelta(months=1)
     
-    # Calcular días faltantes
     dias = (proximo - hoy).days
-    
-    # Calcular si se pasó la fecha anterior (para la gracia)
-    anterior_pago = proximo - relativedelta(months=1)
-    dias_desde_anterior = (hoy - anterior_pago).days
+    anterior = proximo - relativedelta(months=1)
+    dias_mora = (hoy - anterior).days
 
     alerta = None
     estado = "activo"
     
-    # AVISO 3 DÍAS ANTES
+    # Lógica de Alertas (3 días antes y 3 de gracia)
     if dias <= 3 and dias >= 0: 
         estado = "advertencia"
         alerta = f"⚠️ Tu corte es el {proximo.day}. Tienes {dias} días para pagar."
-    
-    # DÍAS DE GRACIA (Si ya pasó la fecha, pero menos de 3 días)
-    # Nota: Si 'proximo' es futuro, 'anterior' fue el pago que debió hacerse.
-    # Si hoy es 12 y pago era 11, dias_desde_anterior es 1.
-    elif dias_desde_anterior > 0 and dias_desde_anterior <= 3:
-        estado = "gracia"
-        alerta = f"🚨 Fecha de corte superada. Tienes {3 - dias_desde_anterior} días de cortesía antes de la suspensión."
-    
-    elif dias_desde_anterior > 3:
-        estado = "vencido"
-        alerta = "⛔ Cuenta vencida. Realiza el pago para reactivar."
+    elif dias < 0: # Fecha pasada
+        if dias_mora <= 3: 
+            estado = "gracia"
+            alerta = f"🚨 Fecha superada. Estás en tus 3 días de cortesía."
+        else: 
+            estado = "vencido"
+            alerta = "⛔ Cuenta vencida. Paga para reactivar."
 
     # Guardar Configuración
     if request.method == 'POST':
         if request.POST.get('accion') == 'guardar_config':
             peluqueria.bold_api_key = request.POST.get('bold_api_key')
             peluqueria.telegram_token = request.POST.get('telegram_token')
-            # ... otros campos ...
             peluqueria.save(); messages.success(request, "Guardado.")
-        # ... lógica cupones ...
         return redirect('panel_negocio')
 
     ctx = {
@@ -168,7 +167,7 @@ def panel_negocio(request):
     }
     return render(request, 'salon/dashboard.html', ctx)
 
-# --- RESTO DE VISTAS (Mantenidas igual) ---
+# --- RESTO DE VISTAS ---
 def inicio(request): return render(request, 'salon/index.html', {'peluquerias': Peluqueria.objects.all(), 'ciudades': Peluqueria.objects.values_list('ciudad', flat=True).distinct()})
 def registro_empleado_publico(request, slug_peluqueria): return render(request, 'salon/registro_empleado.html', {'peluqueria': get_object_or_404(Peluqueria, slug=slug_peluqueria)})
 def agendar_cita(request, slug_peluqueria): return render(request, 'salon/agendar.html', {'peluqueria': get_object_or_404(Peluqueria, slug=slug_peluqueria)})
