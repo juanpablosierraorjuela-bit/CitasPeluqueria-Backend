@@ -1,0 +1,153 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Únete al Equipo | {{ peluqueria.nombre_visible }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #db2777;
+            --bg-soft: #f8fafc;
+        }
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-soft);
+            margin: 0; min-height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            background-image: radial-gradient(circle at 10% 20%, rgba(219, 39, 119, 0.05) 0%, transparent 20%),
+                              radial-gradient(circle at 90% 80%, rgba(15, 23, 42, 0.05) 0%, transparent 20%);
+        }
+
+        .card-container {
+            background: white; width: 100%; max-width: 480px;
+            padding: 40px; border-radius: 24px;
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1);
+            text-align: center; position: relative; overflow: hidden;
+        }
+
+        .card-container::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+        }
+
+        h1 { font-size: 1.8rem; font-weight: 800; color: var(--primary); margin: 10px 0 5px; }
+        p { color: #64748b; font-size: 0.95rem; margin-bottom: 30px; }
+        
+        .avatar-salon {
+            width: 80px; height: 80px; margin: 0 auto 20px;
+            background: #f1f5f9; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; font-weight: 800; color: var(--accent);
+            border: 3px solid white; box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+        }
+
+        /* INPUTS */
+        .form-group { text-align: left; margin-bottom: 15px; }
+        .form-group label { font-size: 0.85rem; font-weight: 700; color: #334155; margin-left: 5px; display: block; margin-bottom: 5px; }
+        
+        .input-wrapper { position: relative; }
+        .input-wrapper i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+        
+        input {
+            width: 100%; padding: 14px 14px 14px 45px; border-radius: 12px;
+            border: 2px solid #e2e8f0; font-family: inherit; font-size: 0.95rem;
+            transition: 0.3s; background: #f8fafc; color: var(--primary);
+            box-sizing: border-box; outline: none;
+        }
+        input:focus { border-color: var(--accent); background: white; box-shadow: 0 0 0 4px rgba(219, 39, 119, 0.1); }
+
+        .btn-submit {
+            width: 100%; padding: 16px; border: none; border-radius: 12px;
+            background: var(--primary); color: white; font-weight: 700; font-size: 1rem;
+            cursor: pointer; transition: 0.3s; margin-top: 15px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(15, 23, 42, 0.2); }
+
+        .alert-error {
+            background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 10px;
+            font-size: 0.9rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+        }
+        
+        .login-link { margin-top: 25px; font-size: 0.9rem; color: #64748b; }
+        .login-link a { color: var(--primary); font-weight: 700; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+    <div class="card-container">
+        <div class="avatar-salon">
+            {{ peluqueria.nombre_visible|first|upper }}
+        </div>
+
+        <h1>Te invitan al equipo</h1>
+        <p>Regístrate para gestionar tu agenda en <strong>{{ peluqueria.nombre_visible }}</strong></p>
+
+        {% if error %}
+            <div class="alert-error">
+                <i class="fas fa-exclamation-circle"></i> {{ error }}
+            </div>
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="nombre" placeholder="Tu nombre" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Apellido</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="apellido" placeholder="Tu apellido" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Correo Electrónico (Será tu usuario)</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" name="email" placeholder="ejemplo@correo.com" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Contraseña</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="password" placeholder="••••••••" required minlength="6">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Confirmar Contraseña</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-check-circle"></i>
+                    <input type="password" name="confirm_password" placeholder="••••••••" required minlength="6">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit">
+                Crear Cuenta y Entrar <i class="fas fa-arrow-right"></i>
+            </button>
+        </form>
+
+        <div class="login-link">
+            ¿Ya tienes cuenta en PASO? <a href="{% url 'login_custom' %}">Inicia Sesión</a>
+        </div>
+    </div>
+
+</body>
+</html>
