@@ -61,13 +61,10 @@ def logout_view(request):
     return redirect('inicio')
 
 # =======================================================
-# 2. REGISTRO SAAS Y PAGO DE SUSCRIPCIÓN
+# 2. REGISTRO SAAS Y COBRO (CAMBIO A API LINKS)
 # =======================================================
 
 def landing_saas(request):
-    """
-    Registro de nuevos clientes. Redirige al pago de $130.000 COP inmediatamente.
-    """
     if request.method == 'POST':
         nombre_negocio = request.POST.get('nombre_negocio')
         telefono = request.POST.get('telefono', '') 
@@ -115,7 +112,7 @@ def landing_saas(request):
                     user=user, peluqueria=peluqueria, nombre=first_name, apellido=last_name, email_contacto=email, activo=True
                 )
 
-            # NOTIFICACIÓN TELEGRAM AL SUPER ADMIN
+            # Notificación Telegram Admin
             config = ConfiguracionPlataforma.objects.first()
             if config and config.telegram_token and config.telegram_chat_id:
                 try:
@@ -123,22 +120,20 @@ def landing_saas(request):
                         f"💰 *NUEVO CLIENTE - PENDIENTE PAGO*\n"
                         f"🏢 *Negocio:* {nombre_negocio}\n"
                         f"👤 *Usuario:* {first_name} {last_name}\n"
-                        f"📞 *Tel:* {telefono}\n"
-                        f"📧 *Email:* {email}\n"
                         f"💵 *Facturar:* ${config.precio_mensualidad:,.0f}"
                     )
                     requests.post(
                         f"https://api.telegram.org/bot{config.telegram_token}/sendMessage", 
                         data={"chat_id": config.telegram_chat_id, "text": msg, "parse_mode": "Markdown"}
                     )
-                except Exception as e:
-                    print(f"Error Telegram Admin: {e}")
+                except: pass
 
             login(request, user)
+            # Redirigir a la vista que genera el link de cobro
             return redirect('pago_suscripcion_saas')
 
         except Exception as e:
-            logger.error(f"Error en registro SaaS: {e}")
+            logger.error(f"Error SaaS: {e}")
             messages.error(request, f"Error interno: {str(e)}")
             return render(request, 'salon/landing_saas.html')
 
@@ -146,32 +141,61 @@ def landing_saas(request):
 
 @login_required
 def pago_suscripcion_saas(request):
+    """
+    Genera un LINK DE PAGO usando la API de Bold (Server-to-Server).
+    Solo requiere API Key y Secret Key. No requiere Integrity Key.
+    """
     if not hasattr(request.user, 'perfil') or not request.user.perfil.es_dueño:
         return redirect('inicio')
     
     config = ConfiguracionPlataforma.objects.first()
+    peluqueria = request.user.perfil.peluqueria
     
-    # Valores por defecto o desde DB
-    api_key = config.bold_api_key if config else "g4XAZfPD4hH2e5WXhiKfZjGPLRxrzbPH9rOxaqJhDTw"
-    integrity_key = config.bold_integrity_key if config else "" 
+    # Credenciales del DUEÑO DE LA PLATAFORMA (TÚ)
     secret_key = config.bold_secret_key if config else "te4T6sOL43wDlcGwCGHfGA"
     monto = config.precio_mensualidad if config else 130000
     
-    peluqueria = request.user.perfil.peluqueria
-    referencia = f"SUSCRIPCION-PASO-{peluqueria.id}-{int(datetime.now().timestamp())}"
+    # URL de retorno (cuando paguen exitosamente)
+    scheme = request.is_secure() and "https" or "http"
+    domain = request.get_host()
+    redirect_url = f"{scheme}://{domain}/negocio/dashboard/"
     
-    # Generar Hash de Integridad
-    cadena_concatenada = f"{referencia}{monto}COP{integrity_key}"
-    hash_hex = hashlib.sha256(cadena_concatenada.encode()).hexdigest()
+    # Referencia única
+    ref = f"SUB-{peluqueria.id}-{int(datetime.now().timestamp())}"
 
-    return render(request, 'salon/pago_suscripcion.html', {
-        'api_key': api_key,
-        'monto': monto,
-        'referencia': referencia,
-        'hash': hash_hex,
-        'integrity_key': integrity_key,
-        'peluqueria': peluqueria
-    })
+    # --- LLAMADA A LA API DE BOLD ---
+    url_api = "https://integrations.api.bold.co/online/link/v1"
+    headers = {
+        "Authorization": f"x-api-key {secret_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "name": "Suscripción Mensual PASO",
+        "description": f"Pago de servicio para {peluqueria.nombre}",
+        "amount": monto,
+        "currency": "COP",
+        "redirection_url": redirect_url,
+        "sku": ref
+    }
+
+    try:
+        response = requests.post(url_api, json=payload, headers=headers)
+        data = response.json()
+        
+        if response.status_code == 201 and "payload" in data:
+            # ¡Éxito! Redirigimos al usuario al link de pago de Bold
+            link_pago = data["payload"]["url"]
+            return redirect(link_pago)
+        else:
+            # Error en Bold
+            logger.error(f"Error Bold API: {data}")
+            messages.error(request, "Error generando el link de pago. Intenta más tarde.")
+            return redirect('inicio') # O una página de error
+            
+    except Exception as e:
+        logger.error(f"Excepción Bold: {e}")
+        messages.error(request, "Error de conexión con la pasarela de pagos.")
+        return redirect('inicio')
 
 # =======================================================
 # 3. PANEL Y GESTIÓN
@@ -388,7 +412,7 @@ def agendar_cita(request, slug_peluqueria):
                 except: pass
             return redirect('confirmacion_cita', slug_peluqueria=peluqueria.slug, cita_id=cita.id)
         except Exception as e:
-            return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados, 'error_mensaje': f"No se pudo agendar: {str(e)}"})
+            return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados, 'error_mensaje': f"No se pudo agendar: {str(e)}" })
     return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': servicios, 'empleados': empleados})
 
 def api_obtener_horarios(request):
