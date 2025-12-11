@@ -12,20 +12,24 @@ import pytz
 # 1. CONFIGURACIÓN GLOBAL (SOLO LINK DE PAGO)
 # =============================================================
 class ConfiguracionPlataforma(models.Model):
-    """
-    Configuración simplificada. 
-    En lugar de llaves complicadas, usamos un Link de Pago Único de Bold.
-    """
     solo_un_registro = models.CharField(max_length=1, default='X', editable=False)
     
-    # TU LINK DE PAGO FIJO (El que me diste)
-    link_pago_bold = models.URLField("Link de Pago Bold", default="https://checkout.bold.co/payment/LNK_QZ5NWWY82P", help_text="Pega aquí el Link de Pago creado en Bold (múltiples usos).")
+    # CAMPO NUEVO: TU LINK DE BOLD (Estático)
+    link_pago_bold = models.URLField(
+        "Link de Pago Bold", 
+        default="https://checkout.bold.co/payment/LNK_QZ5NWWY82P", 
+        help_text="Pega aquí el Link de Pago único de Bold."
+    )
     
     # Telegram
     telegram_token = models.CharField(max_length=255, blank=True)
     telegram_chat_id = models.CharField(max_length=255, blank=True)
     
     precio_mensualidad = models.IntegerField(default=130000)
+
+    # Elimino las llaves viejas para que no estorben
+    # bold_api_key = ... (ELIMINADO)
+    # bold_secret_key = ... (ELIMINADO)
 
     class Meta:
         verbose_name = "Configuración Dueño PASO"
@@ -55,7 +59,7 @@ class Peluqueria(models.Model):
     fecha_inicio_contrato = models.DateTimeField(default=timezone.now)
     activo_saas = models.BooleanField(default=True)
 
-    # Integraciones del Cliente (Peluquería) - ESTAS SÍ SON LLAVES API (Para que ellos cobren)
+    # Integraciones del Cliente (Peluquería)
     telegram_token = models.CharField(max_length=200, blank=True, null=True)
     telegram_chat_id = models.CharField(max_length=100, blank=True, null=True)
     bold_api_key = models.CharField(max_length=255, blank=True, null=True)
