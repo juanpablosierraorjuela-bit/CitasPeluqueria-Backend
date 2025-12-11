@@ -11,8 +11,8 @@ from .models import (
 # --- CONFIGURACIÓN GLOBAL (TUS CREDENCIALES) ---
 @admin.register(ConfiguracionPlataforma)
 class ConfigAdmin(admin.ModelAdmin):
-    # Evita que se creen múltiples configuraciones, solo deja editar la primera
     def has_add_permission(self, request):
+        # Solo permite crear una configuración
         if self.model.objects.count() >= 1:
             return False
         return super().has_add_permission(request)
