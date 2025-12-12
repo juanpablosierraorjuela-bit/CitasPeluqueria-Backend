@@ -49,7 +49,7 @@ def redirigir_segun_rol(user):
 def logout_view(request): logout(request); return redirect('inicio')
 
 # =======================================================
-# 2. SAAS: REGISTRO Y PAGOS (CORREGIDO)
+# 2. SAAS: REGISTRO Y PAGOS
 # =======================================================
 
 def landing_saas(request):
@@ -107,20 +107,15 @@ def landing_saas(request):
 
 @login_required
 def pago_suscripcion_saas(request):
-    """
-    Intenta generar link de pago Bold. Si falla, usa link estático.
-    """
     if not request.user.perfil.es_dueño: return redirect('inicio')
     
     peluqueria = request.user.perfil.peluqueria
     config = ConfiguracionPlataforma.objects.first()
     
     monto = config.precio_mensualidad if config else 130000
-    # Link estático de respaldo
     link_respaldo = config.link_pago_bold if config else "#"
     
     if request.method == 'POST':
-        # Si NO hay secret key configurada por el SuperAdmin, no intentamos API
         if not config or not config.bold_secret_key:
             return redirect(link_respaldo)
 
@@ -146,7 +141,6 @@ def pago_suscripcion_saas(request):
                 return redirect(r.json()["payload"]["url"])
             else:
                 logger.error(f"Error Bold: {r.text}")
-                # Fallback al link estático
                 return redirect(link_respaldo)
         except Exception as e:
             logger.error(f"Excepción Bold: {e}")
@@ -164,9 +158,7 @@ def panel_negocio(request):
     peluqueria = request.user.perfil.peluqueria
     hoy = timezone.localdate()
     
-    # Lógica de fechas (simplificada)
     inicio = peluqueria.fecha_inicio_contrato.date()
-    # Calcular proximo pago
     proximo = inicio
     while proximo <= hoy: proximo += relativedelta(months=1)
     dias_restantes = (proximo - hoy).days
@@ -214,7 +206,6 @@ def panel_negocio(request):
         'empleados': peluqueria.empleados.all(),
         'servicios': peluqueria.servicios.all(),
         'cupones': peluqueria.cupones.all(),
-        # Usamos build_absolute_uri para asegurar que el link sea completo con https
         'link_invitacion': request.build_absolute_uri(reverse('registro_empleado', args=[peluqueria.slug]))
     }
     return render(request, 'salon/dashboard.html', ctx)
@@ -222,7 +213,6 @@ def panel_negocio(request):
 # =======================================================
 # 4. GESTIÓN DE SERVICIOS Y EQUIPO
 # =======================================================
-# ... (Igual que antes, gestionar_servicios, eliminar_servicio, gestionar_equipo) ...
 @login_required
 def gestionar_servicios(request):
     if not hasattr(request.user, 'perfil') or not request.user.perfil.es_dueño: return redirect('inicio')
@@ -253,7 +243,7 @@ def gestionar_equipo(request):
     return render(request, 'salon/panel_dueño/equipo.html', {'peluqueria': peluqueria, 'empleados': peluqueria.empleados.all(), 'link_invitacion': link})
 
 # =======================================================
-# 5. EMPLEADOS Y AUSENCIAS (AQUÍ ESTABA EL ERROR 500)
+# 5. EMPLEADOS Y AUSENCIAS
 # =======================================================
 
 @login_required
@@ -262,7 +252,6 @@ def mi_agenda(request):
     except: return redirect('login_custom')
     
     if request.method == 'POST':
-        # Guardar horarios regulares
         with transaction.atomic():
             HorarioEmpleado.objects.filter(empleado=empleado).delete()
             for i in range(7):
@@ -295,7 +284,6 @@ def mi_agenda(request):
 
 @login_required
 def gestionar_ausencias(request):
-    # ESTA VISTA FALTABA Y CAUSABA ERROR 500
     try: empleado = request.user.empleado_perfil
     except: return redirect('inicio')
 
@@ -339,7 +327,7 @@ def registro_empleado_publico(request, slug_peluqueria):
     return render(request, 'salon/registro_empleado.html', {'peluqueria': peluqueria, 'form': form})
 
 # =======================================================
-# 6. PÁGINA PÚBLICA Y RESERVAS (LÓGICA BLINDADA)
+# 6. PÁGINA PÚBLICA Y RESERVAS
 # =======================================================
 
 def inicio(request):
@@ -352,10 +340,8 @@ def agendar_cita(request, slug_peluqueria):
     servicios = peluqueria.servicios.all()
     empleados = peluqueria.empleados.filter(activo=True)
     
-    # Determinamos qué métodos de pago mostrar
     tiene_bold = bool(peluqueria.bold_api_key and peluqueria.bold_integrity_key)
     tiene_nequi = bool(peluqueria.nequi_celular)
-    pago_obligatorio = tiene_bold or tiene_nequi
     
     if request.method == 'POST':
         try:
@@ -363,8 +349,6 @@ def agendar_cita(request, slug_peluqueria):
             fecha = request.POST.get('fecha_seleccionada')
             hora = request.POST.get('hora_seleccionada')
             servicios_ids = request.POST.getlist('servicios')
-            
-            # Nuevo: Método de Pago seleccionado por el cliente
             metodo_pago = request.POST.get('metodo_pago', 'SITIO') 
             
             if not (emp_id and fecha and hora and servicios_ids): raise ValueError("Faltan datos obligatorios.")
@@ -376,9 +360,7 @@ def agendar_cita(request, slug_peluqueria):
             inicio_dt = datetime.strptime(f"{fecha} {hora}", "%Y-%m-%d %H:%M")
             fin_dt = inicio_dt + duracion
             
-            # --- LÓGICA DE RESERVA ---
             def _reserva(empleado):
-                # Verificar ausencias
                 if Ausencia.objects.filter(empleado=empleado, fecha_inicio__lt=fin_dt, fecha_fin__gt=inicio_dt).exists():
                     raise ValueError("El estilista tiene una ausencia programada en este horario.")
 
@@ -399,15 +381,12 @@ def agendar_cita(request, slug_peluqueria):
             cita = BookingManager.ejecutar_reserva_segura(emp_id, _reserva)
             cita.enviar_notificacion_telegram()
             
-            # Redirección según pago
             if metodo_pago == 'BOLD' and tiene_bold:
                 return redirect('confirmacion_cita', slug_peluqueria=peluqueria.slug, cita_id=cita.id)
             elif metodo_pago == 'NEQUI' and tiene_nequi:
-                # Redirigir a una vista que muestre el QR y pida confirmación manual (o WhatsApp)
                 return render(request, 'salon/pago_nequi.html', {'cita': cita, 'peluqueria': peluqueria})
             else:
-                # Pago en Sitio o Sin config
-                cita.estado = 'C' # Confirmar directamente si es en sitio
+                cita.estado = 'C' 
                 cita.save()
                 return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': '¡Reserva Confirmada!'})
             
@@ -426,14 +405,11 @@ def confirmacion_cita(request, slug_peluqueria, cita_id):
     cita = get_object_or_404(Cita, id=cita_id)
     peluqueria = cita.peluqueria
     
-    # Solo mostrar botón Bold si hay credenciales
     if not peluqueria.bold_api_key or not peluqueria.bold_integrity_key:
         return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'Cita agendada (Pago en sitio)'})
 
-    # Generar Hash de Integridad para Bold (Requerido)
     ref = f"CITA-{cita.id}-{int(datetime.now().timestamp())}"
     monto_abono = int(cita.precio_total * (peluqueria.porcentaje_abono/100))
-    # Concatenación estándar Bold: Reference + Amount + Currency + Secret
     raw_sig = f"{ref}{monto_abono}COP{peluqueria.bold_integrity_key}"
     signature = hashlib.sha256(raw_sig.encode()).hexdigest()
     
