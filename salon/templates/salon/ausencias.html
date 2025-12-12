@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Ausencias</title>
+    <style>
+        body { font-family: sans-serif; background: #f8fafc; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        h2 { margin-top: 0; color: #1e293b; }
+        .btn { display: block; width: 100%; padding: 12px; background: #0f172a; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        input, textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        .item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .badge { background: #fee2e2; color: #b91c1c; padding: 5px 10px; border-radius: 20px; text-decoration: none; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{% url 'mi_agenda' %}" style="text-decoration:none; color:#64748b;">← Volver a Agenda</a>
+        <h2>Gestionar Ausencias / Permisos</h2>
+        <p style="font-size:0.9rem; color:#64748b;">Si bloqueas un horario aquí, los clientes no podrán reservar.</p>
+        
+        <form method="POST">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn">Registrar Ausencia</button>
+        </form>
+
+        <h3 style="margin-top:30px;">Próximas Ausencias</h3>
+        {% for a in ausencias %}
+        <div class="item">
+            <div>
+                <strong>{{ a.fecha_inicio|date:"d M H:i" }} - {{ a.fecha_fin|date:"d M H:i" }}</strong><br>
+                <small>{{ a.motivo }}</small>
+            </div>
+            <a href="{% url 'eliminar_ausencia' a.id %}" class="badge">Borrar</a>
+        </div>
+        {% empty %}
+        <p style="text-align:center; color:#999;">No tienes ausencias programadas.</p>
+        {% endfor %}
+    </div>
+</body>
+</html>
