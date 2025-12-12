@@ -149,7 +149,7 @@ def pago_suscripcion_saas(request):
     return render(request, 'salon/pago_suscripcion.html', {'monto': monto, 'peluqueria': peluqueria})
 
 # =======================================================
-# 3. PANEL DUEÑO
+# 3. PANEL DUEÑO (MEJORADO)
 # =======================================================
 
 @login_required
@@ -158,6 +158,7 @@ def panel_negocio(request):
     peluqueria = request.user.perfil.peluqueria
     hoy = timezone.localdate()
     
+    # Lógica de fechas
     inicio = peluqueria.fecha_inicio_contrato.date()
     proximo = inicio
     while proximo <= hoy: proximo += relativedelta(months=1)
@@ -169,32 +170,45 @@ def panel_negocio(request):
 
     if request.method == 'POST':
         accion = request.POST.get('accion')
-        if accion == 'guardar_config':
+        
+        if accion == 'guardar_info':
             peluqueria.direccion = request.POST.get('direccion')
             peluqueria.telefono = request.POST.get('telefono')
             peluqueria.hora_apertura = request.POST.get('hora_apertura')
             peluqueria.hora_cierre = request.POST.get('hora_cierre')
+            peluqueria.telegram_token = request.POST.get('telegram_token')
+            peluqueria.telegram_chat_id = request.POST.get('telegram_chat_id')
+            peluqueria.save()
+            messages.success(request, "Información general actualizada.")
+
+        elif accion == 'guardar_pagos':
             peluqueria.porcentaje_abono = int(request.POST.get('porcentaje_abono') or 50)
             
-            # Credenciales Bold
+            # Bold
             peluqueria.bold_api_key = request.POST.get('bold_api_key')
             peluqueria.bold_integrity_key = request.POST.get('bold_integrity_key')
             peluqueria.bold_secret_key = request.POST.get('bold_secret_key')
             
-            # Credenciales Nequi (Manual)
+            # Nequi
             peluqueria.nequi_celular = request.POST.get('nequi_celular')
+            
             if 'nequi_qr_imagen' in request.FILES:
                 peluqueria.nequi_qr_imagen = request.FILES['nequi_qr_imagen']
             
-            peluqueria.telegram_token = request.POST.get('telegram_token')
-            peluqueria.telegram_chat_id = request.POST.get('telegram_chat_id')
+            # Checkbox para borrar imagen si se desea
+            if request.POST.get('borrar_qr') == 'si':
+                peluqueria.nequi_qr_imagen = None
+                
             peluqueria.save()
-            messages.success(request, "Configuración guardada.")
+            messages.success(request, "Configuración de pagos actualizada.")
             
         elif accion == 'crear_cupon':
             Cupon.objects.create(peluqueria=peluqueria, codigo=request.POST.get('codigo_cupon'), porcentaje_descuento=int(request.POST.get('porcentaje')))
+            messages.success(request, "Cupón creado.")
+
         elif accion == 'eliminar_cupon':
             Cupon.objects.filter(id=request.POST.get('cupon_id')).delete()
+            messages.success(request, "Cupón eliminado.")
             
         return redirect('panel_negocio')
 
@@ -206,6 +220,7 @@ def panel_negocio(request):
         'empleados': peluqueria.empleados.all(),
         'servicios': peluqueria.servicios.all(),
         'cupones': peluqueria.cupones.all(),
+        # Link seguro
         'link_invitacion': request.build_absolute_uri(reverse('registro_empleado', args=[peluqueria.slug]))
     }
     return render(request, 'salon/dashboard.html', ctx)
@@ -213,6 +228,7 @@ def panel_negocio(request):
 # =======================================================
 # 4. GESTIÓN DE SERVICIOS Y EQUIPO
 # =======================================================
+
 @login_required
 def gestionar_servicios(request):
     if not hasattr(request.user, 'perfil') or not request.user.perfil.es_dueño: return redirect('inicio')
@@ -243,7 +259,7 @@ def gestionar_equipo(request):
     return render(request, 'salon/panel_dueño/equipo.html', {'peluqueria': peluqueria, 'empleados': peluqueria.empleados.all(), 'link_invitacion': link})
 
 # =======================================================
-# 5. EMPLEADOS Y AUSENCIAS
+# 5. EMPLEADOS Y AGENDA
 # =======================================================
 
 @login_required
