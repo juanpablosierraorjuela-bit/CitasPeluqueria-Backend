@@ -1,7 +1,8 @@
 import os
 
 # --- CONTENIDO 1: salon/services.py ---
-services_code = r"""import pytz
+# Usamos comillas simples triples (''') para evitar conflicto con las dobles (""") del código
+services_code = r'''import pytz
 from datetime import timedelta, datetime
 from django.utils import timezone
 from .models import Cita, Ausencia, HorarioEmpleado
@@ -84,10 +85,10 @@ def verificar_conflicto_atomic(empleado, inicio, fin):
         fecha_hora_inicio__lt=fin, 
         fecha_hora_fin__gt=inicio
     ).exists()
-"""
+'''
 
 # --- CONTENIDO 2: salon/views.py ---
-views_code = r"""import logging, json, requests
+views_code = r'''import logging, json, requests
 from datetime import timedelta, time, datetime
 from dateutil.relativedelta import relativedelta
 from django.shortcuts import render, get_object_or_404, redirect
@@ -431,10 +432,10 @@ def retorno_bold(request):
         return render(request, 'salon/confirmacion.html', {'mensaje': '¡Pago Exitoso! Tu cita ha sido confirmada.'})
     else:
         return render(request, 'salon/confirmacion.html', {'mensaje': 'El pago no fue aprobado o fue cancelado.'})
-"""
+'''
 
 # --- CONTENIDO 3: salon/templates/salon/agendar.html ---
-agendar_html_code = r"""{% load static %}
+agendar_html_code = r'''{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -709,7 +710,7 @@ agendar_html_code = r"""{% load static %}
     </script>
 </body>
 </html>
-"""
+'''
 
 # Mapa de archivos a escribir
 archivos = {

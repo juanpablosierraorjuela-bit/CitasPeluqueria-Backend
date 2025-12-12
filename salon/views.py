@@ -137,7 +137,7 @@ def mi_agenda(request):
     if request.method == 'POST':
         HorarioEmpleado.objects.filter(empleado=empleado).delete()
         for i in range(7):
-            if request.POST.get(f'trabaja_{{i}}'): HorarioEmpleado.objects.create(empleado=empleado, dia_semana=i, hora_inicio=request.POST.get(f'inicio_{{i}}'), hora_fin=request.POST.get(f'fin_{{i}}'), almuerzo_inicio=request.POST.get(f'almuerzo_inicio_{{i}}') or None, almuerzo_fin=request.POST.get(f'almuerzo_fin_{{i}}') or None)
+            if request.POST.get(f'trabaja_{i}'): HorarioEmpleado.objects.create(empleado=empleado, dia_semana=i, hora_inicio=request.POST.get(f'inicio_{i}'), hora_fin=request.POST.get(f'fin_{i}'), almuerzo_inicio=request.POST.get(f'almuerzo_inicio_{i}') or None, almuerzo_fin=request.POST.get(f'almuerzo_fin_{i}') or None)
         messages.success(request, "Horario actualizado."); return redirect('mi_agenda')
     horarios = {h.dia_semana: h for h in HorarioEmpleado.objects.filter(empleado=empleado)}
     lista = [{'id': i, 'nombre': n, 'trabaja': horarios.get(i) is not None, 'inicio': horarios.get(i).hora_inicio.strftime('%H:%M') if horarios.get(i) else '09:00', 'fin': horarios.get(i).hora_fin.strftime('%H:%M') if horarios.get(i) else '19:00', 'l_ini': horarios.get(i).almuerzo_inicio.strftime('%H:%M') if (horarios.get(i) and horarios.get(i).almuerzo_inicio) else '', 'l_fin': horarios.get(i).almuerzo_fin.strftime('%H:%M') if (horarios.get(i) and horarios.get(i).almuerzo_fin) else ''} for i, n in {0:'Lunes',1:'Martes',2:'Miércoles',3:'Jueves',4:'Viernes',5:'Sábado',6:'Domingo'}.items()]
@@ -179,7 +179,6 @@ def agendar_cita(request, slug_peluqueria):
     peluqueria = get_object_or_404(Peluqueria, slug=slug_peluqueria)
     
     # 1. Determinar si se obliga el pago digital
-    # Se considera activo si tiene credenciales completas de Bold O tiene celular de Nequi
     tiene_bold = bool(peluqueria.bold_secret_key and peluqueria.bold_api_key)
     tiene_nequi = bool(peluqueria.nequi_celular)
     solo_pago_digital = tiene_bold or tiene_nequi
@@ -236,7 +235,7 @@ def agendar_cita(request, slug_peluqueria):
                 cita.enviar_notificacion_telegram()
                 return render(request, 'salon/pago_nequi.html', {'cita': cita, 'peluqueria': peluqueria})
             
-            else: # Pago en sitio (Solo entra si NO hay pagos digitales obligatorios)
+            else: # Pago en sitio
                 cita.estado = 'C'
                 cita.save()
                 cita.enviar_notificacion_telegram()
@@ -288,7 +287,7 @@ def procesar_pago_bold(request, cita_id):
     cita = get_object_or_404(Cita, id=cita_id)
     peluqueria = cita.peluqueria
     
-    # CORRECCIÓN: Usamos bold_api_key para la API de Links, no secret_key
+    # CORRECCIÓN: Usamos bold_api_key para la API de Links
     if not peluqueria.bold_api_key: 
         return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'Error de configuración en el comercio.'})
     
@@ -326,11 +325,11 @@ def procesar_pago_bold(request, cita_id):
             cita.save()
             return redirect(r.json()["payload"]["url"])
         else:
-            print(f"Bold Error: {r.status_code} {r.text}") # Debug
-            return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'Error conectando con Bold. Intenta de nuevo.'})
+            print(f"Bold Error: {r.status_code} {r.text}") 
+            return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'No se pudo generar el link de pago. Intenta más tarde.'})
             
     except Exception as e:
-        print(f"Bold Excepción: {e}") # Debug
+        print(f"Bold Excepción: {e}") 
         return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'Error técnico. Contacta al salón.'})
 
 def api_obtener_horarios(request):

@@ -4,7 +4,6 @@ from django.utils import timezone
 from .models import Cita, Ausencia, HorarioEmpleado
 
 # Intervalo de los bloques de tiempo (cada cuánto inicia una cita)
-# Puedes cambiarlo a 15, 30 o 60 según prefieras.
 INTERVALO_MINUTOS = 30
 
 def obtener_bloques_disponibles(empleado, fecha_date, duracion_servicio):
@@ -24,7 +23,6 @@ def obtener_bloques_disponibles(empleado, fecha_date, duracion_servicio):
     bloques = []
     
     # 1. Crear fechas con Zona Horaria Correcta (Colombia)
-    # Convertimos la fecha y hora seleccionada a un objeto datetime "aware" (con zona horaria)
     inicio_turno = timezone.make_aware(datetime.combine(fecha_date, horario.hora_inicio), zona_co)
     fin_turno = timezone.make_aware(datetime.combine(fecha_date, horario.hora_fin), zona_co)
     
@@ -34,13 +32,12 @@ def obtener_bloques_disponibles(empleado, fecha_date, duracion_servicio):
         inicio_almuerzo = timezone.make_aware(datetime.combine(fecha_date, horario.almuerzo_inicio), zona_co)
         fin_almuerzo = timezone.make_aware(datetime.combine(fecha_date, horario.almuerzo_fin), zona_co)
 
-    # 2. Obtener Citas y Ausencias que afecten el rango del turno
-    # CORRECCIÓN: Buscamos citas que se SOLAPEN con el turno, no solo las que estén dentro.
+    # 2. Obtener Citas y Ausencias que SOLAPEN con el turno
     citas = Cita.objects.filter(
         empleado=empleado, 
-        estado__in=['C', 'P'], # Confirmadas o Pendientes bloquean el espacio
-        fecha_hora_fin__gt=inicio_turno,   # Terminan después de que inicia el turno
-        fecha_hora_inicio__lt=fin_turno    # Empiezan antes de que termine el turno
+        estado__in=['C', 'P'], 
+        fecha_hora_fin__gt=inicio_turno,
+        fecha_hora_inicio__lt=fin_turno
     )
     
     ausencias = Ausencia.objects.filter(
@@ -51,32 +48,25 @@ def obtener_bloques_disponibles(empleado, fecha_date, duracion_servicio):
 
     hora_actual = inicio_turno
 
-    # 3. Iterar bloques para encontrar huecos
+    # 3. Iterar bloques
     while hora_actual + duracion_servicio <= fin_turno:
         fin_bloque = hora_actual + duracion_servicio
         ocupado = False
 
-        # A. Verificar Choque con Almuerzo
         if inicio_almuerzo and fin_almuerzo:
-            # Si el bloque actual se cruza con el almuerzo
             if (hora_actual < fin_almuerzo) and (fin_bloque > inicio_almuerzo):
                 ocupado = True
 
-        # B. Verificar Choque con Citas existentes
         if not ocupado:
             for c in citas:
-                # Lógica estricta de solapamiento:
-                # (InicioBloque < FinCita) Y (FinBloque > InicioCita)
                 if (hora_actual < c.fecha_hora_fin) and (fin_bloque > c.fecha_hora_inicio):
                     ocupado = True; break
         
-        # C. Verificar Choque con Ausencias
         if not ocupado:
             for a in ausencias:
                 if (hora_actual < a.fecha_fin) and (fin_bloque > a.fecha_inicio):
                     ocupado = True; break
             
-        # Si pasó todas las pruebas, es un bloque válido
         if not ocupado: 
             bloques.append(hora_actual.strftime("%H:%M"))
         
@@ -85,10 +75,6 @@ def obtener_bloques_disponibles(empleado, fecha_date, duracion_servicio):
     return bloques
 
 def verificar_conflicto_atomic(empleado, inicio, fin):
-    """
-    Verifica si existe alguna cita superpuesta en el rango dado.
-    Esta función se debe llamar DENTRO de una transacción atómica.
-    """
     return Cita.objects.filter(
         empleado=empleado, 
         estado__in=['P', 'C'],
