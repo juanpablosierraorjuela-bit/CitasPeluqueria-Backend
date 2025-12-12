@@ -164,7 +164,7 @@ class PerfilUsuario(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.SET_NULL, null=True, blank=True)
     es_dueño = models.BooleanField(default=False)
 
-# === REINTEGRADO: MODELO SOLICITUD SAAS (Para que Admin no falle) ===
+# === ESTA ES LA CLASE QUE FALTABA Y CAUSABA EL ERROR ===
 class SolicitudSaaS(models.Model):
     nombre_contacto = models.CharField(max_length=100)
     nombre_empresa = models.CharField(max_length=100)
