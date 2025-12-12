@@ -14,6 +14,7 @@
         :root {
             --primary: #0f172a; --secondary: #475569; --accent: #db2777; --bg: #f8fafc; --surface: #ffffff;
             --success: #10b981; --border: #e2e8f0; --shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            --telegram: #229ED9;
         }
         body { font-family: 'Manrope', sans-serif; background: var(--bg); color: var(--primary); margin: 0; padding-bottom: 40px; }
         
@@ -51,8 +52,14 @@
         input, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.95rem; }
         input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(219, 39, 119, 0.1); }
         
+        /* BOTONES */
         .btn-save { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; font-size: 1rem; margin-top: 10px; }
         .btn-save:hover { background: #1e293b; }
+        
+        .btn-telegram { background: var(--telegram); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; font-size: 1rem; display: flex; justify-content: center; gap: 8px; align-items: center; }
+        .btn-telegram:hover { background: #1b8ec5; }
+
+        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
 
         /* PAYMENT CONFIG */
         .pay-config-grid { display: grid; gap: 30px; grid-template-columns: 1fr; }
@@ -60,9 +67,6 @@
         
         .pay-box { background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
         .pay-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
-        .pay-logo { height: 30px; }
-        
-        .tooltip { font-size: 0.8rem; color: #64748b; margin-top: 5px; line-height: 1.4; }
         .badge-configured { background: #dcfce7; color: #166534; padding: 3px 8px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
 
         /* MENU GRID */
@@ -70,6 +74,8 @@
         .menu-item { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 25px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; text-decoration: none; color: var(--primary); transition: 0.2s; font-weight: 700; text-align: center; gap: 10px; box-shadow: var(--shadow); }
         .menu-item:hover { border-color: var(--accent); transform: translateY(-3px); }
         .menu-icon { font-size: 1.8rem; color: var(--accent); }
+
+        .tooltip { font-size: 0.8rem; color: #64748b; margin-top: 5px; line-height: 1.4; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -160,7 +166,6 @@
                 <h2>Datos del Negocio</h2>
                 <form method="POST">
                     {% csrf_token %}
-                    <input type="hidden" name="accion" value="guardar_info">
                     
                     <div class="form-group">
                         <label>Dirección Física</label>
@@ -183,17 +188,24 @@
                         </div>
                     </div>
 
-                    <h3 style="margin-top:20px; font-size:1rem;">Notificaciones (Opcional)</h3>
+                    <h3 style="margin-top:20px; font-size:1rem;">Notificaciones Telegram (Opcional)</h3>
                     <div class="form-group">
                         <label>Token Telegram Bot</label>
-                        <input type="password" name="telegram_token" value="{{ peluqueria.telegram_token|default:'' }}" placeholder="Solo si quieres alertas">
+                        <input type="password" name="telegram_token" value="{{ peluqueria.telegram_token|default:'' }}">
                     </div>
                     <div class="form-group">
                         <label>Chat ID Telegram</label>
                         <input type="text" name="telegram_chat_id" value="{{ peluqueria.telegram_chat_id|default:'' }}">
                     </div>
 
-                    <button type="submit" class="btn-save">Guardar Cambios</button>
+                    <div class="btn-row">
+                        <button type="submit" name="accion" value="test_telegram" class="btn-telegram">
+                            <i class="fab fa-telegram-plane"></i> Probar Notificación
+                        </button>
+                        <button type="submit" name="accion" value="guardar_info" class="btn-save">
+                            <i class="fas fa-save"></i> Guardar Todo
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
