@@ -22,20 +22,18 @@
         .btn-main:disabled { background: #cbd5e1; }
         .hidden { display: none; }
         
-        /* Payment Methods */
         .pay-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
         .pay-option { border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; display: flex; align-items: center; gap: 15px; cursor: pointer; background: white; }
         .pay-option.selected { border-color: var(--accent); background: #fdf2f8; color: var(--accent); font-weight: bold; }
         .pay-option i { font-size: 1.5rem; }
 
-        /* Toggle Full vs Abono */
-        .cobro-options { display: flex; gap: 10px; margin-top: 15px; display: none; } /* Oculto por defecto */
+        /* Opciones de Cobro */
+        .cobro-options { display: flex; gap: 10px; margin-top: 15px; display: none; }
         .cobro-option { flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center; cursor: pointer; font-size: 0.9rem; }
         .cobro-option.active { background: var(--accent); color: white; border-color: var(--accent); }
 
         .price-summary { margin-top: 20px; padding: 15px; background: #fff1f2; border-radius: 12px; text-align: center; }
         .total-price { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
-        
         .error-msg { background: #fee2e2; color: #b91c1c; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
     </style>
 </head>
@@ -156,7 +154,6 @@
     <script>
         const pickerFecha = document.getElementById('picker-fecha');
         pickerFecha.min = new Date().toISOString().split('T')[0];
-
         let totalServicios = 0;
         const porcentajeAbono = {{ peluqueria.porcentaje_abono }};
 
@@ -164,22 +161,15 @@
             const chk = card.querySelector('input');
             chk.checked = !chk.checked;
             card.classList.toggle('selected', chk.checked);
-            
-            if(chk.checked) totalServicios += precio;
-            else totalServicios -= precio;
-            
-            updatePrices();
-            checkVisibility();
+            if(chk.checked) totalServicios += precio; else totalServicios -= precio;
+            updatePrices(); checkVisibility();
         }
 
         function updatePrices() {
             const abono = Math.round(totalServicios * (porcentajeAbono / 100));
             document.getElementById('label-total').innerText = '$' + totalServicios.toLocaleString();
-            
             const labelAbono = document.getElementById('label-abono');
             if(labelAbono) labelAbono.innerText = '$' + abono.toLocaleString();
-
-            // Actualizar precio final según selección actual
             const tipo = document.getElementById('input_tipo_cobro').value;
             const final = (tipo === 'TOTAL') ? totalServicios : abono;
             document.getElementById('final-price').innerText = '$' + final.toLocaleString();
@@ -197,22 +187,16 @@
             const fecha = pickerFecha.value;
             const emp = document.getElementById('input_empleado').value;
             const servs = Array.from(document.querySelectorAll('.check-servicio:checked')).map(c => c.value);
-            
             document.getElementById('input_fecha').value = fecha;
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('contenedor-horas').innerHTML = '';
-
             const res = await fetch(`/api/horarios/?empleado_id=${emp}&fecha=${fecha}&s=${servs.join(',')}`);
             const data = await res.json();
-            
             document.getElementById('loading').classList.add('hidden');
             const cont = document.getElementById('contenedor-horas');
-            
             if(data.horas.length === 0) {
-                cont.innerHTML = '<div style="grid-column:1/-1; text-align:center;">No hay cupos disponibles.</div>';
-                return;
+                cont.innerHTML = '<div style="grid-column:1/-1; text-align:center;">No hay cupos disponibles.</div>'; return;
             }
-
             data.horas.forEach(h => {
                 const btn = document.createElement('div');
                 btn.className = 'card';
@@ -235,23 +219,17 @@
             document.querySelectorAll('.pay-option').forEach(e => e.classList.remove('selected'));
             elem.classList.add('selected');
             document.getElementById('input_metodo_pago').value = metodo;
-            
             const divOpciones = document.getElementById('opciones-cobro');
-            
             if (metodo === 'BOLD') {
-                divOpciones.style.display = 'flex';
-                // Reset a Total por defecto
-                setTipoCobro('TOTAL', divOpciones.children[0]);
+                divOpciones.style.display = 'flex'; setTipoCobro('TOTAL', divOpciones.children[0]);
             } else {
-                divOpciones.style.display = 'none';
-                setTipoCobro('TOTAL', null); // Reset interno
+                divOpciones.style.display = 'none'; setTipoCobro('TOTAL', null);
             }
             updatePrices();
         }
 
         function setTipoCobro(tipo, elem) {
             document.getElementById('input_tipo_cobro').value = tipo;
-            
             if(elem) {
                 document.querySelectorAll('.cobro-option').forEach(e => e.classList.remove('active'));
                 elem.classList.add('active');
@@ -260,11 +238,8 @@
         }
 
         function checkVisibility() {
-            if(document.querySelectorAll('.check-servicio:checked').length > 0) {
-                document.getElementById('step-empleado').classList.remove('hidden');
-            } else {
-                document.getElementById('step-empleado').classList.add('hidden');
-            }
+            if(document.querySelectorAll('.check-servicio:checked').length > 0) document.getElementById('step-empleado').classList.remove('hidden');
+            else document.getElementById('step-empleado').classList.add('hidden');
         }
     </script>
 </body>
