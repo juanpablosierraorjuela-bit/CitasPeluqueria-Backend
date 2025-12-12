@@ -149,7 +149,7 @@ def pago_suscripcion_saas(request):
     return render(request, 'salon/pago_suscripcion.html', {'monto': monto, 'peluqueria': peluqueria})
 
 # =======================================================
-# 3. PANEL DUEÑO (MEJORADO)
+# 3. PANEL DUEÑO (CON TEST DE TELEGRAM)
 # =======================================================
 
 @login_required
@@ -158,7 +158,6 @@ def panel_negocio(request):
     peluqueria = request.user.perfil.peluqueria
     hoy = timezone.localdate()
     
-    # Lógica de fechas
     inicio = peluqueria.fecha_inicio_contrato.date()
     proximo = inicio
     while proximo <= hoy: proximo += relativedelta(months=1)
@@ -171,7 +170,34 @@ def panel_negocio(request):
     if request.method == 'POST':
         accion = request.POST.get('accion')
         
-        if accion == 'guardar_info':
+        # --- NUEVO: Lógica para probar Telegram ---
+        if accion == 'test_telegram':
+            token = request.POST.get('telegram_token')
+            chat_id = request.POST.get('telegram_chat_id')
+            
+            # Guardamos primero por si acaso
+            peluqueria.telegram_token = token
+            peluqueria.telegram_chat_id = chat_id
+            peluqueria.save()
+            
+            if token and chat_id:
+                try:
+                    msg = "✅ *¡Prueba Exitosa!*\nTu bot de Telegram está conectado correctamente con PASO Manager."
+                    resp = requests.post(
+                        f"https://api.telegram.org/bot{token}/sendMessage", 
+                        data={"chat_id": chat_id, "text": msg, "parse_mode": "Markdown"},
+                        timeout=5
+                    )
+                    if resp.status_code == 200:
+                        messages.success(request, "¡Mensaje de prueba enviado! Revisa tu Telegram.")
+                    else:
+                        messages.error(request, f"Telegram rechazó el mensaje (Error {resp.status_code}). Verifica el Token y el Chat ID.")
+                except Exception as e:
+                    messages.error(request, f"Error de conexión con Telegram: {e}")
+            else:
+                messages.error(request, "Falta el Token o el Chat ID para probar.")
+
+        elif accion == 'guardar_info':
             peluqueria.direccion = request.POST.get('direccion')
             peluqueria.telefono = request.POST.get('telefono')
             peluqueria.hora_apertura = request.POST.get('hora_apertura')
@@ -183,19 +209,14 @@ def panel_negocio(request):
 
         elif accion == 'guardar_pagos':
             peluqueria.porcentaje_abono = int(request.POST.get('porcentaje_abono') or 50)
-            
-            # Bold
             peluqueria.bold_api_key = request.POST.get('bold_api_key')
             peluqueria.bold_integrity_key = request.POST.get('bold_integrity_key')
             peluqueria.bold_secret_key = request.POST.get('bold_secret_key')
-            
-            # Nequi
             peluqueria.nequi_celular = request.POST.get('nequi_celular')
             
             if 'nequi_qr_imagen' in request.FILES:
                 peluqueria.nequi_qr_imagen = request.FILES['nequi_qr_imagen']
             
-            # Checkbox para borrar imagen si se desea
             if request.POST.get('borrar_qr') == 'si':
                 peluqueria.nequi_qr_imagen = None
                 
@@ -220,7 +241,6 @@ def panel_negocio(request):
         'empleados': peluqueria.empleados.all(),
         'servicios': peluqueria.servicios.all(),
         'cupones': peluqueria.cupones.all(),
-        # Link seguro
         'link_invitacion': request.build_absolute_uri(reverse('registro_empleado', args=[peluqueria.slug]))
     }
     return render(request, 'salon/dashboard.html', ctx)
@@ -228,7 +248,6 @@ def panel_negocio(request):
 # =======================================================
 # 4. GESTIÓN DE SERVICIOS Y EQUIPO
 # =======================================================
-
 @login_required
 def gestionar_servicios(request):
     if not hasattr(request.user, 'perfil') or not request.user.perfil.es_dueño: return redirect('inicio')
@@ -259,7 +278,7 @@ def gestionar_equipo(request):
     return render(request, 'salon/panel_dueño/equipo.html', {'peluqueria': peluqueria, 'empleados': peluqueria.empleados.all(), 'link_invitacion': link})
 
 # =======================================================
-# 5. EMPLEADOS Y AGENDA
+# 5. EMPLEADOS Y AUSENCIAS
 # =======================================================
 
 @login_required
