@@ -178,13 +178,24 @@ def inicio(request): return render(request, 'salon/index.html', {'peluquerias': 
 def agendar_cita(request, slug_peluqueria):
     peluqueria = get_object_or_404(Peluqueria, slug=slug_peluqueria)
     
+    # 1. Determinar si se obliga el pago digital
+    # Se considera activo si tiene credenciales completas de Bold O tiene celular de Nequi
+    tiene_bold = bool(peluqueria.bold_secret_key and peluqueria.bold_api_key)
+    tiene_nequi = bool(peluqueria.nequi_celular)
+    solo_pago_digital = tiene_bold or tiene_nequi
+    
     if request.method == 'POST':
         try:
             emp_id = request.POST.get('empleado')
             fecha = request.POST.get('fecha_seleccionada')
             hora = request.POST.get('hora_seleccionada')
             servs_ids = request.POST.getlist('servicios')
+            
+            # Obtener metodo, si intentan hackear el form enviando SITIO cuando no deben, forzamos error
             metodo = request.POST.get('metodo_pago', 'SITIO')
+            if solo_pago_digital and metodo == 'SITIO':
+                raise ValueError("Debes seleccionar un método de pago digital.")
+                
             tipo_cobro = request.POST.get('tipo_cobro', 'TOTAL')
             
             if not (emp_id and fecha and hora and servs_ids): raise ValueError("Datos incompletos")
@@ -218,35 +229,45 @@ def agendar_cita(request, slug_peluqueria):
             
             cita = BookingManager.ejecutar_reserva_segura(emp_id, _reserva)
             
-            if metodo == 'BOLD' and peluqueria.bold_secret_key:
+            if metodo == 'BOLD' and tiene_bold:
                 return redirect('confirmacion_cita', slug_peluqueria=peluqueria.slug, cita_id=cita.id)
             
-            elif metodo == 'NEQUI' and peluqueria.nequi_celular:
+            elif metodo == 'NEQUI' and tiene_nequi:
                 cita.enviar_notificacion_telegram()
                 return render(request, 'salon/pago_nequi.html', {'cita': cita, 'peluqueria': peluqueria})
             
-            else: # Pago en sitio
+            else: # Pago en sitio (Solo entra si NO hay pagos digitales obligatorios)
                 cita.estado = 'C'
                 cita.save()
                 cita.enviar_notificacion_telegram()
                 return render(request, 'salon/confirmacion.html', {'cita': cita})
                 
         except Exception as e:
-            return render(request, 'salon/agendar.html', {'peluqueria': peluqueria, 'servicios': peluqueria.servicios.all(), 'empleados': peluqueria.empleados.filter(activo=True), 'error_mensaje': str(e)})
+            return render(request, 'salon/agendar.html', {
+                'peluqueria': peluqueria, 
+                'servicios': peluqueria.servicios.all(), 
+                'empleados': peluqueria.empleados.filter(activo=True), 
+                'tiene_bold': tiene_bold,
+                'tiene_nequi': tiene_nequi,
+                'solo_pago_digital': solo_pago_digital,
+                'error_mensaje': str(e)
+            })
             
     return render(request, 'salon/agendar.html', {
         'peluqueria': peluqueria, 
         'servicios': peluqueria.servicios.all(), 
         'empleados': peluqueria.empleados.filter(activo=True), 
-        'tiene_bold': bool(peluqueria.bold_secret_key), 
-        'tiene_nequi': bool(peluqueria.nequi_celular)
+        'tiene_bold': tiene_bold, 
+        'tiene_nequi': tiene_nequi,
+        'solo_pago_digital': solo_pago_digital
     })
 
 def confirmacion_cita(request, slug_peluqueria, cita_id):
     cita = get_object_or_404(Cita, id=cita_id)
     peluqueria = cita.peluqueria
     
-    if not peluqueria.bold_secret_key:
+    # Validamos que tenga la API KEY configurada también
+    if not (peluqueria.bold_secret_key and peluqueria.bold_api_key):
         return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'Pago en sitio'})
     
     monto_a_cobrar = cita.precio_total
@@ -267,7 +288,9 @@ def procesar_pago_bold(request, cita_id):
     cita = get_object_or_404(Cita, id=cita_id)
     peluqueria = cita.peluqueria
     
-    if not peluqueria.bold_secret_key: return redirect('inicio')
+    # CORRECCIÓN: Usamos bold_api_key para la API de Links, no secret_key
+    if not peluqueria.bold_api_key: 
+        return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'Error de configuración en el comercio.'})
     
     try:
         monto = cita.precio_total
@@ -280,7 +303,13 @@ def procesar_pago_bold(request, cita_id):
         ref = f"CITA-{cita.id}-{int(datetime.now().timestamp())}"
         
         url = "https://integrations.api.bold.co/online/link/v1"
-        headers = {"Authorization": f"x-api-key {peluqueria.bold_secret_key}", "Content-Type": "application/json"}
+        
+        # CORRECCIÓN: Header Authorization usa la api_key pública
+        headers = {
+            "Authorization": f"x-api-key {peluqueria.bold_api_key}", 
+            "Content-Type": "application/json"
+        }
+        
         payload = {
             "name": desc, 
             "description": "Servicio de Belleza", 
@@ -297,9 +326,11 @@ def procesar_pago_bold(request, cita_id):
             cita.save()
             return redirect(r.json()["payload"]["url"])
         else:
+            print(f"Bold Error: {r.status_code} {r.text}") # Debug
             return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'Error conectando con Bold. Intenta de nuevo.'})
             
     except Exception as e:
+        print(f"Bold Excepción: {e}") # Debug
         return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'Error técnico. Contacta al salón.'})
 
 def api_obtener_horarios(request):
