@@ -10,57 +10,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
-        :root {
-            --primary: #0f172a;
-            --accent: #db2777;
-            --bg-body: #f8fafc;
-            --surface: rgba(255, 255, 255, 0.95);
-        }
-
-        body {
-            font-family: 'Manrope', sans-serif;
-            background-color: var(--bg-body);
-            color: var(--primary);
-            min-height: 100vh;
-            display: flex; justify-content: center; align-items: center;
-            padding: 20px;
-            margin: 0;
-        }
-
-        .payment-card {
-            background: var(--surface);
-            border-radius: 32px;
-            padding: 40px 30px;
-            width: 100%; max-width: 400px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
+        :root { --primary: #0f172a; --accent: #db2777; --bg-body: #f8fafc; --surface: rgba(255, 255, 255, 0.95); }
+        body { font-family: 'Manrope', sans-serif; background-color: var(--bg-body); color: var(--primary); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; margin: 0; }
+        .payment-card { background: var(--surface); border-radius: 32px; padding: 40px 30px; width: 100%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); text-align: center; }
         h1 { font-family: 'Cormorant Garamond', serif; font-size: 2rem; margin: 10px 0; }
-        
-        .amount-box {
-            background: #fdf2f8; border: 1px solid #fbcfe8;
-            border-radius: 20px; padding: 20px; margin: 25px 0;
-        }
-        
+        .amount-box { background: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 20px; padding: 20px; margin: 25px 0; }
         .amount-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); font-weight: bold; }
         .amount-value { font-size: 2.5rem; font-weight: 700; color: var(--primary); margin-top: 5px; }
-
         .details { text-align: left; margin-bottom: 30px; border-top: 1px dashed #cbd5e1; padding-top: 20px; }
         .row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; }
         .row.bold { font-weight: bold; font-size: 1rem; color: var(--primary); }
-
-        .btn-pay {
-            display: block; width: 100%;
-            background: #10b981; color: white;
-            padding: 18px; border-radius: 50px;
-            font-size: 1.1rem; font-weight: bold;
-            text-decoration: none; border: none; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-            transition: transform 0.2s;
-        }
+        .btn-pay { display: block; width: 100%; background: #10b981; color: white; padding: 18px; border-radius: 50px; font-size: 1.1rem; font-weight: bold; text-decoration: none; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); transition: transform 0.2s; }
         .btn-pay:hover { transform: translateY(-2px); }
-
         .secure-icon { margin-top: 20px; font-size: 0.8rem; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 5px; }
     </style>
 </head>
