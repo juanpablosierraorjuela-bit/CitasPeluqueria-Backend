@@ -6,289 +6,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Reserva | {{ peluqueria.nombre_visible }}</title>
     
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#ffffff">
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <style>
-        :root {
-            /* Paleta Premium */
-            --font-display: 'Cormorant Garamond', serif;
-            --font-body: 'Manrope', sans-serif;
-            
-            --primary: #1e293b;
-            --secondary: #64748b;
-            --accent: #db2777; /* Rosa fuerte elegante */
-            --gold: #d4af37;   /* Toque dorado */
-            
-            --bg-body: #f8fafc;
-            --surface: rgba(255, 255, 255, 0.92);
-            --glass: rgba(255, 255, 255, 0.7);
-            
-            --shadow-soft: 0 10px 40px -10px rgba(0,0,0,0.08);
-            --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
-            
-            --radius-lg: 24px;
-            --radius-md: 16px;
-        }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
-        body {
-            font-family: var(--font-body);
-            background-color: var(--bg-body);
-            color: var(--primary);
-            margin: 0; padding: 0;
-            min-height: 100vh;
-            display: flex; flex-direction: column; align-items: center;
-            overflow-x: hidden;
-        }
-
-        /* --- FONDO AMBIENTAL --- */
-        .ambient-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            background: 
-                radial-gradient(circle at 10% 20%, rgba(253, 226, 236, 0.6) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(224, 231, 255, 0.6) 0%, transparent 40%);
-        }
-
-        /* --- HEADER PREMIUM --- */
-        .salon-header {
-            width: 100%;
-            background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, var(--bg-body) 100%),
-                        linear-gradient(135deg, #fdf2f8 0%, #f1f5f9 100%);
-            padding: 40px 20px 20px;
-            text-align: center;
-            border-bottom-left-radius: 40px;
-            border-bottom-right-radius: 40px;
-            box-shadow: var(--shadow-soft);
-            margin-bottom: 30px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Adorno sutil */
-        .salon-header::before {
-            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ec4899' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-            opacity: 0.5; pointer-events: none;
-        }
-
-        .brand-name {
-            font-family: var(--font-display);
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin: 0;
-            line-height: 1.1;
-            color: var(--primary);
-            letter-spacing: -0.02em;
-            position: relative;
-        }
-        
-        .slogan {
-            font-family: var(--font-display);
-            font-style: italic;
-            font-size: 1.1rem;
-            color: var(--secondary);
-            margin-top: 5px;
-            opacity: 0.8;
-        }
-
-        .container {
-            width: 100%; max-width: 600px; padding: 0 20px 120px 20px;
-        }
-
-        /* --- ANIMACIONES --- */
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-enter { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        :root { --primary: #1e293b; --accent: #db2777; --bg: #f8fafc; }
+        body { font-family: 'Manrope', sans-serif; background: var(--bg); color: var(--primary); margin: 0; padding-bottom: 80px; }
+        .header { background: white; padding: 20px; text-align: center; border-radius: 0 0 30px 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .card { background: white; border-radius: 16px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; cursor: pointer; transition: 0.2s; }
+        .card.selected { border-color: var(--accent); background: #fdf2f8; }
+        .input-fancy { width: 100%; padding: 15px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 1rem; margin-bottom: 15px; }
+        .btn-main { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 50px; font-size: 1.1rem; font-weight: bold; cursor: pointer; position: fixed; bottom: 0; left: 0; border-radius: 0; }
         .hidden { display: none; }
-
-        /* --- SECCIONES --- */
-        .section-title {
-            font-family: var(--font-display);
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin: 30px 0 15px;
-            display: flex; align-items: center; gap: 12px;
-            color: var(--primary);
-        }
-        .section-number {
-            font-family: var(--font-body);
-            background: var(--primary); color: white;
-            width: 22px; height: 22px; border-radius: 6px;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 0.75rem; font-weight: 700;
-        }
-
-        /* --- TARJETAS DE SERVICIO (GLASS) --- */
-        .services-grid { display: grid; gap: 12px; }
-
-        .service-card {
-            background: var(--surface);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.6);
-            border-radius: var(--radius-md);
-            padding: 18px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: var(--shadow-card);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-
-        .service-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
-
-        .service-card.selected {
-            background: #fff0f5; /* Rosa muy pálido */
-            border-color: var(--accent);
-        }
-        .service-card.selected .check-circle {
-            background: var(--accent); border-color: var(--accent); transform: scale(1.1);
-        }
-        .service-card.selected .check-circle svg { opacity: 1; }
-
-        .service-name { font-weight: 700; font-size: 1rem; color: var(--primary); display: block; }
-        .service-meta { font-size: 0.85rem; color: var(--secondary); margin-top: 4px; display: flex; gap: 8px; align-items: center; }
-        .service-price { font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; color: var(--primary); }
-
-        .check-circle {
-            width: 22px; height: 22px; border-radius: 50%;
-            border: 2px solid #cbd5e1; margin-left: 15px;
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            background: white;
-        }
-        .check-circle svg { width: 12px; fill: white; opacity: 0; transition: 0.2s; }
-        .hidden-input { display: none; }
-
-        /* --- ESTILISTAS --- */
-        .stylist-scroll {
-            display: flex; gap: 15px; overflow-x: auto;
-            padding: 10px 5px 20px; scrollbar-width: none;
-        }
-        .stylist-scroll::-webkit-scrollbar { display: none; }
-
-        .stylist-option {
-            display: flex; flex-direction: column; align-items: center; cursor: pointer; flex: 0 0 auto; width: 75px;
-        }
-        .stylist-avatar {
-            width: 70px; height: 70px; border-radius: 50%;
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-            display: flex; justify-content: center; align-items: center;
-            font-family: var(--font-display); font-size: 1.5rem; color: var(--secondary);
-            border: 2px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            transition: all 0.3s; position: relative;
-        }
-        .stylist-name {
-            margin-top: 10px; font-size: 0.8rem; font-weight: 600; color: var(--secondary); text-align: center;
-        }
-
-        .stylist-option.selected .stylist-avatar {
-            border-color: var(--accent); box-shadow: 0 0 0 3px rgba(219, 39, 119, 0.2); transform: scale(1.05); color: var(--accent);
-        }
-        .stylist-option.selected .stylist-name { color: var(--accent); font-weight: 700; }
-
-        /* --- DATE & TIME --- */
-        .date-input-fancy {
-            width: 100%; border: none; background: white; padding: 15px;
-            border-radius: var(--radius-md); font-family: var(--font-body);
-            font-size: 1rem; color: var(--primary); font-weight: 600;
-            box-shadow: var(--shadow-card); outline: none;
-        }
         
-        .time-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 15px; }
-        .time-btn {
-            background: white; border: 1px solid transparent; padding: 12px 5px;
-            border-radius: 12px; text-align: center; font-size: 0.9rem; font-weight: 600;
-            color: var(--primary); cursor: pointer; transition: 0.2s; box-shadow: var(--shadow-card);
-        }
-        .time-btn:hover { border-color: var(--accent); color: var(--accent); }
-        .time-btn.selected {
-            background: var(--primary); color: white; transform: scale(1.05); box-shadow: 0 5px 15px rgba(30, 41, 59, 0.25);
-        }
-
-        /* --- INPUTS --- */
-        .form-group { margin-bottom: 15px; }
-        .input-fancy {
-            width: 100%; padding: 16px; border: 1px solid transparent;
-            background: white; border-radius: var(--radius-md);
-            font-family: var(--font-body); font-size: 1rem;
-            box-shadow: var(--shadow-card); outline: none; transition: 0.3s;
-        }
-        .input-fancy:focus { box-shadow: 0 0 0 3px rgba(219, 39, 119, 0.1); border-color: rgba(219, 39, 119, 0.2); }
-
-        /* --- BARRA INFERIOR --- */
-        .bottom-bar {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            background: rgba(255,255,255,0.9); backdrop-filter: blur(20px);
-            padding: 15px 25px 30px; z-index: 50;
-            border-top: 1px solid rgba(0,0,0,0.05);
-            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-        .bottom-bar.visible { transform: translateY(0); }
-
-        .btn-confirm {
-            width: 100%; padding: 18px; border: none; border-radius: 50px;
-            background: var(--primary); color: white;
-            font-family: var(--font-body); font-size: 1.1rem; font-weight: 700;
-            cursor: pointer; box-shadow: 0 10px 25px rgba(30, 41, 59, 0.2);
-            position: relative; overflow: hidden; transition: transform 0.2s;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-confirm:active { transform: scale(0.98); }
+        /* Payment Methods */
+        .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .pay-option { border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; background: white; }
+        .pay-option.selected { border-color: var(--accent); background: #fdf2f8; color: var(--accent); font-weight: bold; }
+        .pay-option i { display: block; font-size: 1.5rem; margin-bottom: 5px; }
         
-        /* Efecto Shimmer (Brillo) */
-        .btn-confirm::after {
-            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transform: skewX(-20deg); animation: shimmer 3s infinite;
-        }
-        @keyframes shimmer { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
-
-        /* --- ALERTAS & PAGOS --- */
-        .error-banner { background: #fee2e2; color: #b91c1c; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; font-weight: 600; font-size: 0.9rem; }
-        
-        .payment-toggle { display: flex; background: white; padding: 5px; border-radius: 14px; box-shadow: var(--shadow-card); gap: 5px; margin-top: 8px; }
-        .pay-opt { flex: 1; padding: 10px; text-align: center; border-radius: 10px; font-size: 0.9rem; cursor: pointer; color: var(--secondary); transition: 0.2s; font-weight: 500; }
-        .pay-radio:checked + .pay-opt { background: #fdf2f8; color: var(--accent); font-weight: 700; }
-
-        /* ADMIN BUTTON */
-        .jewel-btn {
-            position: fixed; bottom: 110px; right: 20px; width: 45px; height: 45px;
-            background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05);
-            text-decoration: none; font-size: 1.4rem; z-index: 40;
-        }
-        
-        /* Estilo para mensaje de datos faltantes */
-        .data-missing-message {
-            background: #fff1f2; color: #be123c; padding: 15px; border-radius: 12px; 
-            margin-bottom: 20px; font-size: 0.95rem; text-align: center; font-weight: 600;
-        }
+        .error-msg { background: #fee2e2; color: #b91c1c; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
     </style>
 </head>
 <body>
-    <div class="ambient-bg"></div>
 
-    <header class="salon-header">
-        <h1 class="brand-name">{{ peluqueria.nombre_visible }}</h1>
-        <div class="slogan">Donde tu estilo cobra vida</div>
-    </header>
-
-    {% if request.user.is_authenticated and request.user.is_staff %}
-        <a href="{% url 'admin:index' %}" class="jewel-btn" title="Admin">👑</a>
-    {% endif %}
+    <div class="header">
+        <h1 style="margin:0; font-size: 1.8rem;">{{ peluqueria.nombre_visible }}</h1>
+        <p style="margin:5px 0; color: #64748b;">Reserva tu cita</p>
+    </div>
 
     <div class="container">
-        
         {% if error_mensaje %}
-            <div class="error-banner animate-enter">{{ error_mensaje }}</div>
+            <div class="error-msg">{{ error_mensaje }}</div>
         {% endif %}
 
         <form method="POST" id="bookingForm">
@@ -296,219 +47,143 @@
             <input type="hidden" name="fecha_seleccionada" id="input_fecha">
             <input type="hidden" name="hora_seleccionada" id="input_hora">
             <input type="hidden" name="empleado" id="input_empleado">
+            <input type="hidden" name="metodo_pago" id="input_metodo_pago" value="SITIO">
 
-            <div class="step-group animate-enter">
-                <div class="section-title"><span class="section-number">1</span> Selección de Servicios</div>
-                
-                <div class="services-grid">
-                    {% for s in servicios %}
-                    <label class="service-card" onclick="toggleService(this)">
-                        <input type="checkbox" name="servicios" value="{{ s.id }}" class="hidden-input check-servicio">
-                        <div>
-                            <span class="service-name">{{ s.nombre }}</span>
-                            <div class="service-meta">
-                                <span>{{ s.str_duracion }}</span>
-                            </div>
-                        </div>
-                        <div style="display:flex; align-items:center;">
-                            <span class="service-price">${{ s.precio }}</span>
-                            <div class="check-circle">
-                                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>
-                            </div>
-                        </div>
-                    </label>
-                    {% empty %}
-                    <div class="data-missing-message" style="grid-column:1/-1;">
-                        ❌ No hay servicios activos para esta peluquería. Por favor, contacta al administrador para configurar el menú de servicios.
-                    </div>
-                    {% endfor %}
+            <h3>1. Elige Servicio</h3>
+            {% for s in servicios %}
+            <div class="card" onclick="toggleService(this)">
+                <input type="checkbox" name="servicios" value="{{ s.id }}" class="hidden check-servicio">
+                <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                    <span>{{ s.nombre }}</span>
+                    <span>${{ s.precio }}</span>
                 </div>
+                <small style="color:#64748b;">{{ s.str_duracion }}</small>
             </div>
+            {% endfor %}
 
             <div id="step-empleado" class="hidden">
-                <div class="section-title"><span class="section-number">2</span> Tu Estilista</div>
-                <div class="stylist-scroll">
+                <h3>2. Elige Profesional</h3>
+                <div style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;">
                     {% for e in empleados %}
-                    <div class="stylist-option" onclick="selectStylist(this, '{{ e.id }}')">
-                        <div class="stylist-avatar">
+                    <div class="card" style="min-width:100px; text-align:center;" onclick="selectStylist(this, '{{ e.id }}')">
+                        <div style="width:50px; height:50px; background:#e2e8f0; border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-weight:bold;">
                             {{ e.nombre|first }}
                         </div>
-                        <span class="stylist-name">{{ e.nombre }}</span>
-                    </div>
-                    {% empty %}
-                    <div class="data-missing-message" style="grid-column:1/-1;">
-                        ❌ No hay estilistas activos o con horarios disponibles para tomar reservas.
+                        <span>{{ e.nombre }}</span>
                     </div>
                     {% endfor %}
                 </div>
             </div>
 
             <div id="step-fecha" class="hidden">
-                <div class="section-title"><span class="section-number">3</span> Agenda tu Momento</div>
-                <input type="date" id="picker-fecha" class="date-input-fancy" required>
-                
-                <div id="loading-hours" class="hidden" style="text-align:center; padding:20px; color:var(--secondary);">
-                    <span style="font-size:0.9rem;">Consultando disponibilidad...</span>
-                </div>
-                
-                <div id="contenedor-horas" class="time-grid"></div>
+                <h3>3. Fecha y Hora</h3>
+                <input type="date" id="picker-fecha" class="input-fancy" required>
+                <div id="loading" class="hidden" style="text-align:center; color:#64748b;">Buscando disponibilidad...</div>
+                <div id="contenedor-horas" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px;"></div>
             </div>
 
             <div id="step-datos" class="hidden">
-                <div class="section-title"><span class="section-number">4</span> Finalizar Reserva</div>
-                
-                <div class="form-group">
-                    <input type="text" name="nombre_cliente" id="input_nombre" class="input-fancy" placeholder="Nombre completo" required>
-                </div>
-                <div class="form-group">
-                    <input type="tel" name="telefono_cliente" id="input_telefono" class="input-fancy" 
-                           placeholder="WhatsApp de contacto (Ej: 3001234567)" required
-                           pattern="[0-9]{10}" maxlength="10"> 
-                </div>
+                <h3>4. Tus Datos</h3>
+                <input type="text" name="nombre_cliente" class="input-fancy" placeholder="Tu Nombre" required>
+                <input type="tel" name="telefono_cliente" class="input-fancy" placeholder="WhatsApp (10 dígitos)" pattern="[0-9]{10}" required>
 
-                {% if peluqueria.bold_api_key %}
-                <div class="form-group">
-                    <label style="font-size:0.85rem; font-weight:600; color:var(--secondary); margin-left:5px;">Preferencia de Pago</label>
-                    <div class="payment-toggle">
-                        <label class="pay-opt">
-                            <input type="radio" name="tipo_pago" value="completo" class="pay-radio hidden-input" checked>
-                            <span class="pay-opt">Total</span>
-                        </label>
-                        <label class="pay-opt">
-                            <input type="radio" name="tipo_pago" value="abono" class="pay-radio hidden-input">
-                            <span class="pay-opt">Abono {{ peluqueria.porcentaje_abono }}%</span>
-                        </label>
+                <h3>Forma de Pago</h3>
+                <div class="pay-grid">
+                    {% if tiene_bold %}
+                    <div class="pay-option" onclick="setPago(this, 'BOLD')">
+                        <i class="fas fa-credit-card"></i> Tarjeta/PSE (Bold)
+                    </div>
+                    {% endif %}
+                    
+                    {% if tiene_nequi %}
+                    <div class="pay-option" onclick="setPago(this, 'NEQUI')">
+                        <i class="fas fa-mobile-alt"></i> Nequi
+                    </div>
+                    {% endif %}
+                    
+                    <div class="pay-option selected" onclick="setPago(this, 'SITIO')">
+                        <i class="fas fa-store"></i> Pagar en el Salón
                     </div>
                 </div>
-                {% endif %}
-
-                <div style="display:flex; gap:12px; margin-top:20px; align-items:flex-start; padding:0 5px;">
-                    <input type="checkbox" id="check_terminos" style="margin-top:4px; accent-color: var(--primary);" required>
-                    <label for="check_terminos" style="font-size:0.85rem; color:var(--secondary); line-height:1.5;">
-                        Confirmo mi asistencia y acepto las <a href="#" style="color: var(--accent); font-weight: 700; text-decoration: none;">Políticas de Cancelación</a>. (El abono no es reembolsable si cancelas con menos de 24 horas).
-                    </label>
-                </div>
+                <p style="font-size:0.8rem; color:#64748b; margin-top:10px;">
+                    * Al reservar aceptas nuestras políticas de cancelación.
+                </p>
             </div>
 
-            <div class="bottom-bar" id="bottom-bar">
-                <button type="submit" id="btn-confirmar" class="btn-confirm" disabled>
-                    CONFIRMAR CITA
-                </button>
-            </div>
-
+            <button type="submit" class="btn-main" id="btn-submit" disabled>CONFIRMAR RESERVA</button>
         </form>
     </div>
 
-<script>
-    if ('serviceWorker' in navigator) { window.addEventListener('load', () => navigator.serviceWorker.register('/static/js/sw.js')); }
+    <script>
+        const pickerFecha = document.getElementById('picker-fecha');
+        pickerFecha.min = new Date().toISOString().split('T')[0];
 
-    const pickerFecha = document.getElementById('picker-fecha');
-    pickerFecha.min = new Date().toISOString().split('T')[0];
-    
-    // 1. Servicios
-    function toggleService(card) {
-        const checkbox = card.querySelector('.check-servicio');
-        setTimeout(() => {
-            card.classList.toggle('selected', checkbox.checked);
-            checkSteps();
-        }, 10);
-    }
-
-    // 2. Estilista
-    function selectStylist(elem, id) {
-        document.querySelectorAll('.stylist-option').forEach(el => el.classList.remove('selected'));
-        elem.classList.add('selected');
-        document.getElementById('input_empleado').value = id;
-        
-        const next = document.getElementById('step-fecha');
-        next.classList.remove('hidden'); next.classList.add('animate-enter');
-        
-        pickerFecha.value = '';
-        document.getElementById('contenedor-horas').innerHTML = '';
-        checkSteps();
-        next.scrollIntoView({behavior: 'smooth', block: 'start'});
-    }
-
-    // 3. Control de Pasos
-    function checkSteps() {
-        const hasService = document.querySelectorAll('.check-servicio:checked').length > 0;
-        const stepEmp = document.getElementById('step-empleado');
-        
-        if (hasService) {
-            if(stepEmp.classList.contains('hidden')) {
-                stepEmp.classList.remove('hidden'); stepEmp.classList.add('animate-enter');
-            }
-        } else {
-            stepEmp.classList.add('hidden');
-            document.getElementById('step-fecha').classList.add('hidden');
-            document.getElementById('step-datos').classList.add('hidden');
-            document.getElementById('bottom-bar').classList.remove('visible');
+        function toggleService(card) {
+            const chk = card.querySelector('input');
+            chk.checked = !chk.checked;
+            card.classList.toggle('selected', chk.checked);
+            checkVisibility();
         }
-    }
 
-    // 4. API Horas
-    pickerFecha.addEventListener('change', async () => {
-        const fecha = pickerFecha.value;
-        const empId = document.getElementById('input_empleado').value;
-        const sIds = Array.from(document.querySelectorAll('.check-servicio:checked')).map(x => x.value);
-        
-        if(!fecha || !empId || sIds.length===0) return;
+        function selectStylist(card, id) {
+            document.querySelectorAll('#step-empleado .card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            document.getElementById('input_empleado').value = id;
+            document.getElementById('step-fecha').classList.remove('hidden');
+            pickerFecha.scrollIntoView({behavior:'smooth'});
+        }
 
-        document.getElementById('input_fecha').value = fecha;
-        const div = document.getElementById('contenedor-horas');
-        const load = document.getElementById('loading-hours');
-        
-        div.innerHTML = ''; load.classList.remove('hidden');
-
-        try {
-            const res = await fetch(`/api/horarios/?empleado_id=${empId}&fecha=${fecha}&servicios_ids=${sIds.join(',')}`);
-            const data = await res.json();
-            load.classList.add('hidden');
+        pickerFecha.addEventListener('change', async () => {
+            const fecha = pickerFecha.value;
+            const emp = document.getElementById('input_empleado').value;
+            const servs = Array.from(document.querySelectorAll('.check-servicio:checked')).map(c => c.value);
             
-            if(data.horas && data.horas.length > 0) {
-                data.horas.forEach(h => {
-                    const btn = document.createElement('div');
-                    btn.className = 'time-btn'; btn.textContent = h;
-                    btn.onclick = () => selectTime(btn, h);
-                    div.appendChild(btn);
-                });
-            } else {
-                div.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:15px; background:#fff1f2; border-radius:12px; color:#be123c; font-size:0.9rem;">Sin cupos este día.</div>';
+            document.getElementById('input_fecha').value = fecha;
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('contenedor-horas').innerHTML = '';
+
+            const res = await fetch(`/api/horarios/?empleado_id=${emp}&fecha=${fecha}&s=${servs.join(',')}`);
+            const data = await res.json();
+            
+            document.getElementById('loading').classList.add('hidden');
+            const cont = document.getElementById('contenedor-horas');
+            
+            if(data.horas.length === 0) {
+                cont.innerHTML = '<div style="grid-column:1/-1; text-align:center;">No hay cupos disponibles.</div>';
+                return;
             }
-        } catch(e) { console.error(e); load.classList.add('hidden'); }
-    });
 
-    // 5. Selección Hora
-    function selectTime(elem, hora) {
-        document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
-        elem.classList.add('selected');
-        document.getElementById('input_hora').value = hora;
-        
-        const next = document.getElementById('step-datos');
-        next.classList.remove('hidden'); next.classList.add('animate-enter');
-        setTimeout(() => next.scrollIntoView({behavior: 'smooth', block: 'center'}), 300);
-        validateForm();
-    }
+            data.horas.forEach(h => {
+                const btn = document.createElement('div');
+                btn.className = 'card';
+                btn.style.textAlign = 'center';
+                btn.style.marginBottom = '0';
+                btn.textContent = h;
+                btn.onclick = () => {
+                    document.querySelectorAll('#contenedor-horas div').forEach(d => d.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    document.getElementById('input_hora').value = h;
+                    document.getElementById('step-datos').classList.remove('hidden');
+                    document.getElementById('btn-submit').disabled = false;
+                    document.getElementById('step-datos').scrollIntoView({behavior:'smooth'});
+                };
+                cont.appendChild(btn);
+            });
+        });
 
-    // 6. Validación
-    ['input_nombre', 'input_telefono', 'check_terminos'].forEach(id => {
-        document.getElementById(id).addEventListener('input', validateForm);
-    });
-
-    function validateForm() {
-        const hora = document.getElementById('input_hora').value;
-        const nom = document.getElementById('input_nombre').value.trim();
-        const tel = document.getElementById('input_telefono').value.trim();
-        const term = document.getElementById('check_terminos').checked;
-        const btn = document.getElementById('btn-confirmar');
-        const bar = document.getElementById('bottom-bar');
-
-        if(hora && nom && tel && tel.length === 10 && term) {
-            btn.disabled = false; bar.classList.add('visible');
-        } else {
-            btn.disabled = true; if(!hora) bar.classList.remove('visible');
+        function setPago(elem, metodo) {
+            document.querySelectorAll('.pay-option').forEach(e => e.classList.remove('selected'));
+            elem.classList.add('selected');
+            document.getElementById('input_metodo_pago').value = metodo;
         }
-    }
-</script>
+
+        function checkVisibility() {
+            if(document.querySelectorAll('.check-servicio:checked').length > 0) {
+                document.getElementById('step-empleado').classList.remove('hidden');
+            } else {
+                document.getElementById('step-empleado').classList.add('hidden');
+            }
+        }
+    </script>
 </body>
 </html>
