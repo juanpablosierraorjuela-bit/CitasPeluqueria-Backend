@@ -7,172 +7,98 @@
     <title>Pago Seguro | {{ peluqueria.nombre_visible }}</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --font-display: 'Cormorant Garamond', serif;
-            --font-body: 'Manrope', sans-serif;
-
             --primary: #0f172a;
-            --secondary: #64748b;
             --accent: #db2777;
-            --gold: #d4af37;
-            
             --bg-body: #f8fafc;
-            --surface: rgba(255, 255, 255, 0.9);
-            
-            --shadow-card: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            --surface: rgba(255, 255, 255, 0.95);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
-            font-family: var(--font-body);
+            font-family: 'Manrope', sans-serif;
             background-color: var(--bg-body);
             color: var(--primary);
             min-height: 100vh;
             display: flex; justify-content: center; align-items: center;
             padding: 20px;
-            overflow: hidden;
+            margin: 0;
         }
 
-        /* --- FONDO AMBIENTAL --- */
-        .ambient-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            background: 
-                radial-gradient(circle at 80% 20%, rgba(219, 39, 119, 0.05) 0%, transparent 60%),
-                radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.05) 0%, transparent 60%);
-        }
-
-        /* --- TARJETA DE PAGO --- */
         .payment-card {
             background: var(--surface);
-            backdrop-filter: blur(20px);
             border-radius: 32px;
-            padding: 50px 40px;
-            width: 100%; max-width: 420px;
-            box-shadow: var(--shadow-card);
-            border: 1px solid rgba(255, 255, 255, 0.8);
+            padding: 40px 30px;
+            width: 100%; max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             text-align: center;
-            position: relative;
-            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-
-        .header-icon {
-            font-size: 2.5rem; margin-bottom: 20px; display: inline-block;
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
-        }
-
-        h1 {
-            font-family: var(--font-display); font-size: 2rem; font-weight: 700;
-            margin-bottom: 5px; color: var(--primary); line-height: 1;
-        }
-
-        .subtitle { color: var(--secondary); font-size: 0.95rem; margin-bottom: 35px; }
-
-        /* --- MONTO A PAGAR --- */
-        .amount-display {
+        h1 { font-family: 'Cormorant Garamond', serif; font-size: 2rem; margin: 10px 0; }
+        
+        .amount-box {
             background: #fdf2f8; border: 1px solid #fbcfe8;
-            border-radius: 24px; padding: 25px; margin-bottom: 30px;
-            position: relative; overflow: hidden;
+            border-radius: 20px; padding: 20px; margin: 25px 0;
         }
         
-        .amount-display::before {
-            content: ''; position: absolute; top: -10px; right: -10px; width: 50px; height: 50px;
-            background: rgba(219, 39, 119, 0.1); border-radius: 50%;
-        }
+        .amount-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); font-weight: bold; }
+        .amount-value { font-size: 2.5rem; font-weight: 700; color: var(--primary); margin-top: 5px; }
 
-        .amount-label {
-            display: block; font-size: 0.75rem; text-transform: uppercase;
-            letter-spacing: 1.5px; font-weight: 700; color: var(--accent);
-            margin-bottom: 5px;
-        }
+        .details { text-align: left; margin-bottom: 30px; border-top: 1px dashed #cbd5e1; padding-top: 20px; }
+        .row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; }
+        .row.bold { font-weight: bold; font-size: 1rem; color: var(--primary); }
 
-        .amount-value {
-            font-family: var(--font-display); font-size: 2.8rem; font-weight: 700;
-            color: var(--primary); line-height: 1;
+        .btn-pay {
+            display: block; width: 100%;
+            background: #10b981; color: white;
+            padding: 18px; border-radius: 50px;
+            font-size: 1.1rem; font-weight: bold;
+            text-decoration: none; border: none; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            transition: transform 0.2s;
         }
+        .btn-pay:hover { transform: translateY(-2px); }
 
-        /* --- DETALLES DE COMPRA --- */
-        .order-summary {
-            text-align: left; margin-bottom: 30px;
-            border-top: 1px solid rgba(0,0,0,0.05);
-            padding-top: 20px;
-        }
-
-        .summary-row {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 12px; font-size: 0.9rem; color: var(--secondary);
-        }
-        .summary-row.highlight { color: var(--primary); font-weight: 600; font-size: 1rem; }
-
-        /* --- BOTÓN BOLD --- */
-        .bold-wrapper {
-            margin-top: 10px;
-            transform: scale(1); transition: transform 0.2s;
-        }
-        .bold-wrapper:hover { transform: scale(1.02); }
-
-        .security-badge {
-            margin-top: 25px; font-size: 0.8rem; color: #10b981; font-weight: 600;
-            display: flex; align-items: center; justify-content: center; gap: 6px;
-        }
-
+        .secure-icon { margin-top: 20px; font-size: 0.8rem; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 5px; }
     </style>
 </head>
 <body>
 
-    <div class="ambient-bg"></div>
-
     <div class="payment-card">
-        <span class="header-icon">💎</span>
-        <h1>Finalizar Reserva</h1>
-        <p class="subtitle">Estás a un paso de tu experiencia en<br><strong>{{ peluqueria.nombre_visible }}</strong></p>
+        <div style="font-size: 3rem;">💎</div>
+        <h1>Resumen de Pago</h1>
+        <p style="color: #64748b;">{{ peluqueria.nombre_visible }}</p>
 
-        <div class="amount-display">
-            <span class="amount-label">Valor a Pagar Hoy</span>
-            <div class="amount-value">${{ monto_anticipo }}</div>
+        <div class="amount-box">
+            <span class="amount-label">Valor a Pagar Ahora</span>
+            <div class="amount-value">${{ monto_a_cobrar }}</div>
         </div>
 
-        <div class="order-summary">
-            <div class="summary-row">
-                <span>Servicio Principal</span>
-                <span>{{ cita.servicios.first.nombre }}</span>
+        <div class="details">
+            <div class="row">
+                <span>Servicios:</span>
+                <span>{{ cita.servicios.count }} seleccionados</span>
             </div>
-            <div class="summary-row">
-                <span>Total de la Cita</span>
+            <div class="row">
+                <span>Total Cita:</span>
                 <span>${{ cita.precio_total }}</span>
             </div>
-            
-            {% if monto_anticipo < cita.precio_total %}
-            <div class="summary-row highlight" style="margin-top:10px; border-top:1px dashed #e2e8f0; padding-top:10px;">
-                <span>Pendiente en Salón</span>
-                <span>${{ cita.precio_total|add:"-"|add:monto_anticipo }}</span>
+            {% if es_abono %}
+            <div class="row bold" style="color: var(--accent);">
+                <span>Pendiente en Salón:</span>
+                <span>${{ cita.precio_total|add:"-"|add:monto_a_cobrar }}</span>
             </div>
             {% endif %}
         </div>
 
-        <div class="bold-wrapper">
-            <form>
-                <script
-                  src="https://checkout.bold.co/library/boldPaymentButton.js"
-                  data-bold-button="dark" 
-                  data-order-id="{{ referencia }}"
-                  data-currency="COP"
-                  data-amount="{{ monto_anticipo }}"
-                  data-api-key="{{ peluqueria.bold_api_key }}"
-                  data-integrity-signature="{{ signature }}"
-                  data-redirection-url="{{ request.scheme }}://{{ request.get_host }}{% url 'retorno_bold' %}"
-                ></script>
-            </form>
-        </div>
+        <a href="{% url 'procesar_pago_bold' cita.id %}" class="btn-pay">
+            PAGAR AHORA
+        </a>
 
-        <div class="security-badge">
-            🔒 Transacción 100% Segura y Encriptada
+        <div class="secure-icon">
+            🔒 Transacción procesada por Bold
         </div>
     </div>
 
