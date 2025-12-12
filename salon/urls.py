@@ -28,4 +28,5 @@ urlpatterns = [
     path('mi-agenda/', views.mi_agenda, name='mi_agenda'),
     path('mi-agenda/ausencias/', views.gestionar_ausencias, name='gestionar_ausencias'), # NUEVA
     path('mi-agenda/ausencias/borrar/<int:ausencia_id>/', views.eliminar_ausencia, name='eliminar_ausencia'), # NUEVA
+    path('procesar-pago-bold/<int:cita_id>/', views.procesar_pago_bold, name='procesar_pago_bold'),
 ]
