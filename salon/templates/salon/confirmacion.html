@@ -10,25 +10,23 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .card { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); max-width: 400px; width: 90%; text-align: center; }
         .icon-check { font-size: 4rem; display: block; margin-bottom: 20px; }
-        .btn-bold { background: #ef4444; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-weight: 700; width: 100%; cursor: pointer; text-decoration: none; display: block; margin-top: 20px; }
+        .btn-home { background: #0f172a; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-weight: 700; width: 100%; cursor: pointer; text-decoration: none; display: block; margin-top: 20px; }
         .detail-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; color: #64748b; }
         .total { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 20px 0; }
         
-        /* Estilos para estado de error/éxito */
         .success-mode .icon-check { color: #10b981; }
         .error-mode .icon-check { color: #ef4444; }
         .error-mode h2 { color: #ef4444; }
     </style>
 </head>
 <body>
-    <div class="card {% if mensaje and 'Error' in mensaje or mensaje and 'No se pudo' in mensaje or mensaje and 'cancelado' in mensaje %}error-mode{% else %}success-mode{% endif %}">
+    <div class="card {% if mensaje and 'Error' in mensaje or mensaje and 'no fue aprobado' in mensaje or mensaje and 'No se pudo' in mensaje %}error-mode{% else %}success-mode{% endif %}">
         
-        {% if mensaje and 'Error' in mensaje or mensaje and 'No se pudo' in mensaje or mensaje and 'cancelado' in mensaje %}
+        {% if mensaje and 'Error' in mensaje or mensaje and 'no fue aprobado' in mensaje or mensaje and 'No se pudo' in mensaje %}
             <span class="icon-check">⚠️</span>
             <h2 style="margin:0 0 10px;">Hubo un problema</h2>
             <p style="color:#64748b;">{{ mensaje }}</p>
-            
-            <a href="{% url 'inicio' %}" class="btn-bold" style="background-color: #64748b;">Volver al Inicio</a>
+            <a href="{% url 'inicio' %}" class="btn-home" style="background-color: #64748b;">Volver al Inicio</a>
         
         {% else %}
             <span class="icon-check">✅</span>
@@ -45,20 +43,12 @@
                     <div class="detail-row"><span>Fecha:</span> <strong>{{ cita.fecha_hora_inicio|date:"d M, Y" }}</strong></div>
                     <div class="detail-row"><span>Hora:</span> <strong>{{ cita.fecha_hora_inicio|date:"h:i A" }}</strong></div>
                     <div class="detail-row"><span>Estilista:</span> <strong>{{ cita.empleado.nombre }}</strong></div>
-                    {% if cita.descuento_aplicado > 0 %}
-                        <div class="detail-row" style="color:#db2777;"><span>Descuento:</span> <strong>-${{ cita.descuento_aplicado }}</strong></div>
-                    {% endif %}
                     <hr>
                     <div class="total" style="text-align: center;">Total: ${{ cita.precio_total }}</div>
-                    {% if cita.estado == 'P' and cita.abono_pagado > 0 %}
-                        <div style="text-align:center; font-size:0.9rem; color:#db2777;">
-                            Abono requerido: ${{ cita.abono_pagado }}
-                        </div>
-                    {% endif %}
                 </div>
             {% endif %}
 
-            <a href="{% url 'inicio' %}" style="display:block; margin-top:20px; color:#0f172a; font-weight:700;">Volver al Inicio</a>
+            <a href="{% url 'inicio' %}" class="btn-home">Volver al Inicio</a>
         {% endif %}
     </div>
 </body>
