@@ -164,6 +164,16 @@ class PerfilUsuario(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.SET_NULL, null=True, blank=True)
     es_dueño = models.BooleanField(default=False)
 
+# === REINTEGRADO: MODELO SOLICITUD SAAS (Para que Admin no falle) ===
+class SolicitudSaaS(models.Model):
+    nombre_contacto = models.CharField(max_length=100)
+    nombre_empresa = models.CharField(max_length=100)
+    telefono = models.CharField(max_length=20)
+    nichos = models.CharField(max_length=50)
+    cantidad_empleados = models.CharField(max_length=50)
+    fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    atendido = models.BooleanField(default=False)
+
 @receiver(post_save, sender=User)
 def crear_perfil(sender, instance, created, **kwargs):
     if created: PerfilUsuario.objects.get_or_create(user=instance)
