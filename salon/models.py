@@ -1,4 +1,3 @@
-# UBICACIÓN: salon/models.py
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
@@ -8,9 +7,6 @@ from django.utils import timezone
 import requests
 import pytz 
 
-# =============================================================
-# 1. CONFIGURACIÓN GLOBAL
-# =============================================================
 class ConfiguracionPlataforma(models.Model):
     solo_un_registro = models.CharField(max_length=1, default='X', editable=False)
     link_pago_bold = models.URLField("Link Respaldo", default="https://checkout.bold.co/payment/LNK_QZ5NWWY82P")
@@ -18,13 +14,8 @@ class ConfiguracionPlataforma(models.Model):
     telegram_token = models.CharField(max_length=255, blank=True)
     telegram_chat_id = models.CharField(max_length=255, blank=True)
     precio_mensualidad = models.IntegerField(default=130000)
-
     class Meta: verbose_name_plural = "Configuración Dueño PASO"
     def __str__(self): return "Configuración Plataforma"
-
-# =============================================================
-# 2. MODELOS DE NEGOCIO
-# =============================================================
 
 class Peluqueria(models.Model):
     nombre = models.CharField(max_length=200)
@@ -34,33 +25,21 @@ class Peluqueria(models.Model):
     direccion = models.CharField(max_length=200, blank=True)
     telefono = models.CharField(max_length=20, blank=True)
     codigo_pais_wa = models.CharField(max_length=5, default="57")
-    
-    # CONFIGURACIÓN DE PAGOS (SIMPLIFICADA)
     porcentaje_abono = models.IntegerField(default=50)
-    
-    # BOLD (Solo lo necesario)
     bold_api_key = models.CharField("Llave de Identidad", max_length=255, blank=True, null=True)
     bold_secret_key = models.CharField("Llave Secreta", max_length=255, blank=True, null=True)
-    
-    # NEQUI
     nequi_celular = models.CharField(max_length=20, blank=True, null=True)
     nequi_qr_imagen = models.ImageField(upload_to='qrs_nequi/', blank=True, null=True)
-
-    # SAAS & NOTIFICACIONES
     fecha_inicio_contrato = models.DateTimeField(default=timezone.now)
     activo_saas = models.BooleanField(default=True)
     telegram_token = models.CharField(max_length=200, blank=True, null=True)
     telegram_chat_id = models.CharField(max_length=100, blank=True, null=True)
-    
     hora_apertura = models.TimeField(default="08:00")
     hora_cierre = models.TimeField(default="20:00")
     latitud = models.FloatField(default=5.5353)
     longitud = models.FloatField(default=-73.3678)
-
     @property
-    def acepta_pagos_digitales(self):
-        return bool(self.bold_secret_key) or bool(self.nequi_celular)
-
+    def acepta_pagos_digitales(self): return bool(self.bold_secret_key) or bool(self.nequi_celular)
     def save(self, *args, **kwargs):
         if not self.slug: self.slug = slugify(self.nombre)
         super().save(*args, **kwargs)
@@ -106,62 +85,36 @@ class Ausencia(models.Model):
 class Cita(models.Model):
     ESTADOS = [('P', 'Pendiente'), ('C', 'Confirmada'), ('X', 'Cancelada')]
     METODOS = [('BOLD', 'Bold'), ('NEQUI', 'Nequi'), ('SITIO', 'En Sitio')]
-    
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='citas')
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
     servicios = models.ManyToManyField(Servicio)
-    
     cliente_nombre = models.CharField(max_length=150)
     cliente_telefono = models.CharField(max_length=20)
-    
     fecha_hora_inicio = models.DateTimeField()
     fecha_hora_fin = models.DateTimeField()
-    
     precio_total = models.IntegerField(default=0)
     abono_pagado = models.IntegerField(default=0)
     metodo_pago = models.CharField(max_length=10, choices=METODOS, default='SITIO')
     referencia_pago = models.CharField(max_length=100, blank=True, null=True)
-    
     estado = models.CharField(max_length=1, choices=ESTADOS, default='C')
     creado_en = models.DateTimeField(auto_now_add=True)
-
     @property
-    def saldo_pendiente(self):
-        return self.precio_total - self.abono_pagado
-
+    def saldo_pendiente(self): return self.precio_total - self.abono_pagado
     def enviar_notificacion_telegram(self):
-        """ Envía un recibo detallado e inteligente al dueño """
         try:
             if self.peluqueria.telegram_token and self.peluqueria.telegram_chat_id:
-                # Construir lista de servicios
                 servicios_str = ", ".join([s.nombre for s in self.servicios.all()])
-                
-                # Formato de Moneda
                 total_fmt = "{:,.0f}".format(self.precio_total).replace(",", ".")
                 abono_fmt = "{:,.0f}".format(self.abono_pagado).replace(",", ".")
                 saldo_fmt = "{:,.0f}".format(self.saldo_pendiente).replace(",", ".")
-                
                 fecha_fmt = self.fecha_hora_inicio.strftime("%d/%m/%Y %I:%M %p")
-
-                msg = (
-                    f"🔥 *NUEVA CITA CONFIRMADA*\n"
-                    f"📅 *Fecha:* {fecha_fmt}\n"
-                    f"👤 *Cliente:* {self.cliente_nombre}\n"
-                    f"📞 *Tel:* {self.cliente_telefono}\n"
-                    f"💇 *Staff:* {self.empleado.nombre}\n\n"
-                    f"📋 *Servicios:* {servicios_str}\n"
-                    f"💰 *Total:* ${total_fmt}\n"
-                    f"💳 *Abono ({self.metodo_pago}):* ${abono_fmt}\n"
-                    f"📉 *Resta por cobrar:* ${saldo_fmt}"
-                )
-                
-                requests.post(
-                    f"https://api.telegram.org/bot{self.peluqueria.telegram_token}/sendMessage", 
-                    data={"chat_id": self.peluqueria.telegram_chat_id, "text": msg, "parse_mode": "Markdown"},
-                    timeout=5
-                )
-        except Exception as e:
-            print(f"Error Telegram: {e}")
+                msg = (f"🔥 *NUEVA CITA CONFIRMADA*\n📅 *Fecha:* {fecha_fmt}\n👤 *Cliente:* {self.cliente_nombre}\n"
+                       f"📞 *Tel:* {self.cliente_telefono}\n💇 *Staff:* {self.empleado.nombre}\n\n"
+                       f"📋 *Servicios:* {servicios_str}\n💰 *Total:* ${total_fmt}\n"
+                       f"💳 *Abono ({self.metodo_pago}):* ${abono_fmt}\n📉 *Resta por cobrar:* ${saldo_fmt}")
+                requests.post(f"https://api.telegram.org/bot{self.peluqueria.telegram_token}/sendMessage", 
+                              data={"chat_id": self.peluqueria.telegram_chat_id, "text": msg, "parse_mode": "Markdown"}, timeout=5)
+        except Exception as e: print(f"Error Telegram: {e}")
 
 class Cupon(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='cupones')
