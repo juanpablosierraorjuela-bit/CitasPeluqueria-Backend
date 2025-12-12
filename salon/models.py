@@ -7,6 +7,9 @@ from django.utils import timezone
 import requests
 import pytz 
 
+# Definir zona horaria Colombia para cálculos precisos
+ZONA_CO = pytz.timezone('America/Bogota')
+
 class ConfiguracionPlataforma(models.Model):
     solo_un_registro = models.CharField(max_length=1, default='X', editable=False)
     link_pago_bold = models.URLField("Link Respaldo", default="https://checkout.bold.co/payment/LNK_QZ5NWWY82P")
@@ -25,21 +28,36 @@ class Peluqueria(models.Model):
     direccion = models.CharField(max_length=200, blank=True)
     telefono = models.CharField(max_length=20, blank=True)
     codigo_pais_wa = models.CharField(max_length=5, default="57")
-    porcentaje_abono = models.IntegerField(default=50)
-    bold_api_key = models.CharField("Llave de Identidad", max_length=255, blank=True, null=True)
-    bold_secret_key = models.CharField("Llave Secreta", max_length=255, blank=True, null=True)
+    
+    # Pagos
+    porcentaje_abono = models.IntegerField(default=50, help_text="Porcentaje mínimo para reservar (ej: 50)")
+    bold_api_key = models.CharField("Llave de Identidad (Bold)", max_length=255, blank=True, null=True)
+    bold_secret_key = models.CharField("Llave Secreta (Bold)", max_length=255, blank=True, null=True)
     nequi_celular = models.CharField(max_length=20, blank=True, null=True)
     nequi_qr_imagen = models.ImageField(upload_to='qrs_nequi/', blank=True, null=True)
+    
     fecha_inicio_contrato = models.DateTimeField(default=timezone.now)
     activo_saas = models.BooleanField(default=True)
+    
     telegram_token = models.CharField(max_length=200, blank=True, null=True)
     telegram_chat_id = models.CharField(max_length=100, blank=True, null=True)
+    
+    # Horarios
     hora_apertura = models.TimeField(default="08:00")
     hora_cierre = models.TimeField(default="20:00")
     latitud = models.FloatField(default=5.5353)
     longitud = models.FloatField(default=-73.3678)
+
     @property
-    def acepta_pagos_digitales(self): return bool(self.bold_secret_key) or bool(self.nequi_celular)
+    def acepta_pagos_digitales(self): 
+        return bool(self.bold_secret_key) or bool(self.nequi_celular)
+    
+    @property
+    def esta_abierto(self):
+        """Calcula si está abierto basándose en la hora de Colombia"""
+        ahora_co = timezone.now().astimezone(ZONA_CO).time()
+        return self.hora_apertura <= ahora_co <= self.hora_cierre
+
     def save(self, *args, **kwargs):
         if not self.slug: self.slug = slugify(self.nombre)
         super().save(*args, **kwargs)
@@ -85,6 +103,8 @@ class Ausencia(models.Model):
 class Cita(models.Model):
     ESTADOS = [('P', 'Pendiente'), ('C', 'Confirmada'), ('X', 'Cancelada')]
     METODOS = [('BOLD', 'Bold'), ('NEQUI', 'Nequi'), ('SITIO', 'En Sitio')]
+    TIPO_COBRO = [('TOTAL', 'Pago Completo'), ('ABONO', 'Solo Abono')] # Nuevo campo
+
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='citas')
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
     servicios = models.ManyToManyField(Servicio)
@@ -92,14 +112,20 @@ class Cita(models.Model):
     cliente_telefono = models.CharField(max_length=20)
     fecha_hora_inicio = models.DateTimeField()
     fecha_hora_fin = models.DateTimeField()
+    
     precio_total = models.IntegerField(default=0)
     abono_pagado = models.IntegerField(default=0)
+    
     metodo_pago = models.CharField(max_length=10, choices=METODOS, default='SITIO')
+    tipo_cobro = models.CharField(max_length=10, choices=TIPO_COBRO, default='TOTAL') # Nuevo
     referencia_pago = models.CharField(max_length=100, blank=True, null=True)
+    
     estado = models.CharField(max_length=1, choices=ESTADOS, default='C')
     creado_en = models.DateTimeField(auto_now_add=True)
+
     @property
     def saldo_pendiente(self): return self.precio_total - self.abono_pagado
+
     def enviar_notificacion_telegram(self):
         try:
             if self.peluqueria.telegram_token and self.peluqueria.telegram_chat_id:
@@ -107,7 +133,11 @@ class Cita(models.Model):
                 total_fmt = "{:,.0f}".format(self.precio_total).replace(",", ".")
                 abono_fmt = "{:,.0f}".format(self.abono_pagado).replace(",", ".")
                 saldo_fmt = "{:,.0f}".format(self.saldo_pendiente).replace(",", ".")
-                fecha_fmt = self.fecha_hora_inicio.strftime("%d/%m/%Y %I:%M %p")
+                
+                # Convertir hora a Colombia para el mensaje
+                fecha_co = self.fecha_hora_inicio.astimezone(ZONA_CO)
+                fecha_fmt = fecha_co.strftime("%d/%m/%Y %I:%M %p")
+                
                 msg = (f"🔥 *NUEVA CITA CONFIRMADA*\n📅 *Fecha:* {fecha_fmt}\n👤 *Cliente:* {self.cliente_nombre}\n"
                        f"📞 *Tel:* {self.cliente_telefono}\n💇 *Staff:* {self.empleado.nombre}\n\n"
                        f"📋 *Servicios:* {servicios_str}\n💰 *Total:* ${total_fmt}\n"
