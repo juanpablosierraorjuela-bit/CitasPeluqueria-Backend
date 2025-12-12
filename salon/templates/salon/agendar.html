@@ -17,15 +17,24 @@
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
         .card { background: white; border-radius: 16px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; cursor: pointer; transition: 0.2s; }
         .card.selected { border-color: var(--accent); background: #fdf2f8; }
-        .input-fancy { width: 100%; padding: 15px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 1rem; margin-bottom: 15px; }
-        .btn-main { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 50px; font-size: 1.1rem; font-weight: bold; cursor: pointer; position: fixed; bottom: 0; left: 0; border-radius: 0; }
+        .input-fancy { width: 100%; padding: 15px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 1rem; margin-bottom: 15px; box-sizing: border-box; }
+        .btn-main { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 50px; font-size: 1.1rem; font-weight: bold; cursor: pointer; position: fixed; bottom: 0; left: 0; border-radius: 0; z-index: 100; }
+        .btn-main:disabled { background: #cbd5e1; }
         .hidden { display: none; }
         
         /* Payment Methods */
-        .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .pay-option { border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; background: white; }
+        .pay-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
+        .pay-option { border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; display: flex; align-items: center; gap: 15px; cursor: pointer; background: white; }
         .pay-option.selected { border-color: var(--accent); background: #fdf2f8; color: var(--accent); font-weight: bold; }
-        .pay-option i { display: block; font-size: 1.5rem; margin-bottom: 5px; }
+        .pay-option i { font-size: 1.5rem; }
+
+        /* Toggle Full vs Abono */
+        .cobro-options { display: flex; gap: 10px; margin-top: 15px; display: none; } /* Oculto por defecto */
+        .cobro-option { flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center; cursor: pointer; font-size: 0.9rem; }
+        .cobro-option.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        .price-summary { margin-top: 20px; padding: 15px; background: #fff1f2; border-radius: 12px; text-align: center; }
+        .total-price { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
         
         .error-msg { background: #fee2e2; color: #b91c1c; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
     </style>
@@ -34,7 +43,13 @@
 
     <div class="header">
         <h1 style="margin:0; font-size: 1.8rem;">{{ peluqueria.nombre_visible }}</h1>
-        <p style="margin:5px 0; color: #64748b;">Reserva tu cita</p>
+        <p style="margin:5px 0; color: #64748b;">
+            {% if peluqueria.esta_abierto %}
+                <span style="color: green;">● Abierto ahora</span>
+            {% else %}
+                <span style="color: red;">● Cerrado ahora</span>
+            {% endif %}
+        </p>
     </div>
 
     <div class="container">
@@ -47,11 +62,13 @@
             <input type="hidden" name="fecha_seleccionada" id="input_fecha">
             <input type="hidden" name="hora_seleccionada" id="input_hora">
             <input type="hidden" name="empleado" id="input_empleado">
+            
             <input type="hidden" name="metodo_pago" id="input_metodo_pago" value="SITIO">
+            <input type="hidden" name="tipo_cobro" id="input_tipo_cobro" value="TOTAL">
 
             <h3>1. Elige Servicio</h3>
             {% for s in servicios %}
-            <div class="card" onclick="toggleService(this)">
+            <div class="card" onclick="toggleService(this, {{ s.precio }})">
                 <input type="checkbox" name="servicios" value="{{ s.id }}" class="hidden check-servicio">
                 <div style="display:flex; justify-content:space-between; font-weight:bold;">
                     <span>{{ s.nombre }}</span>
@@ -91,7 +108,11 @@
                 <div class="pay-grid">
                     {% if tiene_bold %}
                     <div class="pay-option" onclick="setPago(this, 'BOLD')">
-                        <i class="fas fa-credit-card"></i> Tarjeta/PSE (Bold)
+                        <i class="fas fa-credit-card" style="color:#db2777;"></i>
+                        <div>
+                            <strong>Pago Seguro (Tarjetas/PSE)</strong><br>
+                            <small>Paga el total o abona para reservar</small>
+                        </div>
                     </div>
                     {% endif %}
                     
@@ -105,7 +126,25 @@
                         <i class="fas fa-store"></i> Pagar en el Salón
                     </div>
                 </div>
-                <p style="font-size:0.8rem; color:#64748b; margin-top:10px;">
+
+                <div id="opciones-cobro" class="cobro-options">
+                    <div class="cobro-option active" onclick="setTipoCobro('TOTAL', this)">
+                        Pagar Total<br>
+                        <strong id="label-total">$0</strong>
+                    </div>
+                    {% if peluqueria.porcentaje_abono < 100 %}
+                    <div class="cobro-option" onclick="setTipoCobro('ABONO', this)">
+                        Abonar {{ peluqueria.porcentaje_abono }}%<br>
+                        <strong id="label-abono">$0</strong>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="price-summary">
+                    Total a pagar ahora: <div class="total-price" id="final-price">$0</div>
+                </div>
+
+                <p style="font-size:0.8rem; color:#64748b; margin-top:10px; text-align: center;">
                     * Al reservar aceptas nuestras políticas de cancelación.
                 </p>
             </div>
@@ -118,11 +157,32 @@
         const pickerFecha = document.getElementById('picker-fecha');
         pickerFecha.min = new Date().toISOString().split('T')[0];
 
-        function toggleService(card) {
+        let totalServicios = 0;
+        const porcentajeAbono = {{ peluqueria.porcentaje_abono }};
+
+        function toggleService(card, precio) {
             const chk = card.querySelector('input');
             chk.checked = !chk.checked;
             card.classList.toggle('selected', chk.checked);
+            
+            if(chk.checked) totalServicios += precio;
+            else totalServicios -= precio;
+            
+            updatePrices();
             checkVisibility();
+        }
+
+        function updatePrices() {
+            const abono = Math.round(totalServicios * (porcentajeAbono / 100));
+            document.getElementById('label-total').innerText = '$' + totalServicios.toLocaleString();
+            
+            const labelAbono = document.getElementById('label-abono');
+            if(labelAbono) labelAbono.innerText = '$' + abono.toLocaleString();
+
+            // Actualizar precio final según selección actual
+            const tipo = document.getElementById('input_tipo_cobro').value;
+            const final = (tipo === 'TOTAL') ? totalServicios : abono;
+            document.getElementById('final-price').innerText = '$' + final.toLocaleString();
         }
 
         function selectStylist(card, id) {
@@ -165,7 +225,7 @@
                     document.getElementById('input_hora').value = h;
                     document.getElementById('step-datos').classList.remove('hidden');
                     document.getElementById('btn-submit').disabled = false;
-                    document.getElementById('step-datos').scrollIntoView({behavior:'smooth'});
+                    setTimeout(() => document.getElementById('step-datos').scrollIntoView({behavior:'smooth'}), 100);
                 };
                 cont.appendChild(btn);
             });
@@ -175,6 +235,28 @@
             document.querySelectorAll('.pay-option').forEach(e => e.classList.remove('selected'));
             elem.classList.add('selected');
             document.getElementById('input_metodo_pago').value = metodo;
+            
+            const divOpciones = document.getElementById('opciones-cobro');
+            
+            if (metodo === 'BOLD') {
+                divOpciones.style.display = 'flex';
+                // Reset a Total por defecto
+                setTipoCobro('TOTAL', divOpciones.children[0]);
+            } else {
+                divOpciones.style.display = 'none';
+                setTipoCobro('TOTAL', null); // Reset interno
+            }
+            updatePrices();
+        }
+
+        function setTipoCobro(tipo, elem) {
+            document.getElementById('input_tipo_cobro').value = tipo;
+            
+            if(elem) {
+                document.querySelectorAll('.cobro-option').forEach(e => e.classList.remove('active'));
+                elem.classList.add('active');
+            }
+            updatePrices();
         }
 
         function checkVisibility() {
