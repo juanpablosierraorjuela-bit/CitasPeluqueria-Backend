@@ -93,7 +93,6 @@ class Cita(models.Model):
     fecha_hora_inicio = models.DateTimeField()
     fecha_hora_fin = models.DateTimeField()
     precio_total = models.IntegerField(default=0)
-    descuento_aplicado = models.IntegerField(default=0)
     abono_pagado = models.IntegerField(default=0)
     metodo_pago = models.CharField(max_length=10, choices=METODOS, default='SITIO')
     referencia_pago = models.CharField(max_length=100, blank=True, null=True)
