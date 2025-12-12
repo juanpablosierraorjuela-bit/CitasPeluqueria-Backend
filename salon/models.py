@@ -7,7 +7,7 @@ from django.utils import timezone
 import requests
 import pytz 
 
-# Definir zona horaria Colombia para cálculos precisos
+# Definir zona horaria Colombia
 ZONA_CO = pytz.timezone('America/Bogota')
 
 class ConfiguracionPlataforma(models.Model):
@@ -18,11 +18,8 @@ class ConfiguracionPlataforma(models.Model):
     telegram_chat_id = models.CharField(max_length=255, blank=True)
     precio_mensualidad = models.IntegerField(default=130000)
     
-    class Meta: 
-        verbose_name_plural = "Configuración Dueño PASO"
-    
-    def __str__(self): 
-        return "Configuración Plataforma"
+    class Meta: verbose_name_plural = "Configuración Dueño PASO"
+    def __str__(self): return "Configuración Plataforma"
 
 class Peluqueria(models.Model):
     nombre = models.CharField(max_length=200)
@@ -58,14 +55,12 @@ class Peluqueria(models.Model):
     
     @property
     def esta_abierto(self):
-        """Calcula si está abierto basándose en la hora de Colombia"""
         ahora_co = timezone.now().astimezone(ZONA_CO).time()
         return self.hora_apertura <= ahora_co <= self.hora_cierre
 
     def save(self, *args, **kwargs):
         if not self.slug: self.slug = slugify(self.nombre)
         super().save(*args, **kwargs)
-        
     def __str__(self): return self.nombre_visible
 
 class Servicio(models.Model):
@@ -73,12 +68,10 @@ class Servicio(models.Model):
     nombre = models.CharField(max_length=100)
     duracion = models.DurationField()
     precio = models.IntegerField()
-    
     @property
     def str_duracion(self):
         ts = int(self.duracion.total_seconds())
         return f"{ts//3600}h {(ts%3600)//60}m" if ts//3600 > 0 else f"{(ts%3600)//60} min"
-        
     def __str__(self): return f"{self.nombre} - ${self.precio}"
 
 class Empleado(models.Model):
@@ -88,7 +81,6 @@ class Empleado(models.Model):
     apellido = models.CharField(max_length=100)
     email_contacto = models.EmailField(blank=True, null=True)
     activo = models.BooleanField(default=True)
-    
     def __str__(self): return f"{self.nombre} {self.apellido}"
 
 DIAS = ((0,'L'),(1,'M'),(2,'X'),(3,'J'),(4,'V'),(5,'S'),(6,'D'))
@@ -99,7 +91,6 @@ class HorarioEmpleado(models.Model):
     hora_fin = models.TimeField()
     almuerzo_inicio = models.TimeField(blank=True, null=True)
     almuerzo_fin = models.TimeField(blank=True, null=True)
-    
     class Meta: unique_together = ('empleado', 'dia_semana')
 
 class Ausencia(models.Model):
@@ -112,7 +103,7 @@ class Ausencia(models.Model):
 class Cita(models.Model):
     ESTADOS = [('P', 'Pendiente'), ('C', 'Confirmada'), ('X', 'Cancelada')]
     METODOS = [('BOLD', 'Bold'), ('NEQUI', 'Nequi'), ('SITIO', 'En Sitio')]
-    TIPO_COBRO = [('TOTAL', 'Pago Completo'), ('ABONO', 'Solo Abono')] # Nuevo campo
+    TIPO_COBRO = [('TOTAL', 'Pago Completo'), ('ABONO', 'Solo Abono')]
 
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='citas')
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
@@ -126,7 +117,7 @@ class Cita(models.Model):
     abono_pagado = models.IntegerField(default=0)
     
     metodo_pago = models.CharField(max_length=10, choices=METODOS, default='SITIO')
-    tipo_cobro = models.CharField(max_length=10, choices=TIPO_COBRO, default='TOTAL') # Nuevo
+    tipo_cobro = models.CharField(max_length=10, choices=TIPO_COBRO, default='TOTAL')
     referencia_pago = models.CharField(max_length=100, blank=True, null=True)
     
     estado = models.CharField(max_length=1, choices=ESTADOS, default='C')
@@ -143,7 +134,6 @@ class Cita(models.Model):
                 abono_fmt = "{:,.0f}".format(self.abono_pagado).replace(",", ".")
                 saldo_fmt = "{:,.0f}".format(self.saldo_pendiente).replace(",", ".")
                 
-                # Convertir hora a Colombia para el mensaje
                 fecha_co = self.fecha_hora_inicio.astimezone(ZONA_CO)
                 fecha_fmt = fecha_co.strftime("%d/%m/%Y %I:%M %p")
                 
@@ -151,7 +141,6 @@ class Cita(models.Model):
                        f"📞 *Tel:* {self.cliente_telefono}\n💇 *Staff:* {self.empleado.nombre}\n\n"
                        f"📋 *Servicios:* {servicios_str}\n💰 *Total:* ${total_fmt}\n"
                        f"💳 *Abono ({self.metodo_pago}):* ${abono_fmt}\n📉 *Resta por cobrar:* ${saldo_fmt}")
-                
                 requests.post(f"https://api.telegram.org/bot{self.peluqueria.telegram_token}/sendMessage", 
                               data={"chat_id": self.peluqueria.telegram_chat_id, "text": msg, "parse_mode": "Markdown"}, timeout=5)
         except Exception as e: print(f"Error Telegram: {e}")
