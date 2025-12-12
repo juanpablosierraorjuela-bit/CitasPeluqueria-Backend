@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagar con Nequi</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 40px 20px; background: #fdf2f8; }
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }
+        h1 { color: #db2777; }
+        .qr-img { width: 200px; height: 200px; object-fit: contain; margin: 20px 0; border: 2px dashed #db2777; border-radius: 10px; }
+        .number { font-size: 1.5rem; font-weight: bold; color: #1e293b; background: #f1f5f9; padding: 10px; border-radius: 8px; display: inline-block; margin-bottom: 20px; }
+        .btn { background: #25D366; color: white; text-decoration: none; padding: 15px 30px; border-radius: 50px; font-weight: bold; display: inline-block; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>¡Casi listo!</h1>
+        <p>Para confirmar tu cita, por favor transfiere el abono a:</p>
+        
+        {% if peluqueria.nequi_qr_imagen %}
+            <img src="{{ peluqueria.nequi_qr_imagen.url }}" class="qr-img">
+        {% endif %}
+        
+        <div class="number">Nequi: {{ peluqueria.nequi_celular }}</div>
+        
+        <p>Total a transferir: <strong>${{ cita.precio_total }}</strong></p>
+        
+        <p>Una vez hecho el pago, envíanos el comprobante por WhatsApp para confirmar tu cita.</p>
+        
+        <a href="https://wa.me/{{ peluqueria.codigo_pais_wa }}{{ peluqueria.telefono }}?text=Hola, acabo de reservar. Envío comprobante para cita #{{ cita.id }}" class="btn">
+            Enviar Comprobante
+        </a>
+    </div>
+</body>
+</html>
