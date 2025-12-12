@@ -4,43 +4,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reserva Confirmada</title>
+    <title>Estado de la Reserva</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .card { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); max-width: 400px; width: 90%; text-align: center; }
-        .icon-check { font-size: 4rem; color: #10b981; margin-bottom: 20px; display: block; }
+        .icon-check { font-size: 4rem; display: block; margin-bottom: 20px; }
         .btn-bold { background: #ef4444; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-weight: 700; width: 100%; cursor: pointer; text-decoration: none; display: block; margin-top: 20px; }
         .detail-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; color: #64748b; }
         .total { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 20px 0; }
+        
+        /* Estilos para estado de error/éxito */
+        .success-mode .icon-check { color: #10b981; }
+        .error-mode .icon-check { color: #ef4444; }
+        .error-mode h2 { color: #ef4444; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <span class="icon-check">✅</span>
-        <h2 style="margin:0 0 10px;">¡Reserva Creada!</h2>
-        <p style="color:#64748b;">Hola {{ cita.cliente_nombre }}, tu espacio ha sido separado.</p>
+    <div class="card {% if mensaje and 'Error' in mensaje or mensaje and 'No se pudo' in mensaje or mensaje and 'cancelado' in mensaje %}error-mode{% else %}success-mode{% endif %}">
         
-        <div style="background:#f1f5f9; padding:20px; border-radius:16px; margin-top:20px; text-align:left;">
-            <div class="detail-row"><span>Fecha:</span> <strong>{{ cita.fecha_hora_inicio|date:"d M, Y" }}</strong></div>
-            <div class="detail-row"><span>Hora:</span> <strong>{{ cita.fecha_hora_inicio|date:"h:i A" }}</strong></div>
-            <div class="detail-row"><span>Estilista:</span> <strong>{{ cita.empleado.nombre }}</strong></div>
-            {% if cita.descuento_aplicado > 0 %}
-                <div class="detail-row" style="color:#db2777;"><span>Descuento:</span> <strong>-${{ cita.descuento_aplicado }}</strong></div>
+        {% if mensaje and 'Error' in mensaje or mensaje and 'No se pudo' in mensaje or mensaje and 'cancelado' in mensaje %}
+            <span class="icon-check">⚠️</span>
+            <h2 style="margin:0 0 10px;">Hubo un problema</h2>
+            <p style="color:#64748b;">{{ mensaje }}</p>
+            
+            <a href="{% url 'inicio' %}" class="btn-bold" style="background-color: #64748b;">Volver al Inicio</a>
+        
+        {% else %}
+            <span class="icon-check">✅</span>
+            <h2 style="margin:0 0 10px;">¡Reserva Confirmada!</h2>
+            
+            {% if mensaje and 'Exitoso' in mensaje %}
+                <p style="color:#10b981; font-weight:bold;">{{ mensaje }}</p>
             {% endif %}
-            <hr>
-            <div class="total" style="text-align: center;">Total: ${{ cita.precio_total }}</div>
-            {% if cita.estado == 'P' and cita.abono_pagado > 0 %}
-                <div style="text-align:center; font-size:0.9rem; color:#db2777;">
-                    Abono requerido: ${{ cita.abono_pagado }}
+
+            {% if cita %}
+                <p style="color:#64748b;">Hola {{ cita.cliente_nombre }}, tu espacio ha sido separado.</p>
+                
+                <div style="background:#f1f5f9; padding:20px; border-radius:16px; margin-top:20px; text-align:left;">
+                    <div class="detail-row"><span>Fecha:</span> <strong>{{ cita.fecha_hora_inicio|date:"d M, Y" }}</strong></div>
+                    <div class="detail-row"><span>Hora:</span> <strong>{{ cita.fecha_hora_inicio|date:"h:i A" }}</strong></div>
+                    <div class="detail-row"><span>Estilista:</span> <strong>{{ cita.empleado.nombre }}</strong></div>
+                    {% if cita.descuento_aplicado > 0 %}
+                        <div class="detail-row" style="color:#db2777;"><span>Descuento:</span> <strong>-${{ cita.descuento_aplicado }}</strong></div>
+                    {% endif %}
+                    <hr>
+                    <div class="total" style="text-align: center;">Total: ${{ cita.precio_total }}</div>
+                    {% if cita.estado == 'P' and cita.abono_pagado > 0 %}
+                        <div style="text-align:center; font-size:0.9rem; color:#db2777;">
+                            Abono requerido: ${{ cita.abono_pagado }}
+                        </div>
+                    {% endif %}
                 </div>
             {% endif %}
-        </div>
 
-        {% if cita.estado == 'P' and cita.peluqueria.bold_integrity_key %}
-            <a href="#" class="btn-bold">PAGAR ABONO CON BOLD</a>
-            <p style="font-size:0.75rem; margin-top:10px; color:#94a3b8;">Pago seguro encriptado</p>
-        {% else %}
             <a href="{% url 'inicio' %}" style="display:block; margin-top:20px; color:#0f172a; font-weight:700;">Volver al Inicio</a>
         {% endif %}
     </div>
