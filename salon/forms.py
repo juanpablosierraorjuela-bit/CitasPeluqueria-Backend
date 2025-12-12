@@ -8,12 +8,11 @@ class ConfigNegocioForm(forms.ModelForm):
         fields = [
             'nombre_visible', 'ciudad', 'direccion', 'telefono', 
             'codigo_pais_wa', 'telegram_token', 'telegram_chat_id',
-            'bold_api_key', 'bold_integrity_key', 'bold_secret_key',
+            'bold_api_key', 'bold_secret_key', 
             'nequi_celular', 'nequi_qr_imagen', 'porcentaje_abono'
         ]
         widgets = {
             'bold_api_key': forms.PasswordInput(render_value=True),
-            'bold_integrity_key': forms.PasswordInput(render_value=True),
             'bold_secret_key': forms.PasswordInput(render_value=True),
             'telegram_token': forms.PasswordInput(render_value=True),
         }
