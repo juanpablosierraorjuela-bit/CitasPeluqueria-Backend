@@ -287,9 +287,9 @@ def procesar_pago_bold(request, cita_id):
     cita = get_object_or_404(Cita, id=cita_id)
     peluqueria = cita.peluqueria
     
-    # CORRECCIÓN: Usamos bold_api_key para la API de Links
-    if not peluqueria.bold_api_key: 
-        return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'Error de configuración en el comercio.'})
+    # CORRECCIÓN: Validamos bold_secret_key que es la requerida para el backend
+    if not peluqueria.bold_secret_key: 
+        return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'Error de configuración: Falta la Llave Secreta en el comercio.'})
     
     try:
         monto = cita.precio_total
@@ -303,9 +303,9 @@ def procesar_pago_bold(request, cita_id):
         
         url = "https://integrations.api.bold.co/online/link/v1"
         
-        # CORRECCIÓN: Header Authorization usa la api_key pública
+        # CORRECCIÓN: Se usa bold_secret_key para autorizar la creación del link
         headers = {
-            "Authorization": f"x-api-key {peluqueria.bold_api_key}", 
+            "Authorization": f"x-api-key {peluqueria.bold_secret_key}", 
             "Content-Type": "application/json"
         }
         
@@ -326,11 +326,12 @@ def procesar_pago_bold(request, cita_id):
             return redirect(r.json()["payload"]["url"])
         else:
             print(f"Bold Error: {r.status_code} {r.text}") 
-            return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'No se pudo generar el link de pago. Intenta más tarde.'})
+            # El mensaje se pasará al template corregido para mostrar el error real
+            return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'No se pudo generar el link de pago con Bold. Intente nuevamente.'})
             
     except Exception as e:
         print(f"Bold Excepción: {e}") 
-        return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'Error técnico. Contacta al salón.'})
+        return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'Error técnico al conectar con pasarela.'})
 
 def api_obtener_horarios(request):
     try: return JsonResponse({'horas': obtener_bloques_disponibles(Empleado.objects.get(id=request.GET.get('empleado_id')), datetime.strptime(request.GET.get('fecha'), '%Y-%m-%d').date(), timedelta(minutes=30))})
