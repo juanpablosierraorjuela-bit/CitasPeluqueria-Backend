@@ -9,32 +9,21 @@ import requests
 import pytz 
 
 # =============================================================
-# 1. CONFIGURACIÓN GLOBAL (TU PAGO COMO DUEÑO)
+# 1. CONFIGURACIÓN GLOBAL
 # =============================================================
 class ConfiguracionPlataforma(models.Model):
     solo_un_registro = models.CharField(max_length=1, default='X', editable=False)
-    
-    # Link de respaldo por si falla la API
-    link_pago_bold = models.URLField(
-        "Link de Pago Bold (Respaldo)", 
-        default="https://checkout.bold.co/payment/LNK_QZ5NWWY82P"
-    )
-    
-    # Tus credenciales para cobrar la mensualidad (SaaS)
-    bold_secret_key = models.CharField(max_length=255, blank=True, null=True, help_text="Tu llave secreta de Bold para generar cobros")
-    
+    link_pago_bold = models.URLField("Link Respaldo", default="https://checkout.bold.co/payment/LNK_QZ5NWWY82P")
+    bold_secret_key = models.CharField(max_length=255, blank=True, null=True)
     telegram_token = models.CharField(max_length=255, blank=True)
     telegram_chat_id = models.CharField(max_length=255, blank=True)
     precio_mensualidad = models.IntegerField(default=130000)
 
-    class Meta:
-        verbose_name = "Configuración Dueño PASO"
-        verbose_name_plural = "Configuración Dueño PASO"
-
-    def __str__(self): return "Configuración de Pagos"
+    class Meta: verbose_name_plural = "Configuración Dueño PASO"
+    def __str__(self): return "Configuración Plataforma"
 
 # =============================================================
-# 2. MODELOS BASE
+# 2. MODELOS DE NEGOCIO
 # =============================================================
 
 class Peluqueria(models.Model):
@@ -46,27 +35,23 @@ class Peluqueria(models.Model):
     telefono = models.CharField(max_length=20, blank=True)
     codigo_pais_wa = models.CharField(max_length=5, default="57")
     
-    # Configuración de Pagos del Negocio
+    # CONFIGURACIÓN DE PAGOS (SIMPLIFICADA)
     porcentaje_abono = models.IntegerField(default=50)
     
-    # BOLD (Integración API)
-    bold_api_key = models.CharField(max_length=255, blank=True, null=True)
-    bold_integrity_key = models.CharField(max_length=255, blank=True, null=True)
-    bold_secret_key = models.CharField(max_length=255, blank=True, null=True)
+    # BOLD (Solo lo necesario)
+    bold_api_key = models.CharField("Llave de Identidad", max_length=255, blank=True, null=True)
+    bold_secret_key = models.CharField("Llave Secreta", max_length=255, blank=True, null=True)
     
-    # NEQUI (Integración Manual/Visual)
-    nequi_celular = models.CharField(max_length=20, blank=True, null=True, help_text="Número Nequi para transferencias")
-    nequi_qr_imagen = models.ImageField(upload_to='qrs_nequi/', blank=True, null=True, help_text="Sube el QR de Nequi")
+    # NEQUI
+    nequi_celular = models.CharField(max_length=20, blank=True, null=True)
+    nequi_qr_imagen = models.ImageField(upload_to='qrs_nequi/', blank=True, null=True)
 
-    # DATOS DE SUSCRIPCIÓN
+    # SAAS & NOTIFICACIONES
     fecha_inicio_contrato = models.DateTimeField(default=timezone.now)
     activo_saas = models.BooleanField(default=True)
-
-    # Integraciones
     telegram_token = models.CharField(max_length=200, blank=True, null=True)
     telegram_chat_id = models.CharField(max_length=100, blank=True, null=True)
     
-    # Horarios Generales
     hora_apertura = models.TimeField(default="08:00")
     hora_cierre = models.TimeField(default="20:00")
     latitud = models.FloatField(default=5.5353)
@@ -74,14 +59,11 @@ class Peluqueria(models.Model):
 
     @property
     def acepta_pagos_digitales(self):
-        # Verifica si tiene configurado Bold O Nequi
-        return bool(self.bold_api_key) or bool(self.nequi_celular)
+        return bool(self.bold_secret_key) or bool(self.nequi_celular)
 
     def save(self, *args, **kwargs):
         if not self.slug: self.slug = slugify(self.nombre)
-        if self.ciudad: self.ciudad = self.ciudad.title().strip()
         super().save(*args, **kwargs)
-
     def __str__(self): return self.nombre_visible
 
 class Servicio(models.Model):
@@ -89,7 +71,6 @@ class Servicio(models.Model):
     nombre = models.CharField(max_length=100)
     duracion = models.DurationField()
     precio = models.IntegerField()
-    
     @property
     def str_duracion(self):
         ts = int(self.duracion.total_seconds())
@@ -120,37 +101,67 @@ class Ausencia(models.Model):
     fecha_inicio = models.DateTimeField()
     fecha_fin = models.DateTimeField()
     motivo = models.CharField(max_length=200, blank=True)
-    creado_en = models.DateTimeField(auto_now_add=True)
+    creado_en = models.DateTimeField(default=timezone.now)
 
 class Cita(models.Model):
     ESTADOS = [('P', 'Pendiente'), ('C', 'Confirmada'), ('X', 'Cancelada')]
-    METODOS_PAGO = [('BOLD', 'Bold'), ('NEQUI', 'Nequi'), ('SITIO', 'En Sitio')]
+    METODOS = [('BOLD', 'Bold'), ('NEQUI', 'Nequi'), ('SITIO', 'En Sitio')]
     
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='citas')
-    cliente_nombre = models.CharField(max_length=150)
-    cliente_telefono = models.CharField(max_length=20)
+    empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
     servicios = models.ManyToManyField(Servicio)
     
-    precio_total = models.IntegerField(default=0)
-    descuento_aplicado = models.IntegerField(default=0)
+    cliente_nombre = models.CharField(max_length=150)
+    cliente_telefono = models.CharField(max_length=20)
     
-    # Control de Pagos
-    abono_pagado = models.IntegerField(default=0)
-    metodo_pago = models.CharField(max_length=10, choices=METODOS_PAGO, default='SITIO')
-    referencia_pago = models.CharField(max_length=100, blank=True, null=True) # Sirve para Bold o comprobante Nequi
-    
-    empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
     fecha_hora_inicio = models.DateTimeField()
     fecha_hora_fin = models.DateTimeField()
-    creado_en = models.DateTimeField(auto_now_add=True)
-    estado = models.CharField(max_length=1, choices=ESTADOS, default='C')
     
+    precio_total = models.IntegerField(default=0)
+    abono_pagado = models.IntegerField(default=0)
+    metodo_pago = models.CharField(max_length=10, choices=METODOS, default='SITIO')
+    referencia_pago = models.CharField(max_length=100, blank=True, null=True)
+    
+    estado = models.CharField(max_length=1, choices=ESTADOS, default='C')
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def saldo_pendiente(self):
+        return self.precio_total - self.abono_pagado
+
     def enviar_notificacion_telegram(self):
+        """ Envía un recibo detallado e inteligente al dueño """
         try:
             if self.peluqueria.telegram_token and self.peluqueria.telegram_chat_id:
-                msg = f"🔥 *NUEVA CITA ({self.metodo_pago})*\nCliente: {self.cliente_nombre}\nTotal: ${self.precio_total}\nFecha: {self.fecha_hora_inicio}"
-                requests.post(f"https://api.telegram.org/bot{self.peluqueria.telegram_token}/sendMessage", data={"chat_id": self.peluqueria.telegram_chat_id, "text": msg, "parse_mode": "Markdown"})
-        except: pass
+                # Construir lista de servicios
+                servicios_str = ", ".join([s.nombre for s in self.servicios.all()])
+                
+                # Formato de Moneda
+                total_fmt = "{:,.0f}".format(self.precio_total).replace(",", ".")
+                abono_fmt = "{:,.0f}".format(self.abono_pagado).replace(",", ".")
+                saldo_fmt = "{:,.0f}".format(self.saldo_pendiente).replace(",", ".")
+                
+                fecha_fmt = self.fecha_hora_inicio.strftime("%d/%m/%Y %I:%M %p")
+
+                msg = (
+                    f"🔥 *NUEVA CITA CONFIRMADA*\n"
+                    f"📅 *Fecha:* {fecha_fmt}\n"
+                    f"👤 *Cliente:* {self.cliente_nombre}\n"
+                    f"📞 *Tel:* {self.cliente_telefono}\n"
+                    f"💇 *Staff:* {self.empleado.nombre}\n\n"
+                    f"📋 *Servicios:* {servicios_str}\n"
+                    f"💰 *Total:* ${total_fmt}\n"
+                    f"💳 *Abono ({self.metodo_pago}):* ${abono_fmt}\n"
+                    f"📉 *Resta por cobrar:* ${saldo_fmt}"
+                )
+                
+                requests.post(
+                    f"https://api.telegram.org/bot{self.peluqueria.telegram_token}/sendMessage", 
+                    data={"chat_id": self.peluqueria.telegram_chat_id, "text": msg, "parse_mode": "Markdown"},
+                    timeout=5
+                )
+        except Exception as e:
+            print(f"Error Telegram: {e}")
 
 class Cupon(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='cupones')
@@ -164,7 +175,6 @@ class PerfilUsuario(models.Model):
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.SET_NULL, null=True, blank=True)
     es_dueño = models.BooleanField(default=False)
 
-# === CLASE RESTAURADA ===
 class SolicitudSaaS(models.Model):
     nombre_contacto = models.CharField(max_length=100)
     nombre_empresa = models.CharField(max_length=100)
