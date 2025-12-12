@@ -61,7 +61,7 @@
             <input type="hidden" name="hora_seleccionada" id="input_hora">
             <input type="hidden" name="empleado" id="input_empleado">
             
-            <input type="hidden" name="metodo_pago" id="input_metodo_pago" value="SITIO">
+            <input type="hidden" name="metodo_pago" id="input_metodo_pago" value="">
             <input type="hidden" name="tipo_cobro" id="input_tipo_cobro" value="TOTAL">
 
             <h3>1. Elige Servicio</h3>
@@ -105,24 +105,26 @@
                 <h3>Forma de Pago</h3>
                 <div class="pay-grid">
                     {% if tiene_bold %}
-                    <div class="pay-option" onclick="setPago(this, 'BOLD')">
+                    <div class="pay-option" id="opt-bold" onclick="setPago(this, 'BOLD')">
                         <i class="fas fa-credit-card" style="color:#db2777;"></i>
                         <div>
                             <strong>Pago Seguro (Tarjetas/PSE)</strong><br>
-                            <small>Paga el total o abona para reservar</small>
+                            <small>Bold</small>
                         </div>
                     </div>
                     {% endif %}
                     
                     {% if tiene_nequi %}
-                    <div class="pay-option" onclick="setPago(this, 'NEQUI')">
+                    <div class="pay-option" id="opt-nequi" onclick="setPago(this, 'NEQUI')">
                         <i class="fas fa-mobile-alt"></i> Nequi
                     </div>
                     {% endif %}
                     
-                    <div class="pay-option selected" onclick="setPago(this, 'SITIO')">
+                    {% if not solo_pago_digital %}
+                    <div class="pay-option selected" id="opt-sitio" onclick="setPago(this, 'SITIO')">
                         <i class="fas fa-store"></i> Pagar en el Salón
                     </div>
+                    {% endif %}
                 </div>
 
                 <div id="opciones-cobro" class="cobro-options">
@@ -157,6 +159,25 @@
         let totalServicios = 0;
         const porcentajeAbono = {{ peluqueria.porcentaje_abono }};
 
+        // Autoselección de método de pago al cargar
+        document.addEventListener("DOMContentLoaded", function() {
+            const sitio = document.getElementById('opt-sitio');
+            const bold = document.getElementById('opt-bold');
+            const nequi = document.getElementById('opt-nequi');
+            
+            // Si la opción de sitio no existe (porque es pago digital obligatorio)
+            if (!sitio) {
+                if (bold) {
+                    setPago(bold, 'BOLD');
+                } else if (nequi) {
+                    setPago(nequi, 'NEQUI');
+                }
+            } else {
+                // Si existe sitio, es el default
+                setPago(sitio, 'SITIO'); 
+            }
+        });
+
         function toggleService(card, precio) {
             const chk = card.querySelector('input');
             chk.checked = !chk.checked;
@@ -190,10 +211,14 @@
             document.getElementById('input_fecha').value = fecha;
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('contenedor-horas').innerHTML = '';
+            
+            // Fetch a la API con la fecha seleccionada
             const res = await fetch(`/api/horarios/?empleado_id=${emp}&fecha=${fecha}&s=${servs.join(',')}`);
             const data = await res.json();
+            
             document.getElementById('loading').classList.add('hidden');
             const cont = document.getElementById('contenedor-horas');
+            
             if(data.horas.length === 0) {
                 cont.innerHTML = '<div style="grid-column:1/-1; text-align:center;">No hay cupos disponibles.</div>'; return;
             }
@@ -221,9 +246,13 @@
             document.getElementById('input_metodo_pago').value = metodo;
             const divOpciones = document.getElementById('opciones-cobro');
             if (metodo === 'BOLD') {
-                divOpciones.style.display = 'flex'; setTipoCobro('TOTAL', divOpciones.children[0]);
+                divOpciones.style.display = 'flex'; 
+                // Seleccionar Total por defecto al cambiar a Bold
+                const optTotal = divOpciones.querySelector('.cobro-option');
+                if(optTotal) setTipoCobro('TOTAL', optTotal);
             } else {
-                divOpciones.style.display = 'none'; setTipoCobro('TOTAL', null);
+                divOpciones.style.display = 'none'; 
+                setTipoCobro('TOTAL', null);
             }
             updatePrices();
         }
