@@ -1,7 +1,6 @@
-{% extends 'base.html' %}
-{% load static %}
+{% extends 'salon/base.html' %} {% load static %}
 
-{% block title %}Agendar Cita - PASO{% endblock %}
+{% block title %}Agendar Cita - {{ tenant.name }}{% endblock %}
 
 {% block content %}
 <div class="container py-5">
@@ -10,7 +9,7 @@
             
             <div class="card shadow-lg border-0 rounded-3">
                 <div class="card-header bg-dark text-white text-center py-3">
-                    <h4 class="mb-0"><i class="bi bi-calendar-check me-2"></i>Reserva tu Cita</h4>
+                    <h4 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Reserva en {{ tenant.name }}</h4>
                     <small>Elige tu experiencia de belleza</small>
                 </div>
                 
@@ -32,8 +31,8 @@
                             <select name="servicio" id="id_servicio" class="form-select form-select-lg" required>
                                 <option value="" selected disabled>Selecciona un servicio...</option>
                                 {% for servicio in servicios %}
-                                    <option value="{{ servicio.id }}" data-precio="{{ servicio.precio }}" data-duracion="{{ servicio.duracion }}">
-                                        {{ servicio.nombre }} - ${{ servicio.precio }} ({{ servicio.duracion }} min)
+                                    <option value="{{ servicio.id }}" data-precio="{{ servicio.price }}" data-duracion="{{ servicio.duration_min }}">
+                                        {{ servicio.name }} - ${{ servicio.price }} ({{ servicio.duration_min }} min)
                                     </option>
                                 {% endfor %}
                             </select>
@@ -44,7 +43,7 @@
                             <select name="profesional" id="id_profesional" class="form-select" required>
                                 <option value="" selected disabled>Cualquiera disponible</option>
                                 {% for pro in profesionales %}
-                                    <option value="{{ pro.id }}">{{ pro.nombre }}</option>
+                                    <option value="{{ pro.id }}">{{ pro.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -61,7 +60,6 @@
                             </div>
                         </div>
 
-                        {% if not user.is_authenticated %}
                         <div class="card bg-light mb-4 border-0">
                             <div class="card-body">
                                 <h6 class="card-title fw-bold mb-3">Tus Datos de Contacto</h6>
@@ -76,7 +74,6 @@
                                 </div>
                             </div>
                         </div>
-                        {% endif %}
 
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-dark btn-lg">
@@ -96,18 +93,18 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // 1. Establecer fecha mínima como HOY
+        // 1. Establecer fecha mínima como HOY para no reservar en el pasado
         const fechaInput = document.getElementById('id_fecha');
         const hoy = new Date().toISOString().split('T')[0];
         fechaInput.setAttribute('min', hoy);
 
-        // 2. Lógica opcional: Mostrar resumen del precio (si deseas agregar interactividad)
+        // 2. Mostrar precio dinámico (Opcional, pero útil)
         const servicioSelect = document.getElementById('id_servicio');
         
         servicioSelect.addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
             const precio = selectedOption.getAttribute('data-precio');
-            // Aquí podrías actualizar un elemento HTML para mostrar el total a pagar
+            // Aquí podrías actualizar un elemento visual si lo deseas
             console.log("Precio seleccionado: " + precio);
         });
     });
