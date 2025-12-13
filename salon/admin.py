@@ -4,19 +4,43 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django import forms
 from .models import (
     Peluqueria, Servicio, Empleado, Cita, PerfilUsuario, 
-    Ausencia, SolicitudSaaS, HorarioEmpleado, ConfiguracionPlataforma
+    Ausencia, SolicitudSaaS, HorarioEmpleado, ConfiguracionPlataforma,
+    Producto, MovimientoInventario
 )
+
+# --- INLINE PARA INVENTARIO ---
+class MovimientoInventarioInline(admin.TabularInline):
+    model = MovimientoInventario
+    extra = 0
+    readonly_fields = ('fecha', 'tipo', 'cantidad', 'descripcion')
+    can_delete = False
+
+@admin.register(Producto)
+class ProductoAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'cantidad_actual', 'precio_venta', 'peluqueria')
+    search_fields = ('nombre',)
+    inlines = [MovimientoInventarioInline]
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser: return qs
+        if hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
+            return qs.filter(peluqueria=request.user.perfil.peluqueria)
+        return qs.none()
+    
+    def save_model(self, request, obj, form, change):
+        if not request.user.is_superuser:
+            obj.peluqueria = request.user.perfil.peluqueria
+        super().save_model(request, obj, form, change)
 
 # --- CONFIGURACIÓN GLOBAL ---
 @admin.register(ConfiguracionPlataforma)
 class ConfigAdmin(admin.ModelAdmin):
     list_display = ('link_pago_bold', 'precio_mensualidad')
     def has_add_permission(self, request):
-        if self.model.objects.count() >= 1:
-            return False
-        return super().has_add_permission(request)
+        return self.model.objects.count() == 0
 
-# --- PERMISOS DE DUEÑOS DE SALÓN ---
+# --- CLASE BASE DE DUEÑOS ---
 class SalonOwnerAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -49,13 +73,9 @@ class HorarioEmpleadoInline(admin.TabularInline):
 
 @admin.register(Empleado)
 class EmpleadoAdmin(SalonOwnerAdmin):
-    list_display = ('nombre', 'apellido', 'activo')
+    list_display = ('nombre', 'apellido', 'activo', 'es_domiciliario')
     exclude = ('peluqueria',) 
     inlines = [HorarioEmpleadoInline]
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "user" and not request.user.is_superuser:
-            kwargs["queryset"] = User.objects.filter(is_staff=False, is_superuser=False)
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 @admin.register(Servicio)
 class ServicioAdmin(SalonOwnerAdmin):
@@ -66,29 +86,16 @@ class ServicioAdmin(SalonOwnerAdmin):
 class AusenciaAdmin(SalonOwnerAdmin):
     list_display = ('empleado', 'fecha_inicio', 'fecha_fin')
     exclude = ('peluqueria',)
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if not request.user.is_superuser and hasattr(request.user, 'perfil'):
-            if db_field.name == "empleado":
-                kwargs["queryset"] = Empleado.objects.filter(peluqueria=request.user.perfil.peluqueria)
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 @admin.register(Cita)
 class CitaAdmin(SalonOwnerAdmin):
-    list_display = ('cliente_nombre', 'fecha_hora_inicio', 'estado', 'empleado', 'precio_total')
-    list_filter = ('estado', 'fecha_hora_inicio')
+    list_display = ('cliente_nombre', 'fecha_hora_inicio', 'estado', 'empleado', 'precio_total', 'metodo_pago')
+    list_filter = ('estado', 'fecha_hora_inicio', 'metodo_pago')
     exclude = ('peluqueria',)
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if not request.user.is_superuser and hasattr(request.user, 'perfil'):
-            peluqueria_actual = request.user.perfil.peluqueria
-            if db_field.name == "empleado":
-                kwargs["queryset"] = Empleado.objects.filter(peluqueria=peluqueria_actual)
-            if db_field.name == "servicio":
-                kwargs["queryset"] = Servicio.objects.filter(peluqueria=peluqueria_actual)
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 @admin.register(Peluqueria)
 class PeluqueriaAdmin(admin.ModelAdmin):
-    list_display = ('nombre_visible', 'ciudad', 'telefono', 'fecha_inicio_contrato')
+    list_display = ('nombre_visible', 'ciudad', 'telefono', 'fecha_inicio_contrato', 'activo_saas')
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser: return qs
@@ -97,19 +104,18 @@ class PeluqueriaAdmin(admin.ModelAdmin):
         return qs.none()
     def get_readonly_fields(self, request, obj=None):
         if not request.user.is_superuser:
-            return ('slug', 'bold_api_key', 'bold_integrity_key', 'telegram_token', 'telegram_chat_id', 'bold_secret_key', 'fecha_inicio_contrato', 'activo_saas')
+            return ('slug', 'fecha_inicio_contrato', 'activo_saas')
         return ()
 
 @admin.register(PerfilUsuario)
 class PerfilUsuarioAdmin(admin.ModelAdmin):
     list_display = ('user', 'peluqueria', 'es_dueño')
-    def has_change_permission(self, request, obj=None): return request.user.is_superuser
-    def has_add_permission(self, request): return request.user.is_superuser
 
 @admin.register(SolicitudSaaS)
 class SolicitudSaaSAdmin(admin.ModelAdmin):
     list_display = ('nombre_empresa', 'fecha_solicitud', 'telefono')
 
+# Re-registrar User Admin
 try: admin.site.unregister(User)
 except admin.sites.NotRegistered: pass
 try: admin.site.unregister(Group)
@@ -118,8 +124,7 @@ except admin.sites.NotRegistered: pass
 @admin.register(User)
 class CustomUserAdmin(BaseUserAdmin):
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if request.user.is_superuser: return qs
-        return qs.none()
+        if request.user.is_superuser: return super().get_queryset(request)
+        return super().get_queryset(request).none()
 
 admin.site.register(Group)
