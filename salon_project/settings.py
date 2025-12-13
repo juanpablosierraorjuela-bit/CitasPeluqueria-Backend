@@ -98,10 +98,10 @@ AUTH_PASSWORD_VALIDATORS = [
 # 7. INTERNATIONALIZATION
 # ==========================================
 
-LANGUAGE_CODE = 'es-co'
-TIME_ZONE = 'America/Bogota'
+LANGUAGE_CODE = 'es-co'  # Español de Colombia (o 'es')
+TIME_ZONE = 'America/Bogota' 
 USE_I18N = True
-USE_TZ = True
+USE_L10N = True
 
 # ==========================================
 # 8. ESTÁTICOS Y MEDIA (ARCHIVOS SUBIDOS)
