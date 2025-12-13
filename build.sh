@@ -1,3 +1,4 @@
+cat > build.sh << 'EOF'
 #!/usr/bin/env bash
 # exit on error
 set -o errexit
@@ -10,3 +11,4 @@ python manage.py collectstatic --no-input
 
 # 3. Aplicar migraciones
 python manage.py migrate
+EOF
