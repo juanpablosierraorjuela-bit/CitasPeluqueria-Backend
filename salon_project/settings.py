@@ -167,3 +167,8 @@ API_SECRET_KEY = os.environ.get('API_SECRET_KEY', 'mi-clave-super-secreta-cambia
 
 LOGIN_REDIRECT_URL = 'inicio'
 LOGOUT_REDIRECT_URL = 'inicio'
+
+# --- CONFIGURACION LOGIN AUTOMATICA ---
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'dashboard'
+LOGIN_URL = '/accounts/login/'

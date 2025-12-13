@@ -1,7 +1,12 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
+    # Rutas de Autenticación (Login/Logout)
+    path('accounts/', include('django.contrib.auth.urls')),
+    
+    # Rutas del Sistema
     path('', views.dashboard, name='dashboard'),
     path('settings/', views.settings_view, name='settings'),
     path('inventory/', views.inventory_list, name='inventory'),
