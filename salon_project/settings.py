@@ -40,11 +40,11 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',  # <--- CORREGIDO (Tenía falta de ortografía)
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'salon.middleware.PeluqueriaMiddleware',      # <--- ACTIVADO (Correcto para producción)
+    'salon.middleware.PeluqueriaMiddleware',
 ]
 
 ROOT_URLCONF = 'salon_project.urls'
@@ -104,7 +104,7 @@ USE_I18N = True
 USE_TZ = True
 
 # ==========================================
-# 8. ESTÁTICOS
+# 8. ESTÁTICOS Y MEDIA (ARCHIVOS SUBIDOS)
 # ==========================================
 
 STATIC_URL = '/static/'
@@ -114,39 +114,27 @@ STATICFILES_DIRS = [
 ]
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
+# --- CONFIGURACIÓN CRÍTICA PARA LOGOS ---
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 # ==========================================
 # 9. OTRAS CONFIGURACIONES
 # ==========================================
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- CONFIGURACIÓN JAZZMIN (CORREGIDA) ---
+# --- CONFIGURACIÓN JAZZMIN ---
 JAZZMIN_SETTINGS = {
     "site_title": "Administración PASO",
     "site_header": "PASO Admin",
     "welcome_sign": "Bienvenido al Panel de Control",
     "search_model": "salon.Peluqueria",
-    
-    # 1. Menú Superior
-    "topmenu_links": [
-        {"name": "Ver Sitio", "url": "inicio", "permissions": ["auth.view_user"]},
-    ],
-
-    # 2. Sidebar Custom Links (CORREGIDO: 'mi_horario' -> 'mi_agenda')
+    "topmenu_links": [{"name": "Ver Sitio", "url": "inicio", "permissions": ["auth.view_user"]}],
     "custom_links": {
-        "salon": [{
-            "name": "📅 Gestionar Horario", 
-            "url": "mi_agenda", 
-            "icon": "fas fa-clock",
-            "permissions": ["auth.view_user"]
-        }]
+        "salon": [{"name": "📅 Gestionar Horario", "url": "mi_agenda", "icon": "fas fa-clock", "permissions": ["auth.view_user"]}]
     },
-
-    # 3. User Menu (CORREGIDO: 'mi_horario' -> 'mi_agenda')
-    "usermenu_links": [
-        {"name": "📅 Mi Horario Visual", "url": "mi_agenda", "new_window": True, "icon": "fas fa-clock"},
-    ],
-
+    "usermenu_links": [{"name": "📅 Mi Horario Visual", "url": "mi_agenda", "new_window": True, "icon": "fas fa-clock"}],
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
