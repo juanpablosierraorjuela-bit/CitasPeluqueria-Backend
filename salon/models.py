@@ -8,13 +8,15 @@ class Tenant(models.Model):
     subdomain = models.SlugField(unique=True, verbose_name="Identificador (URL)")
     ciudad = models.CharField(max_length=100, default="Tunja", verbose_name="Ciudad")
     direccion = models.CharField(max_length=200, blank=True, null=True, verbose_name="Dirección")
-    telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono")
+    # CORREGIDO: Aumentado de 20 a 50
+    telefono = models.CharField(max_length=50, blank=True, null=True, verbose_name="Teléfono") 
     
     # Redes y Pagos
     instagram = models.URLField(blank=True, null=True, verbose_name="Instagram")
     facebook = models.URLField(blank=True, null=True, verbose_name="Facebook")
     tiktok = models.URLField(blank=True, null=True, verbose_name="TikTok")
-    nequi_number = models.CharField(max_length=20, blank=True, null=True, verbose_name="Nequi")
+    # CORREGIDO: Aumentado de 20 a 50
+    nequi_number = models.CharField(max_length=50, blank=True, null=True, verbose_name="Nequi") 
     bold_api_key = models.CharField(max_length=200, blank=True, null=True, verbose_name="API Key Bold")
 
     class Meta:
@@ -29,7 +31,8 @@ class Professional(models.Model):
     nombre = models.CharField(max_length=100, verbose_name="Nombre Completo")
     especialidad = models.CharField(max_length=100, blank=True, verbose_name="Especialidad")
     email = models.EmailField(blank=True, null=True, verbose_name="Correo Electrónico")
-    telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono")
+    # CORREGIDO: Aumentado de 20 a 50
+    telefono = models.CharField(max_length=50, blank=True, null=True, verbose_name="Teléfono") 
     
     # Vinculación opcional con usuario de sistema para login
     user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='professional_profile')
@@ -81,7 +84,8 @@ class Appointment(models.Model):
     empleado = models.ForeignKey(Professional, on_delete=models.CASCADE, verbose_name="Profesional")
     fecha_hora_inicio = models.DateTimeField(verbose_name="Fecha y Hora")
     cliente_nombre = models.CharField(max_length=100, verbose_name="Nombre Cliente")
-    cliente_telefono = models.CharField(max_length=20, verbose_name="Teléfono Cliente")
+    # CORREGIDO: Aumentado de 20 a 50
+    cliente_telefono = models.CharField(max_length=50, verbose_name="Teléfono Cliente") 
     cliente_email = models.EmailField(blank=True, null=True, verbose_name="Email Cliente")
     estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
     precio_total = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Total a Pagar")
