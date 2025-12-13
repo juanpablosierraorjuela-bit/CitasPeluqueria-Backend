@@ -12,7 +12,6 @@ DEBUG = 'RENDER' not in os.environ
 ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
 
-
 # ==========================================
 # 2. APLICACIONES INSTALADAS
 # ==========================================
@@ -98,13 +97,13 @@ AUTH_PASSWORD_VALIDATORS = [
 # 7. INTERNATIONALIZATION
 # ==========================================
 
-LANGUAGE_CODE = 'es-co'  # Español de Colombia (o 'es')
+LANGUAGE_CODE = 'es-co'
 TIME_ZONE = 'America/Bogota' 
 USE_I18N = True
 USE_L10N = True
 
 # ==========================================
-# 8. ESTÁTICOS Y MEDIA (ARCHIVOS SUBIDOS)
+# 8. ESTÁTICOS Y MEDIA
 # ==========================================
 
 STATIC_URL = '/static/'
@@ -114,7 +113,6 @@ STATICFILES_DIRS = [
 ]
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
-# --- CONFIGURACIÓN CRÍTICA PARA LOGOS ---
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -129,11 +127,11 @@ JAZZMIN_SETTINGS = {
     "site_title": "Administración PASO",
     "site_header": "PASO Admin",
     "welcome_sign": "Bienvenido al Panel de Control",
-    "search_model": "salon.Peluqueria",
+    "search_model": "salon.Tenant", 
     
     # 1. Menú Superior
     "topmenu_links": [
-        {"name": "Ver Sitio", "url": "inicio", "permissions": ["auth.view_user"]},
+        {"name": "Ver Sitio", "url": "landing_negocio", "permissions": ["auth.view_user"]},
     ],
 
     # 2. Sidebar Custom Links
@@ -155,20 +153,17 @@ JAZZMIN_SETTINGS = {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
-        "salon.Peluqueria": "fas fa-store",
-        "salon.Cita": "fas fa-calendar-check",
-        "salon.Empleado": "fas fa-user-tie",
-        "salon.Servicio": "fas fa-cut",
+        "salon.Tenant": "fas fa-store",
+        "salon.Appointment": "fas fa-calendar-check",
+        "salon.Professional": "fas fa-user-tie",
+        "salon.Service": "fas fa-cut",
     },
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
 API_SECRET_KEY = os.environ.get('API_SECRET_KEY', 'mi-clave-super-secreta-cambiame')
 
-LOGIN_REDIRECT_URL = 'inicio'
-LOGOUT_REDIRECT_URL = 'inicio'
-
 # --- CONFIGURACION LOGIN AUTOMATICA ---
-LOGIN_REDIRECT_URL = 'dashboard'
-LOGOUT_REDIRECT_URL = 'dashboard'
-LOGIN_URL = '/accounts/login/' 
+LOGIN_URL = '/accounts/login/'  
+LOGIN_REDIRECT_URL = 'panel_negocio'
+LOGOUT_REDIRECT_URL = 'landing_negocio'
