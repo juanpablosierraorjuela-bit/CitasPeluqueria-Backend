@@ -1,4 +1,3 @@
-
 from .models import Tenant
 
 class TenantMiddleware:
@@ -6,11 +5,6 @@ class TenantMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Esta lógica permite que el servidor arranque sin errores
-        # Pasa la petición directamente.
         return self.get_response(request)
 
-# ALIAS DE SEGURIDAD:
-# Si tu configuración vieja busca 'PeluqueriaMiddleware', 
-# esto la redirige al nuevo código para que no falle.
 PeluqueriaMiddleware = TenantMiddleware
