@@ -26,7 +26,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'django_multitenant',
-    'salon', 
+    'salon',
 ]
 
 # ==========================================
@@ -98,7 +98,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # ==========================================
 
 LANGUAGE_CODE = 'es-co'
-TIME_ZONE = 'America/Bogota' 
+TIME_ZONE = 'America/Bogota'
 USE_I18N = True
 USE_L10N = True
 
@@ -127,7 +127,7 @@ JAZZMIN_SETTINGS = {
     "site_title": "Administración PASO",
     "site_header": "PASO Admin",
     "welcome_sign": "Bienvenido al Panel de Control",
-    "search_model": "salon.Tenant", 
+    "search_model": "salon.Tenant",
     
     # 1. Menú Superior
     "topmenu_links": [
@@ -137,8 +137,8 @@ JAZZMIN_SETTINGS = {
     # 2. Sidebar Custom Links
     "custom_links": {
         "salon": [{
-            "name": "📅 Gestionar Horario", 
-            "url": "mi_agenda", 
+            "name": "📅 Gestionar Horario",
+            "url": "mi_agenda",
             "icon": "fas fa-clock",
             "permissions": ["auth.view_user"]
         }]
@@ -164,6 +164,6 @@ CORS_ALLOW_ALL_ORIGINS = True
 API_SECRET_KEY = os.environ.get('API_SECRET_KEY', 'mi-clave-super-secreta-cambiame')
 
 # --- CONFIGURACION LOGIN AUTOMATICA ---
-LOGIN_URL = '/accounts/login/'  
+LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = 'panel_negocio'
 LOGOUT_REDIRECT_URL = 'landing_negocio'
