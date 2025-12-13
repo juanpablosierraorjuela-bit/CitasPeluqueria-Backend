@@ -1,7 +1,9 @@
 # UBICACIÓN: salon/context_processors.py
+
 def tenant_context(request):
     """
     Inyecta el objeto 'current_tenant' a todas las plantillas de forma segura.
+    Detecta si el usuario es Dueño o Empleado para mostrar la info correcta.
     """
     tenant = None
     if request.user.is_authenticated:
