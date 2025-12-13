@@ -144,8 +144,9 @@ def panel_negocio(request):
     peluqueria = request.user.perfil.peluqueria
     hoy = timezone.localdate()
     
-    inicio = peluqueria.fecha_inicio_contrato.date()
-    proximo = inicio
+    # Check suscripción
+    inicio_plan = peluqueria.fecha_inicio_contrato.date()
+    proximo = inicio_plan
     while proximo <= hoy: proximo += relativedelta(months=1)
     dias = (proximo - hoy).days
     alerta = f"⚠️ Tu plan vence en {dias} días." if dias <= 5 else None
@@ -153,13 +154,11 @@ def panel_negocio(request):
     if request.method == 'POST':
         accion = request.POST.get('accion')
         
-        # --- MEJORA: GUARDAR INFORMACIÓN GENERAL Y REDES ---
         if accion == 'guardar_general':
             peluqueria.nombre_visible = request.POST.get('nombre_visible')
             peluqueria.ciudad = request.POST.get('ciudad')
             peluqueria.direccion = request.POST.get('direccion')
             peluqueria.telefono = request.POST.get('telefono')
-            
             peluqueria.instagram = request.POST.get('instagram')
             peluqueria.facebook = request.POST.get('facebook')
             peluqueria.tiktok = request.POST.get('tiktok')
@@ -168,7 +167,7 @@ def panel_negocio(request):
                 peluqueria.logo = request.FILES['logo']
             
             peluqueria.save()
-            messages.success(request, "Información de perfil actualizada exitosamente.")
+            messages.success(request, "Perfil actualizado correctamente.")
 
         elif accion == 'guardar_pagos':
             peluqueria.porcentaje_abono = int(request.POST.get('porcentaje_abono') or 50)
@@ -190,20 +189,85 @@ def panel_negocio(request):
 
     # Datos Dashboard
     citas_hoy = peluqueria.citas.filter(fecha_hora_inicio__date=hoy).order_by('fecha_hora_inicio')
-    citas_futuras = peluqueria.citas.filter(fecha_hora_inicio__gte=timezone.now()).order_by('fecha_hora_inicio')[:20]
+    # Citas Nequi pendientes de aprobación manual
+    citas_por_confirmar = peluqueria.citas.filter(estado='P', metodo_pago='NEQUI').order_by('fecha_hora_inicio')
     
     ctx = {
         'peluqueria': peluqueria, 
         'alerta_pago': alerta, 
         'proximo_pago': proximo, 
         'citas_hoy_count': citas_hoy.count(), 
-        'citas_futuras': citas_futuras, 
+        'citas_por_confirmar': citas_por_confirmar,
         'empleados': peluqueria.empleados.all(), 
         'servicios': peluqueria.servicios.all(),
-        'inventario': peluqueria.inventario.all()[:5],
+        'inventario_count': peluqueria.inventario.count(),
         'link_invitacion': request.build_absolute_uri(reverse('registro_empleado', args=[peluqueria.slug]))
     }
     return render(request, 'salon/dashboard.html', ctx)
+
+@login_required
+def confirmar_pago_manual(request, cita_id):
+    """ Permite al dueño confirmar una cita de Nequi manual """
+    cita = get_object_or_404(Cita, id=cita_id, peluqueria=request.user.perfil.peluqueria)
+    if cita.estado == 'P':
+        cita.estado = 'C'
+        cita.abono_pagado = int(cita.precio_total * (cita.peluqueria.porcentaje_abono/100))
+        cita.save()
+        
+        # Descontar inventario
+        for s in cita.servicios.all():
+            if s.producto_asociado:
+                p = s.producto_asociado
+                p.cantidad_actual -= s.cantidad_descuento
+                p.save()
+                MovimientoInventario.objects.create(producto=p, tipo='SALIDA', cantidad=s.cantidad_descuento, descripcion=f"Servicio Cita Confirmada #{cita.id}")
+
+        messages.success(request, f"Cita de {cita.cliente_nombre} confirmada exitosamente.")
+    return redirect('panel_negocio')
+
+# --- INVENTARIO (NUEVA FUNCIONALIDAD) ---
+
+@login_required
+def gestionar_inventario(request):
+    if not request.user.perfil.es_dueño: return redirect('inicio')
+    peluqueria = request.user.perfil.peluqueria
+    
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+        if accion == 'nuevo_producto':
+            Producto.objects.create(
+                peluqueria=peluqueria,
+                nombre=request.POST.get('nombre'),
+                costo_compra=request.POST.get('costo') or 0,
+                precio_venta=request.POST.get('precio') or 0,
+                cantidad_actual=request.POST.get('cantidad') or 0,
+                stock_minimo=request.POST.get('minimo') or 5,
+                es_insumo_interno=request.POST.get('es_insumo') == 'on'
+            )
+            messages.success(request, "Producto agregado.")
+        
+        elif accion == 'registrar_venta':
+            prod_id = request.POST.get('producto_id')
+            cantidad = int(request.POST.get('cantidad'))
+            prod = get_object_or_404(Producto, id=prod_id, peluqueria=peluqueria)
+            if prod.cantidad_actual >= cantidad:
+                prod.cantidad_actual -= cantidad
+                prod.save()
+                MovimientoInventario.objects.create(producto=prod, tipo='SALIDA', cantidad=cantidad, descripcion="Venta Manual Mostrador")
+                messages.success(request, "Venta registrada.")
+            else:
+                messages.error(request, "No hay suficiente stock.")
+
+        return redirect('gestionar_inventario')
+
+    productos = peluqueria.inventario.all().order_by('nombre')
+    valor_inventario = sum([p.valor_total_stock for p in productos])
+    
+    return render(request, 'salon/panel_dueño/inventario.html', {
+        'peluqueria': peluqueria,
+        'productos': productos,
+        'valor_total': valor_inventario
+    })
 
 @login_required
 def gestionar_servicios(request):
@@ -214,10 +278,18 @@ def gestionar_servicios(request):
             nuevo = form.save(commit=False)
             nuevo.peluqueria = peluqueria
             nuevo.duracion = timedelta(minutes=form.cleaned_data['duracion_minutos'])
+            # Vinculación con inventario opcional
+            prod_id = request.POST.get('producto_asociado')
+            if prod_id: nuevo.producto_asociado_id = prod_id
             nuevo.save()
             messages.success(request, "Servicio creado.")
             return redirect('gestionar_servicios')
-    return render(request, 'salon/panel_dueño/servicios.html', {'servicios': peluqueria.servicios.all(), 'form': ServicioForm(), 'peluqueria': peluqueria})
+    return render(request, 'salon/panel_dueño/servicios.html', {
+        'servicios': peluqueria.servicios.all(), 
+        'form': ServicioForm(), 
+        'peluqueria': peluqueria,
+        'productos': peluqueria.inventario.all() # Para el select
+    })
 
 @login_required
 def eliminar_servicio(request, servicio_id):
@@ -226,10 +298,20 @@ def eliminar_servicio(request, servicio_id):
 @login_required
 def gestionar_equipo(request):
     peluqueria = request.user.perfil.peluqueria
+    if request.method == 'POST':
+        # Activar/Desactivar Domiciliario Independiente
+        emp_id = request.POST.get('empleado_id')
+        es_indep = request.POST.get('es_independiente') == 'on'
+        emp = get_object_or_404(Empleado, id=emp_id, peluqueria=peluqueria)
+        emp.es_independiente = es_indep
+        emp.save()
+        messages.success(request, f"Perfil de {emp.nombre} actualizado.")
+        return redirect('gestionar_equipo')
+
     link = request.build_absolute_uri(reverse('registro_empleado', args=[peluqueria.slug]))
     return render(request, 'salon/panel_dueño/equipo.html', {'peluqueria': peluqueria, 'empleados': peluqueria.empleados.all(), 'link_invitacion': link})
 
-# --- EMPLEADO ---
+# --- EMPLEADO / DOMICILIARIO INDEPENDIENTE ---
 
 @login_required
 def mi_agenda(request):
@@ -237,11 +319,18 @@ def mi_agenda(request):
     except: return redirect('login_custom')
     
     if request.method == 'POST':
-        if 'instagram' in request.POST:
+        if 'config_independiente' in request.POST:
+            # Configuración para profesionales independientes
             empleado.instagram = request.POST.get('instagram')
+            if empleado.es_independiente:
+                empleado.bold_api_key = request.POST.get('bold_api_key')
+                empleado.bold_secret_key = request.POST.get('bold_secret_key')
+                empleado.telegram_token = request.POST.get('telegram_token')
+                empleado.telegram_chat_id = request.POST.get('telegram_chat_id')
             empleado.save()
-            messages.success(request, "Perfil actualizado")
+            messages.success(request, "Perfil profesional actualizado")
         else:
+            # Lógica de Horarios (Existente)
             HorarioEmpleado.objects.filter(empleado=empleado).delete()
             for i in range(7):
                 if request.POST.get(f'trabaja_{i}'): 
@@ -252,7 +341,7 @@ def mi_agenda(request):
                         almuerzo_inicio=request.POST.get(f'almuerzo_inicio_{i}') or None, 
                         almuerzo_fin=request.POST.get(f'almuerzo_fin_{i}') or None
                     )
-            messages.success(request, "Horario actualizado.")
+            messages.success(request, "Horario de disponibilidad actualizado.")
         return redirect('mi_agenda')
         
     horarios = {h.dia_semana: h for h in HorarioEmpleado.objects.filter(empleado=empleado)}
@@ -318,9 +407,9 @@ def inicio(request):
 def agendar_cita(request, slug_peluqueria):
     peluqueria = get_object_or_404(Peluqueria, slug=slug_peluqueria)
     
+    # Esta lógica inicial es para validación visual en el template
     tiene_bold = bool(peluqueria.bold_secret_key and peluqueria.bold_api_key)
     tiene_nequi = bool(peluqueria.nequi_celular)
-    solo_pago_digital = tiene_bold or tiene_nequi
     
     if request.method == 'POST':
         try:
@@ -337,10 +426,6 @@ def agendar_cita(request, slug_peluqueria):
                  raise ValueError("Este establecimiento no ofrece servicio a domicilio.")
 
             metodo = request.POST.get('metodo_pago', 'SITIO')
-            if solo_pago_digital and metodo == 'SITIO':
-                raise ValueError("Debes seleccionar un método de pago digital.")
-                
-            tipo_cobro = request.POST.get('tipo_cobro', 'TOTAL')
             
             if not (emp_id and fecha and hora and servs_ids): raise ValueError("Datos incompletos")
             
@@ -350,6 +435,14 @@ def agendar_cita(request, slug_peluqueria):
             
             ini = datetime.strptime(f"{fecha} {hora}", "%Y-%m-%d %H:%M")
             
+            # Verificar Empleado para uso de credenciales propias
+            empleado_obj = Empleado.objects.get(id=emp_id)
+            usa_credenciales_propias = empleado_obj.es_independiente and empleado_obj.bold_secret_key
+            
+            # Si el pago es digital y el empleado NO es independiente y el salón NO tiene keys
+            if metodo != 'SITIO' and not usa_credenciales_propias and not (tiene_bold or tiene_nequi):
+                 raise ValueError("Este método de pago no está disponible actualmente.")
+
             def _reserva(emp):
                 if Ausencia.objects.filter(empleado=emp, fecha_inicio__lt=ini + duracion, fecha_fin__gt=ini).exists(): 
                     raise ValueError("Estilista ausente")
@@ -366,7 +459,7 @@ def agendar_cita(request, slug_peluqueria):
                     precio_total=precio, 
                     estado='P', 
                     metodo_pago=metodo,
-                    tipo_cobro=tipo_cobro,
+                    tipo_cobro='TOTAL', # Simplificado por ahora
                     es_domicilio=es_domicilio,
                     direccion_domicilio=request.POST.get('direccion_domicilio') if es_domicilio else None
                 )
@@ -375,14 +468,18 @@ def agendar_cita(request, slug_peluqueria):
             
             cita = BookingManager.ejecutar_reserva_segura(emp_id, _reserva)
             
-            if metodo == 'BOLD' and tiene_bold:
+            if metodo == 'BOLD':
+                # Decide que llave usar
                 return redirect('procesar_pago_bold', cita_id=cita.id)
-            elif metodo == 'NEQUI' and tiene_nequi:
+            elif metodo == 'NEQUI':
+                # Nequi deja la cita en PENDIENTE
                 cita.enviar_notificacion_telegram() 
                 return render(request, 'salon/pago_nequi.html', {'cita': cita, 'peluqueria': peluqueria})
             else: 
+                # Pago en Sitio
                 cita.estado = 'C'
                 cita.save()
+                # Inventario
                 for s in cita.servicios.all():
                     if s.producto_asociado:
                         p = s.producto_asociado
@@ -400,7 +497,6 @@ def agendar_cita(request, slug_peluqueria):
                 'empleados': peluqueria.empleados.filter(activo=True), 
                 'tiene_bold': tiene_bold,
                 'tiene_nequi': tiene_nequi,
-                'solo_pago_digital': solo_pago_digital,
                 'error_mensaje': str(e)
             })
             
@@ -409,8 +505,7 @@ def agendar_cita(request, slug_peluqueria):
         'servicios': peluqueria.servicios.all(), 
         'empleados': peluqueria.empleados.filter(activo=True), 
         'tiene_bold': tiene_bold, 
-        'tiene_nequi': tiene_nequi,
-        'solo_pago_digital': solo_pago_digital
+        'tiene_nequi': tiene_nequi
     })
 
 def confirmacion_cita(request, slug_peluqueria, cita_id):
@@ -420,24 +515,28 @@ def confirmacion_cita(request, slug_peluqueria, cita_id):
 def procesar_pago_bold(request, cita_id):
     cita = get_object_or_404(Cita, id=cita_id)
     peluqueria = cita.peluqueria
+    empleado = cita.empleado
     
-    if not peluqueria.bold_secret_key: 
+    # Lógica de Domiciliario Independiente: Usar sus llaves si corresponde
+    secret_key = peluqueria.bold_secret_key
+    if empleado.es_independiente and empleado.bold_secret_key:
+        secret_key = empleado.bold_secret_key
+    
+    if not secret_key: 
         return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'Error: Comercio sin llave secreta configurada.'})
     
     try:
         monto = cita.precio_total
-        desc = f"Reserva Cita #{cita.id}"
-        
+        # Calcular monto real si es abono
         if cita.tipo_cobro == 'ABONO' and peluqueria.porcentaje_abono < 100:
-            monto = int(cita.precio_total * (peluqueria.porcentaje_abono/100))
-            desc = f"Abono {peluqueria.porcentaje_abono}% Cita #{cita.id}"
+             monto = int(cita.precio_total * (peluqueria.porcentaje_abono/100))
             
         ref = f"CITA-{cita.id}-{int(datetime.now().timestamp())}"
         url = "https://integrations.api.bold.co/online/link/v1"
-        headers = {"Authorization": f"x-api-key {peluqueria.bold_secret_key}", "Content-Type": "application/json"}
+        headers = {"Authorization": f"x-api-key {secret_key}", "Content-Type": "application/json"}
         url_retorno = request.build_absolute_uri(reverse('retorno_bold')) + f"?cita_id={cita.id}"
         
-        payload = {"name": desc, "description": "Servicio de Belleza", "amount": monto, "currency": "COP", "sku": ref, "redirection_url": url_retorno}
+        payload = {"name": f"Cita #{cita.id}", "description": "Servicio de Belleza", "amount": monto, "currency": "COP", "sku": ref, "redirection_url": url_retorno}
         
         r = requests.post(url, json=payload, headers=headers, timeout=10)
         
@@ -459,9 +558,11 @@ def retorno_bold(request):
     if payment_status == 'APPROVED':
         if cita.estado != 'C': 
             cita.estado = 'C'
+            # Calcular abono
             cita.abono_pagado = int(cita.precio_total * (cita.peluqueria.porcentaje_abono/100)) if cita.tipo_cobro == 'ABONO' else cita.precio_total
             cita.save()
             
+            # Descuento inventario automático
             for s in cita.servicios.all():
                 if s.producto_asociado:
                     p = s.producto_asociado
