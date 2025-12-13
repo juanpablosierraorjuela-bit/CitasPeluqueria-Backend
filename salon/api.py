@@ -4,12 +4,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.conf import settings
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 
-from .models import Peluqueria, Servicio, Empleado, Cita
+from .models import Tenant as Peluqueria, Service as Servicio, Professional as Empleado, Appointment as Cita
 from .services import obtener_bloques_disponibles, verificar_conflicto_atomic
-# IMPORTAMOS AL GUARDIA
+# IMPORTAMOS AL GUARDIA (Asumiendo que tienes este archivo)
 from salon.utils.booking_lock import BookingManager
 
 def proteger_api(vista_func):
@@ -23,17 +23,18 @@ def proteger_api(vista_func):
 
 @proteger_api
 def listar_servicios(request, slug_peluqueria):
-    servicios = Servicio.objects.filter(peluqueria__slug=slug_peluqueria)
+    servicios = Servicio.objects.filter(tenant__subdomain=slug_peluqueria)
     data = list(servicios.values('id', 'nombre', 'duracion', 'precio'))
     for s in data:
-        s['duracion'] = s['duracion'].total_seconds() / 60 
+        # s['duracion'] ya es int en minutos según el modelo corregido
         s['precio'] = float(s['precio'])
     return JsonResponse(data, safe=False)
 
 @proteger_api
 def listar_empleados(request, slug_peluqueria):
-    empleados = Empleado.objects.filter(peluqueria__slug=slug_peluqueria, activo=True)
-    data = [{'id': e.id, 'nombre': f"{e.nombre} {e.apellido}"} for e in empleados]
+    # Asumimos que todos los Professional activos se muestran
+    empleados = Empleado.objects.filter(tenant__subdomain=slug_peluqueria)
+    data = [{'id': e.id, 'nombre': e.nombre} for e in empleados]
     return JsonResponse(data, safe=False)
 
 @proteger_api
@@ -51,9 +52,9 @@ def consultar_disponibilidad(request, slug_peluqueria):
         
         # Filtro de empleados
         if empleado_id and empleado_id != 'todos': 
-            empleados = Empleado.objects.filter(id=empleado_id, activo=True)
+            empleados = Empleado.objects.filter(id=empleado_id)
         else: 
-            empleados = Empleado.objects.filter(peluqueria__slug=slug_peluqueria, activo=True)
+            empleados = Empleado.objects.filter(tenant__subdomain=slug_peluqueria)
 
         resultados = {}
         for emp in empleados:
@@ -77,7 +78,7 @@ def crear_cita_api(request, slug_peluqueria):
 
     try:
         data = json.loads(request.body)
-        peluqueria = get_object_or_404(Peluqueria, slug=slug_peluqueria)
+        peluqueria = get_object_or_404(Peluqueria, subdomain=slug_peluqueria)
         
         # Obtenemos IDs básicos
         empleado_id = data.get('empleado_id')
@@ -88,41 +89,35 @@ def crear_cita_api(request, slug_peluqueria):
         fecha_str = data.get('fecha')
         hora_str = data.get('hora_inicio')
         inicio = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
-        fin = inicio + servicio.duracion
+        fin = inicio + timedelta(minutes=servicio.duracion)
 
         # --- DEFINICIÓN DE LA LÓGICA SEGURA ---
-        # Esta función se ejecutará DENTRO del bloqueo del Guardia
         def _logica_crear_cita(empleado_bloqueado, *args, **kwargs):
             # Validar pertenencia
-            if empleado_bloqueado.peluqueria != peluqueria:
+            if empleado_bloqueado.tenant != peluqueria:
                 raise ValueError('El empleado no pertenece a esta peluquería')
 
-            # 1. Verificar conflicto (Ahora es 100% seguro porque nadie más puede escribir)
+            # 1. Verificar conflicto
             if verificar_conflicto_atomic(empleado_bloqueado, inicio, fin):
                 raise ValueError('HORARIO_OCUPADO')
 
             # 2. Crear Cita
             nueva_cita = Cita.objects.create(
-                peluqueria=peluqueria,
+                tenant=peluqueria,
                 empleado=empleado_bloqueado,
+                servicio=servicio,
                 cliente_nombre=data.get('cliente_nombre', 'Cliente App'),
                 cliente_telefono=data.get('cliente_telefono', '0000000000'),
                 fecha_hora_inicio=inicio,
                 fecha_hora_fin=fin,
                 precio_total=servicio.precio,
-                estado='C' # Confirmada directamente (Pago en local asumido para API)
+                estado='confirmada' # Confirmada directamente
             )
-            # 3. Asociar servicio (M2M)
-            nueva_cita.servicios.add(servicio)
             return nueva_cita
 
         # --- EJECUCIÓN CON EL GUARDIA ---
-        # Le decimos al Guardia: "Bloquea a este empleado y ejecuta esta lógica"
         cita = BookingManager.ejecutar_reserva_segura(empleado_id, _logica_crear_cita)
         
-        # Notificar fuera de la transacción
-        cita.enviar_notificacion_telegram()
-
         return JsonResponse({'mensaje': 'Cita creada exitosamente', 'id': cita.id}, status=201)
 
     except ValueError as ve:
