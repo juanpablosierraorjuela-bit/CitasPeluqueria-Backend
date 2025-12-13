@@ -4,7 +4,7 @@ from . import views
 urlpatterns = [
     # --- Landing y Accesos Públicos ---
     path('', views.landing_saas_view, name='landing_negocio'),
-    path('negocios/', views.landing_saas_view, name='landing_negocio_alt'), # Alias por seguridad
+    path('negocios/', views.landing_saas_view, name='landing_negocio_alt'),
     path('reservar/<slug:slug>/', views.booking_page, name='agendar_cita'),
     path('confirmacion/<int:cita_id>/', views.confirmation_view, name='confirmacion_reserva'),
 
