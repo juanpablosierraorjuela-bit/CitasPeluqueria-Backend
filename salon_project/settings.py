@@ -7,11 +7,20 @@ import dj_database_url
 # ==========================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-temporal-desarrollo-12345')
-DEBUG = 'RENDER' not in os.environ
-ALLOWED_HOSTS = ['*']
-CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
 
+# SEGURIDAD: Usa la clave del entorno en producción, o la por defecto en local
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-temporal-desarrollo-12345')
+
+# DEBUG: Falso si estamos en Render, Verdadero si es local
+DEBUG = 'RENDER' not in os.environ
+
+ALLOWED_HOSTS = ['*']
+
+# CSRF: Importante para evitar error 403 Forbidden en formularios
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.onrender.com',
+    'https://' + os.environ.get('RENDER_EXTERNAL_HOSTNAME', '127.0.0.1')
+]
 
 # ==========================================
 # 2. APLICACIONES INSTALADAS
@@ -36,15 +45,15 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # <--- CRÍTICO: Para servir CSS/JS en Render
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',  # <--- CORREGIDO (Tenía falta de ortografía)
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'salon.middleware.PeluqueriaMiddleware',      # <--- ACTIVADO (Correcto para producción)
+    'salon.middleware.PeluqueriaMiddleware',
 ]
 
 ROOT_URLCONF = 'salon_project.urls'
@@ -76,6 +85,7 @@ WSGI_APPLICATION = 'salon_project.wsgi.application'
 # 5. BASE DE DATOS
 # ==========================================
 
+# Detecta automáticamente la base de datos de Render (PostgreSQL) o usa SQLite local
 DATABASES = {
     'default': dj_database_url.config(
         default='sqlite:///db.sqlite3',
@@ -104,15 +114,22 @@ USE_I18N = True
 USE_TZ = True
 
 # ==========================================
-# 8. ESTÁTICOS
+# 8. ESTÁTICOS (ARCHIVOS CSS, JS, IMÁGENES)
 # ==========================================
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'salon', 'static'),
 ]
+
+# Compresión para producción
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Media (Imágenes subidas por usuarios)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # ==========================================
 # 9. OTRAS CONFIGURACIONES
@@ -120,7 +137,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- CONFIGURACIÓN JAZZMIN (CORREGIDA) ---
+# --- CONFIGURACIÓN JAZZMIN ---
 JAZZMIN_SETTINGS = {
     "site_title": "Administración PASO",
     "site_header": "PASO Admin",
@@ -132,7 +149,7 @@ JAZZMIN_SETTINGS = {
         {"name": "Ver Sitio", "url": "inicio", "permissions": ["auth.view_user"]},
     ],
 
-    # 2. Sidebar Custom Links (CORREGIDO: 'mi_horario' -> 'mi_agenda')
+    # 2. Sidebar Custom Links
     "custom_links": {
         "salon": [{
             "name": "📅 Gestionar Horario", 
@@ -142,7 +159,7 @@ JAZZMIN_SETTINGS = {
         }]
     },
 
-    # 3. User Menu (CORREGIDO: 'mi_horario' -> 'mi_agenda')
+    # 3. User Menu
     "usermenu_links": [
         {"name": "📅 Mi Horario Visual", "url": "mi_agenda", "new_window": True, "icon": "fas fa-clock"},
     ],
