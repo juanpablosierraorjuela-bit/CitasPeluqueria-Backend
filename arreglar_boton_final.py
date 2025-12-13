@@ -1,4 +1,12 @@
-{% load static %}
+import os
+
+print("--- 🔧 CONECTANDO EL BOTÓN 'MI NEGOCIO' 🔧 ---")
+
+# Ruta de tu diseño
+path = 'salon/templates/salon/index.html'
+
+# TU CÓDIGO VISUAL EXACTO (CON LA CORRECCIÓN APLICADA)
+nuevo_html = """{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -141,3 +149,10 @@
     </script>
 </body>
 </html>
+"""
+
+# Reescribir el archivo
+with open(path, 'w', encoding='utf-8') as f:
+    f.write(nuevo_html)
+
+print("✅ ARCHIVO SOBRESCRITO CON ÉXITO.")
