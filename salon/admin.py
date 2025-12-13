@@ -17,7 +17,8 @@ class MovimientoInventarioInline(admin.TabularInline):
 
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'cantidad_actual', 'precio_venta', 'peluqueria')
+    list_display = ('nombre', 'cantidad_actual', 'precio_venta', 'es_insumo_interno', 'peluqueria')
+    list_filter = ('es_insumo_interno', 'peluqueria')
     search_fields = ('nombre',)
     inlines = [MovimientoInventarioInline]
     
@@ -73,13 +74,28 @@ class HorarioEmpleadoInline(admin.TabularInline):
 
 @admin.register(Empleado)
 class EmpleadoAdmin(SalonOwnerAdmin):
-    list_display = ('nombre', 'apellido', 'activo', 'es_domiciliario')
-    exclude = ('peluqueria',) 
+    list_display = ('nombre', 'apellido', 'peluqueria', 'es_domiciliario', 'es_independiente', 'activo')
+    list_filter = ('es_domiciliario', 'es_independiente', 'activo', 'peluqueria')
     inlines = [HorarioEmpleadoInline]
+    
+    # Organización visual de campos para evitar errores al editar
+    fieldsets = (
+        ('Información Personal', {
+            'fields': ('peluqueria', 'user', 'nombre', 'apellido', 'email_contacto', 'telefono', 'instagram', 'activo')
+        }),
+        ('Configuración Profesional', {
+            'fields': ('es_domiciliario', 'tipo_pago', 'valor_pago')
+        }),
+        ('Modo Independiente (Credenciales Propias)', {
+            'classes': ('collapse',),
+            'description': 'Llenar SOLO si el empleado maneja sus propios cobros y notificaciones.',
+            'fields': ('es_independiente', 'bold_api_key', 'bold_secret_key', 'telegram_token', 'telegram_chat_id')
+        }),
+    )
 
 @admin.register(Servicio)
 class ServicioAdmin(SalonOwnerAdmin):
-    list_display = ('nombre', 'precio', 'duracion') 
+    list_display = ('nombre', 'precio', 'duracion', 'producto_asociado') 
     exclude = ('peluqueria',)
 
 @admin.register(Ausencia)
@@ -89,23 +105,23 @@ class AusenciaAdmin(SalonOwnerAdmin):
 
 @admin.register(Cita)
 class CitaAdmin(SalonOwnerAdmin):
-    list_display = ('cliente_nombre', 'fecha_hora_inicio', 'estado', 'empleado', 'precio_total', 'metodo_pago')
-    list_filter = ('estado', 'fecha_hora_inicio', 'metodo_pago')
+    list_display = ('id', 'fecha_hora_inicio', 'cliente_nombre', 'empleado', 'precio_total', 'estado', 'metodo_pago')
+    list_filter = ('estado', 'metodo_pago', 'fecha_hora_inicio')
+    search_fields = ('cliente_nombre', 'referencia_pago')
+    readonly_fields = ('creado_en',)
     exclude = ('peluqueria',)
 
 @admin.register(Peluqueria)
 class PeluqueriaAdmin(admin.ModelAdmin):
     list_display = ('nombre_visible', 'ciudad', 'telefono', 'fecha_inicio_contrato', 'activo_saas')
+    search_fields = ('nombre', 'ciudad')
+    
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser: return qs
         if hasattr(request.user, 'perfil') and request.user.perfil.peluqueria:
             return qs.filter(id=request.user.perfil.peluqueria.id)
         return qs.none()
-    def get_readonly_fields(self, request, obj=None):
-        if not request.user.is_superuser:
-            return ('slug', 'fecha_inicio_contrato', 'activo_saas')
-        return ()
 
 @admin.register(PerfilUsuario)
 class PerfilUsuarioAdmin(admin.ModelAdmin):
