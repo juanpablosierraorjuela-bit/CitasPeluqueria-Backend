@@ -263,7 +263,8 @@ def gestionar_inventario(request):
     productos = peluqueria.inventario.all().order_by('nombre')
     valor_inventario = sum([p.valor_total_stock for p in productos])
     
-    return render(request, 'salon/panel_dueño/inventario.html', {
+    # --- CAMBIO APLICADO: NOMBRE DEL TEMPLATE CORREGIDO ---
+    return render(request, 'salon/panel_dueño/panel_peluqueria.html', {
         'peluqueria': peluqueria,
         'productos': productos,
         'valor_total': valor_inventario
@@ -459,7 +460,7 @@ def agendar_cita(request, slug_peluqueria):
                     precio_total=precio, 
                     estado='P', 
                     metodo_pago=metodo,
-                    tipo_cobro='TOTAL', # Simplificado por ahora
+                    tipo_cobro='TOTAL', 
                     es_domicilio=es_domicilio,
                     direccion_domicilio=request.POST.get('direccion_domicilio') if es_domicilio else None
                 )
