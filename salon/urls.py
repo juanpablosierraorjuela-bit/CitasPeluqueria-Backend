@@ -10,7 +10,8 @@ urlpatterns = [
     
     # Rutas de Sistema
     path('accounts/', include('django.contrib.auth.urls')),
-    path('reservar/<slug:slug>/', views.booking_page, name='agendar_cita'),
+    # VISTA CORREGIDA: Apunta a 'agendar'
+    path('reservar/<slug:slug>/', views.booking_page, name='agendar'), 
     
     # Herramientas
     path('settings/', views.settings_view, name='settings'),
