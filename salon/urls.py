@@ -1,4 +1,6 @@
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 from . import views
 
 urlpatterns = [
@@ -18,7 +20,7 @@ urlpatterns = [
     path('<slug:slug_peluqueria>/reservar/', views.agendar_cita, name='agendar_cita'),
     path('<slug:slug_peluqueria>/confirmacion/<int:cita_id>/', views.confirmacion_cita, name='confirmacion_cita'),
     
-    # PAGOS BOLD (Correctamente ruteados)
+    # PAGOS BOLD
     path('pagos/procesar/<int:cita_id>/', views.procesar_pago_bold, name='procesar_pago_bold'),
     path('pagos/respuesta-bold/', views.retorno_bold, name='retorno_bold'),
     
@@ -27,6 +29,8 @@ urlpatterns = [
 
     # Panel Dueño
     path('negocio/dashboard/', views.panel_negocio, name='panel_negocio'),
+    path('negocio/confirmar-pago/<int:cita_id>/', views.confirmar_pago_manual, name='confirmar_pago_manual'), # NUEVO
+    path('negocio/inventario/', views.gestionar_inventario, name='gestionar_inventario'), # NUEVO
     path('negocio/servicios/', views.gestionar_servicios, name='gestionar_servicios'),
     path('negocio/servicios/eliminar/<int:servicio_id>/', views.eliminar_servicio, name='eliminar_servicio'),
     path('negocio/equipo/', views.gestionar_equipo, name='gestionar_equipo'),
@@ -36,3 +40,7 @@ urlpatterns = [
     path('mi-agenda/ausencias/', views.gestionar_ausencias, name='gestionar_ausencias'),
     path('mi-agenda/ausencias/borrar/<int:ausencia_id>/', views.eliminar_ausencia, name='eliminar_ausencia'),
 ]
+
+# Configuración para servir imágenes en desarrollo (Arregla bug visual de logos)
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
