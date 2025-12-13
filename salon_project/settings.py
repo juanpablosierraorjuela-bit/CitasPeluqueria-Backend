@@ -130,11 +130,27 @@ JAZZMIN_SETTINGS = {
     "site_header": "PASO Admin",
     "welcome_sign": "Bienvenido al Panel de Control",
     "search_model": "salon.Peluqueria",
-    "topmenu_links": [{"name": "Ver Sitio", "url": "inicio", "permissions": ["auth.view_user"]}],
+    
+    # 1. Menú Superior
+    "topmenu_links": [
+        {"name": "Ver Sitio", "url": "inicio", "permissions": ["auth.view_user"]},
+    ],
+
+    # 2. Sidebar Custom Links
     "custom_links": {
-        "salon": [{"name": "📅 Gestionar Horario", "url": "mi_agenda", "icon": "fas fa-clock", "permissions": ["auth.view_user"]}]
+        "salon": [{
+            "name": "📅 Gestionar Horario", 
+            "url": "mi_agenda", 
+            "icon": "fas fa-clock",
+            "permissions": ["auth.view_user"]
+        }]
     },
-    "usermenu_links": [{"name": "📅 Mi Horario Visual", "url": "mi_agenda", "new_window": True, "icon": "fas fa-clock"}],
+
+    # 3. User Menu
+    "usermenu_links": [
+        {"name": "📅 Mi Horario Visual", "url": "mi_agenda", "new_window": True, "icon": "fas fa-clock"},
+    ],
+
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
