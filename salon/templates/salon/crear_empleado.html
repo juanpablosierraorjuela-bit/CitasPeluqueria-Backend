@@ -147,8 +147,12 @@
         <h2>Nuevo Talento</h2>
         <p class="subtitle">Agrega un nuevo estilista a tu equipo.</p>
 
-        {% if error %} 
-            <div class="error-msg animate-enter">⚠️ {{ error }}</div> 
+        {% if messages %}
+            {% for message in messages %}
+            <div class="error-msg animate-enter" style="{% if message.tags == 'success' %}background:#dcfce7; color:#166534;{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
         {% endif %}
 
         <form method="POST">
@@ -156,7 +160,7 @@
             
             <div class="form-group">
                 <label>Nombre del Estilista</label>
-                <input type="text" name="nombre" placeholder="Ej. Ana María" required autocomplete="off">
+                <input type="text" name="name" placeholder="Ej. Ana María" required autocomplete="off">
             </div>
             
             <div class="form-group">
@@ -172,7 +176,7 @@
             <button type="submit" class="btn-submit">Crear Perfil Oficial</button>
         </form>
 
-        <a href="{% url 'dashboard_dueño' %}" class="back-link">
+        <a href="{% url 'panel_negocio' %}" class="back-link">
             ← Volver al Panel de Control
         </a>
     </div>
