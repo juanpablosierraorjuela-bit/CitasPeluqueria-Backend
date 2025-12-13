@@ -31,7 +31,7 @@ class Peluqueria(models.Model):
     telefono = models.CharField(max_length=20, blank=True)
     codigo_pais_wa = models.CharField(max_length=5, default="57")
     
-    # Redes Sociales (Para mostrar iconos en el perfil)
+    # Redes Sociales
     instagram = models.URLField(blank=True, null=True, help_text="Link completo de Instagram")
     facebook = models.URLField(blank=True, null=True, help_text="Link completo de Facebook")
     tiktok = models.URLField(blank=True, null=True, help_text="Link completo de TikTok")
@@ -46,7 +46,7 @@ class Peluqueria(models.Model):
     
     # Configuración SaaS
     fecha_inicio_contrato = models.DateTimeField(default=timezone.now)
-    activo_saas = models.BooleanField(default=True) # Si false, no deja entrar al panel
+    activo_saas = models.BooleanField(default=True) 
     
     # Notificaciones
     telegram_token = models.CharField(max_length=200, blank=True, null=True)
@@ -58,7 +58,7 @@ class Peluqueria(models.Model):
     latitud = models.FloatField(default=5.5353)
     longitud = models.FloatField(default=-73.3678)
 
-    # Servicio a Domicilio
+    # Servicio a Domicilio (Configuración Global del Salón)
     ofrece_domicilio = models.BooleanField(default=False)
     comision_domicilio = models.IntegerField(default=10, help_text="Porcentaje de comisión para el dueño por servicio a domicilio")
 
@@ -80,13 +80,17 @@ class Producto(models.Model):
     """ Inventario Automático """
     peluqueria = models.ForeignKey(Peluqueria, on_delete=models.CASCADE, related_name='inventario')
     nombre = models.CharField(max_length=150)
-    costo_compra = models.IntegerField(default=0, help_text="Cuánto te costó comprarlo")
-    precio_venta = models.IntegerField(default=0, help_text="A cómo lo vendes al público")
+    costo_compra = models.IntegerField(default=0, help_text="Costo unitario de adquisición")
+    precio_venta = models.IntegerField(default=0, help_text="Precio de venta al público")
     cantidad_actual = models.IntegerField(default=0)
     stock_minimo = models.IntegerField(default=5, help_text="Alerta cuando baje de este número")
-    es_insumo_interno = models.BooleanField(default=False, help_text="Marcar si es un producto de uso interno (shampoo de lavacabezas) y no para venta")
+    es_insumo_interno = models.BooleanField(default=False, help_text="Marcar si es uso interno (no venta)")
 
     def __str__(self): return f"{self.nombre} ({self.cantidad_actual} und)"
+    
+    @property
+    def valor_total_stock(self):
+        return self.cantidad_actual * self.precio_venta
 
 class MovimientoInventario(models.Model):
     """ Historial de movimientos para auditoría """
@@ -102,9 +106,8 @@ class Servicio(models.Model):
     nombre = models.CharField(max_length=100)
     duracion = models.DurationField()
     precio = models.IntegerField()
-    # Vinculación con inventario (Opcional: Si el servicio gasta un producto automáticamente)
-    producto_asociado = models.ForeignKey(Producto, on_delete=models.SET_NULL, null=True, blank=True, help_text="Producto que se descuenta al realizar este servicio (opcional)")
-    cantidad_descuento = models.IntegerField(default=1, help_text="Cantidad a descontar del inventario")
+    producto_asociado = models.ForeignKey(Producto, on_delete=models.SET_NULL, null=True, blank=True)
+    cantidad_descuento = models.IntegerField(default=1)
 
     @property
     def str_duracion(self):
@@ -119,14 +122,20 @@ class Empleado(models.Model):
     apellido = models.CharField(max_length=100)
     email_contacto = models.EmailField(blank=True, null=True)
     telefono = models.CharField(max_length=20, blank=True)
-    
-    # Redes Sociales del Empleado
     instagram = models.CharField(max_length=100, blank=True, help_text="Usuario de IG (sin @)")
     
-    # Configuración de Nómina
+    # Configuración de Nómina y Autonomía
     es_domiciliario = models.BooleanField(default=False)
+    es_independiente = models.BooleanField(default=False, help_text="Si está marcado, usa sus propias credenciales de pago y Telegram.")
+    
+    # Credenciales Propias (Para profesionales independientes)
+    bold_api_key = models.CharField("Mi API Key Bold", max_length=255, blank=True, null=True)
+    bold_secret_key = models.CharField("Mi Secret Key Bold", max_length=255, blank=True, null=True)
+    telegram_token = models.CharField("Mi Token Bot", max_length=200, blank=True, null=True)
+    telegram_chat_id = models.CharField("Mi Chat ID", max_length=100, blank=True, null=True)
+    
     tipo_pago = models.CharField(max_length=20, choices=[('PORCENTAJE', 'Porcentaje'), ('FIJO', 'Sueldo Fijo')], default='PORCENTAJE')
-    valor_pago = models.IntegerField(default=50, help_text="Si es porcentaje: ej 50. Si es fijo: ej 1200000")
+    valor_pago = models.IntegerField(default=50)
     
     activo = models.BooleanField(default=True)
     def __str__(self): return f"{self.nombre} {self.apellido}"
@@ -157,19 +166,15 @@ class Cita(models.Model):
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
     servicios = models.ManyToManyField(Servicio)
     
-    # Datos Cliente
     cliente_nombre = models.CharField(max_length=150)
     cliente_telefono = models.CharField(max_length=20)
     
-    # Fecha y Hora
     fecha_hora_inicio = models.DateTimeField()
     fecha_hora_fin = models.DateTimeField()
     
-    # Finanzas
     precio_total = models.IntegerField(default=0)
     abono_pagado = models.IntegerField(default=0)
     
-    # Configuración Cita
     metodo_pago = models.CharField(max_length=10, choices=METODOS, default='SITIO')
     tipo_cobro = models.CharField(max_length=10, choices=TIPO_COBRO, default='TOTAL')
     referencia_pago = models.CharField(max_length=100, blank=True, null=True)
@@ -184,31 +189,46 @@ class Cita(models.Model):
     def saldo_pendiente(self): return self.precio_total - self.abono_pagado
 
     def enviar_notificacion_telegram(self):
-        """ Envia notificación al dueño con formato mejorado """
+        """ Envia notificación inteligente dependiendo si es Domiciliario Independiente o Negocio """
         try:
-            if self.peluqueria.telegram_token and self.peluqueria.telegram_chat_id:
-                servicios_str = ", ".join([s.nombre for s in self.servicios.all()])
-                total_fmt = "{:,.0f}".format(self.precio_total).replace(",", ".")
-                abono_fmt = "{:,.0f}".format(self.abono_pagado).replace(",", ".")
-                saldo_fmt = "{:,.0f}".format(self.saldo_pendiente).replace(",", ".")
-                
-                fecha_co = self.fecha_hora_inicio.astimezone(ZONA_CO)
-                fecha_fmt = fecha_co.strftime("%d/%m/%Y %I:%M %p")
-                
-                tipo_cita = "🏠 DOMICILIO" if self.es_domicilio else "🏢 EN SALÓN"
-                
-                msg = (f"🔥 *NUEVA CITA - {tipo_cita}*\n"
-                       f"📅 *Fecha:* {fecha_fmt}\n"
-                       f"👤 *Cliente:* {self.cliente_nombre}\n"
-                       f"📞 *Tel:* {self.cliente_telefono}\n"
-                       f"💇 *Staff:* {self.empleado.nombre}\n\n"
-                       f"📋 *Servicios:* {servicios_str}\n"
-                       f"💰 *Total:* ${total_fmt}\n"
-                       f"💳 *Abono ({self.metodo_pago}):* ${abono_fmt}\n"
-                       f"📉 *Resta:* ${saldo_fmt}")
-                
-                requests.post(f"https://api.telegram.org/bot{self.peluqueria.telegram_token}/sendMessage", 
-                              data={"chat_id": self.peluqueria.telegram_chat_id, "text": msg, "parse_mode": "Markdown"}, timeout=5)
+            # Determinar credenciales (Empleado Independiente vs Negocio)
+            if self.empleado.es_independiente and self.empleado.telegram_token:
+                token = self.empleado.telegram_token
+                chat_id = self.empleado.telegram_chat_id
+                entidad = "Profesional"
+            elif self.peluqueria.telegram_token:
+                token = self.peluqueria.telegram_token
+                chat_id = self.peluqueria.telegram_chat_id
+                entidad = "Negocio"
+            else:
+                return # No hay configuración
+
+            servicios_str = ", ".join([s.nombre for s in self.servicios.all()])
+            total_fmt = "{:,.0f}".format(self.precio_total).replace(",", ".")
+            abono_fmt = "{:,.0f}".format(self.abono_pagado).replace(",", ".")
+            
+            fecha_co = self.fecha_hora_inicio.astimezone(ZONA_CO)
+            fecha_fmt = fecha_co.strftime("%d/%m/%Y %I:%M %p")
+            
+            tipo_cita = "🏠 DOMICILIO" if self.es_domicilio else "🏢 EN SALÓN"
+            
+            # Estado personalizado para Nequi
+            estado_txt = "✅ CONFIRMADA"
+            if self.metodo_pago == 'NEQUI' and self.estado == 'P':
+                estado_txt = "⏳ PENDIENTE DE PAGO (Validar Nequi)"
+
+            msg = (f"🔥 *NUEVA CITA - {tipo_cita}*\n"
+                   f"📌 *Estado:* {estado_txt}\n"
+                   f"📅 *Fecha:* {fecha_fmt}\n"
+                   f"👤 *Cliente:* {self.cliente_nombre}\n"
+                   f"📞 *Tel:* {self.cliente_telefono}\n"
+                   f"💇 *Staff:* {self.empleado.nombre}\n\n"
+                   f"📋 *Servicios:* {servicios_str}\n"
+                   f"💰 *Total:* ${total_fmt}\n"
+                   f"💳 *Abono ({self.metodo_pago}):* ${abono_fmt}")
+            
+            requests.post(f"https://api.telegram.org/bot{token}/sendMessage", 
+                          data={"chat_id": chat_id, "text": msg, "parse_mode": "Markdown"}, timeout=5)
         except Exception as e: print(f"Error Telegram: {e}")
 
 class Cupon(models.Model):
