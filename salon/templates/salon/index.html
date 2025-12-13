@@ -30,106 +30,65 @@
             overflow-x: hidden;
         }
 
-        /* --- FONDO ANIMADO --- */
-        .ambient-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            overflow: hidden;
-        }
+        /* FONDO */
+        .ambient-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); overflow: hidden; }
         .blob { position: absolute; filter: blur(80px); opacity: 0.6; animation: float 10s infinite alternate ease-in-out; }
         .blob-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: #fce7f3; }
         .blob-2 { bottom: -10%; right: -10%; width: 600px; height: 600px; background: #e0e7ff; animation-delay: -5s; }
         .blob-3 { top: 40%; left: 40%; width: 300px; height: 300px; background: #fae8ff; animation-delay: -2s; }
         @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(30px, 50px) scale(1.1); } }
 
-        /* --- NAVBAR --- */
-        .navbar {
-            padding: 20px 40px; display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; z-index: 100; 
-            background: rgba(255,255,255,0.05); backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255,255,255,0.2); transition: all 0.3s;
-        }
+        /* NAVBAR */
+        .navbar { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.2); transition: all 0.3s; }
         .navbar.scrolled { background: rgba(255,255,255,0.9); box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
         .brand-pill { text-decoration: none; font-weight: 800; color: var(--primary); font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
         .dot { width: 8px; height: 8px; background: var(--primary); border-radius: 50%; }
-        .btn-access {
-            text-decoration: none; background: var(--primary); color: white;
-            padding: 10px 24px; border-radius: 50px; font-size: 0.9rem; font-weight: 600;
-            transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2);
-        }
+        .btn-access { text-decoration: none; background: var(--primary); color: white; padding: 10px 24px; border-radius: 50px; font-size: 0.9rem; font-weight: 600; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2); }
         .btn-access:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(15, 23, 42, 0.3); }
 
-        /* --- HERO --- */
+        /* HERO */
         header { text-align: center; padding: 100px 20px 60px; max-width: 900px; margin: 0 auto; }
-        .hero-title { 
-            font-size: 4.5rem; font-weight: 800; margin: 0 0 15px; line-height: 1.05; letter-spacing: -2px;
-            background: linear-gradient(180deg, #0f172a 20%, #475569 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            animation: fadeUp 0.8s ease-out forwards;
-        }
+        .hero-title { font-size: 4.5rem; font-weight: 800; margin: 0 0 15px; line-height: 1.05; letter-spacing: -2px; background: linear-gradient(180deg, #0f172a 20%, #475569 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: fadeUp 0.8s ease-out forwards; }
         .hero-title span { background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .hero-subtitle { font-size: 1.25rem; color: var(--secondary); margin-bottom: 30px; animation: fadeUp 0.8s ease-out 0.2s forwards; }
-        .btn-legado {
-            display: inline-flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.4); border: 1px solid rgba(255,255,255,0.6);
-            padding: 12px 28px; border-radius: 50px; text-decoration: none; color: #475569; font-weight: 600;
-            transition: all 0.3s ease; backdrop-filter: blur(10px); margin-bottom: 50px; animation: fadeUp 0.8s ease-out 0.3s forwards;
-        }
+        .btn-legado { display: inline-flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.4); border: 1px solid rgba(255,255,255,0.6); padding: 12px 28px; border-radius: 50px; text-decoration: none; color: #475569; font-weight: 600; transition: all 0.3s ease; backdrop-filter: blur(10px); margin-bottom: 50px; animation: fadeUp 0.8s ease-out 0.3s forwards; }
         .btn-legado:hover { background: white; border-color: #d4af37; color: #d4af37; transform: translateY(-3px); }
 
-        /* --- SEARCH --- */
-        .search-container {
-            display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px);
-            padding: 8px; border-radius: 50px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08); border: 1px solid white;
-            width: fit-content; margin: 0 auto 60px; animation: fadeUp 0.8s ease-out 0.4s forwards; transition: transform 0.3s;
-        }
+        /* SEARCH */
+        .search-container { display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); padding: 8px; border-radius: 50px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08); border: 1px solid white; width: fit-content; margin: 0 auto 60px; animation: fadeUp 0.8s ease-out 0.4s forwards; transition: transform 0.3s; }
         .search-container:hover { transform: translateY(-5px); }
         .city-select { border: none; background: transparent; padding: 12px 20px; font-family: var(--font-main); font-size: 1rem; color: var(--primary); font-weight: 600; outline: none; cursor: pointer; min-width: 200px; }
         .btn-geo { width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--primary); color: white; font-size: 1.2rem; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
         .btn-geo:hover { background: var(--accent); transform: rotate(15deg); }
 
-        /* --- GRID --- */
+        /* GRID */
         .grid-wrapper { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; max-width: 1100px; margin: 0 auto; padding: 0 20px 100px; }
-
-        .salon-card {
-            background: white; border-radius: 28px; padding: 25px; box-shadow: 0 10px 30px -5px rgba(0,0,0,0.03);
-            text-decoration: none; color: inherit; transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-            border: 1px solid rgba(255,255,255,0.8); position: relative; overflow: hidden; display: block;
-            animation: fadeUp 0.6s ease-out forwards;
-        }
+        .salon-card { background: white; border-radius: 28px; padding: 25px; box-shadow: 0 10px 30px -5px rgba(0,0,0,0.03); text-decoration: none; color: inherit; transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); border: 1px solid rgba(255,255,255,0.8); position: relative; overflow: hidden; display: block; animation: fadeUp 0.6s ease-out forwards; }
         .salon-card:hover { transform: translateY(-10px) scale(1.02); box-shadow: 0 25px 50px -10px rgba(0,0,0,0.08); z-index: 10; }
         .salon-card.hidden { display: none; }
 
         .card-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
-        
-        /* LOGO MEJORADO */
-        .salon-avatar {
-            width: 60px; height: 60px; /* Tamaño fijo */
-            background: white;
-            border-radius: 18px; display: flex; align-items: center; justify-content: center;
-            font-weight: 800; color: #64748b; font-size: 1.5rem; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;
-            object-fit: contain; /* Clave para no deformar logos */
-            padding: 5px; /* Espacio para que respire */
-        }
+        /* LOGO */
+        .salon-avatar { width: 60px; height: 60px; background: white; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #64748b; font-size: 1.5rem; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; object-fit: contain; padding: 4px; }
         
         .salon-info h3 { margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--primary); }
         .salon-info span { font-size: 0.85rem; color: #94a3b8; font-weight: 600; }
-        .address { font-size: 0.95rem; color: var(--secondary); margin-bottom: 15px; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .address { font-size: 0.95rem; color: var(--secondary); margin-bottom: 12px; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         .status-pill { font-size: 0.75rem; font-weight: 800; padding: 8px 16px; border-radius: 30px; display: inline-flex; align-items: center; gap: 8px; }
         .status-pill.open { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
         .status-pill.open::before { content:''; width:8px; height:8px; background:#16a34a; border-radius:50%; }
         .status-pill.closed-online { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
 
-        /* ICONOS REDES SOCIALES (NUEVO) */
-        .social-row { display: flex; gap: 10px; margin-bottom: 15px; }
-        .social-icon {
-            width: 30px; height: 30px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            background: #f1f5f9; color: var(--secondary);
-            font-size: 0.9rem; transition: 0.2s; text-decoration: none;
-        }
-        .social-icon:hover { background: var(--accent); color: white; transform: translateY(-2px); }
+        /* REDES SOCIALES */
+        .social-row { display: flex; gap: 10px; margin-bottom: 20px; }
+        .social-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f1f5f9; color: var(--secondary); font-size: 0.95rem; transition: 0.2s; text-decoration: none; border: 1px solid #e2e8f0; }
+        .social-icon:hover { background: var(--primary); color: white; border-color: var(--primary); transform: translateY(-3px); }
+        
+        /* Colores específicos de redes */
+        .social-icon.instagram:hover { background: #E1306C; border-color: #E1306C; }
+        .social-icon.facebook:hover { background: #1877F2; border-color: #1877F2; }
+        .social-icon.tiktok:hover { background: #000000; border-color: #000000; }
 
         @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 768px) { .hero-title { font-size: 3rem; } .search-container { width: 100%; } .city-select { width: 100%; } .navbar { padding: 15px 20px; } }
@@ -172,7 +131,6 @@
     <div class="grid-wrapper" id="salon-grid">
         {% for p in peluquerias %}
             <a href="{% url 'agendar_cita' p.slug %}" class="salon-card" data-lat="{{ p.latitud|stringformat:'.6f' }}" data-lon="{{ p.longitud|stringformat:'.6f' }}" data-ciudad="{{ p.ciudad }}">
-                
                 <div class="card-header">
                     {% if p.logo %}
                         <img src="{{ p.logo.url }}" class="salon-avatar" alt="Logo {{ p.nombre_visible }}">
@@ -189,14 +147,15 @@
                 <p class="address">{{ p.direccion|default:"Ubicación pendiente" }}</p>
 
                 {% if p.instagram or p.facebook or p.tiktok %}
-                <div class="social-row" onclick="event.stopPropagation();"> {% if p.instagram %}
-                        <object><a href="{{ p.instagram }}" target="_blank" class="social-icon" title="Instagram"><i class="fab fa-instagram"></i></a></object>
+                <div class="social-row" onclick="event.stopPropagation();"> 
+                    {% if p.instagram %}
+                        <object><a href="{{ p.instagram }}" target="_blank" class="social-icon instagram" title="Instagram"><i class="fab fa-instagram"></i></a></object>
                     {% endif %}
                     {% if p.facebook %}
-                        <object><a href="{{ p.facebook }}" target="_blank" class="social-icon" title="Facebook"><i class="fab fa-facebook-f"></i></a></object>
+                        <object><a href="{{ p.facebook }}" target="_blank" class="social-icon facebook" title="Facebook"><i class="fab fa-facebook-f"></i></a></object>
                     {% endif %}
                     {% if p.tiktok %}
-                        <object><a href="{{ p.tiktok }}" target="_blank" class="social-icon" title="TikTok"><i class="fab fa-tiktok"></i></a></object>
+                        <object><a href="{{ p.tiktok }}" target="_blank" class="social-icon tiktok" title="TikTok"><i class="fab fa-tiktok"></i></a></object>
                     {% endif %}
                 </div>
                 {% endif %}
