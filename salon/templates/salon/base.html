@@ -11,7 +11,7 @@
 <body class="bg-light">
     <nav class="navbar navbar-dark bg-dark mb-4">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'dashboard' %}">💈 Gestión Salón</a>
+            <a class="navbar-brand" href="{% url 'panel_negocio' %}"> Gestión Salón</a>
             {% if user.is_authenticated %}
             <span class="text-white">Hola, {{ user.username }}</span>
             {% endif %}
