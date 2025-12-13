@@ -10,7 +10,8 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .card { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); max-width: 400px; width: 90%; text-align: center; }
         .icon-check { font-size: 4rem; display: block; margin-bottom: 20px; }
-        .btn-home { background: #0f172a; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-weight: 700; width: 100%; cursor: pointer; text-decoration: none; display: block; margin-top: 20px; }
+        .btn-home { background: #0f172a; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-weight: 700; width: 100%; cursor: pointer; text-decoration: none; display: block; margin-top: 20px; transition: background 0.3s; }
+        .btn-home:hover { background: #1e293b; }
         .detail-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; color: #64748b; }
         .total { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 20px 0; }
         
@@ -37,14 +38,15 @@
             {% endif %}
 
             {% if cita %}
-                <p style="color:#64748b;">Hola {{ cita.cliente_nombre }}, tu espacio ha sido separado.</p>
+                <p style="color:#64748b;">Hola {{ cita.customer_name }}, tu espacio ha sido separado.</p>
                 
                 <div style="background:#f1f5f9; padding:20px; border-radius:16px; margin-top:20px; text-align:left;">
-                    <div class="detail-row"><span>Fecha:</span> <strong>{{ cita.fecha_hora_inicio|date:"d M, Y" }}</strong></div>
-                    <div class="detail-row"><span>Hora:</span> <strong>{{ cita.fecha_hora_inicio|date:"h:i A" }}</strong></div>
-                    <div class="detail-row"><span>Estilista:</span> <strong>{{ cita.empleado.nombre }}</strong></div>
+                    <div class="detail-row"><span>Fecha:</span> <strong>{{ cita.date|date:"d M, Y" }}</strong></div>
+                    <div class="detail-row"><span>Hora:</span> <strong>{{ cita.time|time:"h:i A" }}</strong></div>
+                    
+                    <div class="detail-row"><span>Estilista:</span> <strong>{{ cita.professional.name }}</strong></div>
                     <hr>
-                    <div class="total" style="text-align: center;">Total: ${{ cita.precio_total }}</div>
+                    <div class="total" style="text-align: center;">Total: ${{ cita.service.price }}</div>
                 </div>
             {% endif %}
 
