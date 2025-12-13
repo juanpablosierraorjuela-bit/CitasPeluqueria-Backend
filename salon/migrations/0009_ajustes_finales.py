@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
             name='bold_secret_key',
             field=models.CharField(blank=True, max_length=255, null=True, verbose_name='Bold Secret Key'),
         ),
-        # 2. Agregar horarios (Aunque la base de datos crea tenerlos, esto asegura que el código lo sepa)
+        # 2. Agregar horarios (Se habían borrado en la 0006, aquí se restauran)
         migrations.AddField(
             model_name='peluqueria',
             name='hora_apertura',
@@ -31,10 +31,5 @@ class Migration(migrations.Migration):
             old_name='nicho',
             new_name='nichos',
         ),
-        # 4. Asegurar que Ausencia tenga 'motivo' en lugar de 'tipo'
-        migrations.AddField(
-            model_name='ausencia',
-            name='motivo',
-            field=models.CharField(blank=True, max_length=200),
-        ),
+        # ELIMINADO: La columna 'motivo' ya fue creada en la migración 0006.
     ]
