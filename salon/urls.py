@@ -1,23 +1,28 @@
-from django.urls import path, include
+from django.urls import path
 from . import views
 
 urlpatterns = [
-    # TUS RUTAS BASADAS EN TUS PLANTILLAS:
-    path('', views.public_home, name='home'),                            # index.html
-    path('negocios/', views.landing_saas_view, name='landing_saas'),     # landing_saas.html
-    path('mi-agenda/', views.client_agenda, name='mi_agenda'),           # mi_agenda.html
-    path('dashboard/', views.dashboard, name='panel_negocio'),           # dashboard.html
+    # --- Landing y Accesos Públicos ---
+    path('', views.landing_saas_view, name='landing_negocio'),
+    path('negocios/', views.landing_saas_view, name='landing_negocio_alt'), # Alias por seguridad
+    path('reservar/<slug:slug>/', views.booking_page, name='agendar_cita'),
+    path('confirmacion/<int:cita_id>/', views.confirmation_view, name='confirmacion_reserva'),
+
+    # --- Panel de Gestión (Dueño) ---
+    path('panel/', views.dashboard, name='panel_negocio'),
+    path('configuracion/', views.settings_view, name='configuracion'),
+    path('inventario/', views.inventory_view, name='inventario'),
+    path('nuevo-profesional/', views.create_professional_view, name='crear_profesional'),
+
+    # --- Gestión de Agenda y Empleados ---
+    path('mi-agenda/', views.client_agenda, name='mi_agenda'),
+    path('ausencias/', views.manage_absences, name='mis_ausencias'),
+    path('eliminar-ausencia/<int:absence_id>/', views.delete_absence, name='eliminar_ausencia'),
+
+    # --- Pagos Externos ---
+    path('pago-externo/<int:pro_id>/', views.pay_external, name='pago_externo'),
+    path('invitar-externo/', views.invite_external, name='invitar_externo'),
     
-    # Rutas de Sistema
-    path('accounts/', include('django.contrib.auth.urls')),
-    # VISTA CORREGIDA: Apunta a 'agendar'
-    path('reservar/<slug:slug>/', views.booking_page, name='agendar'), 
-    
-    # Herramientas
-    path('settings/', views.settings_view, name='settings'),
-    path('inventory/', views.inventory_list, name='inventory'),
-    path('inventory/add/', views.add_product, name='add_product'),
-    path('invite-pro/', views.invite_external, name='invite_external'),
-    path('register-external/<uuid:token>/', views.register_external_view, name='register_external'),
-    path('pay-pro/<int:pro_id>/', views.pay_external, name='pay_external'),
+    # --- Crear Negocio (Onboarding) ---
+    path('crear-negocio/', views.create_tenant_view, name='crear_negocio'),
 ]
