@@ -1,7 +1,7 @@
 import pytz
 from datetime import timedelta, datetime
 from django.utils import timezone
-from .models import Cita, Ausencia, HorarioEmpleado
+from .models import Appointment as Cita, Absence as Ausencia, HorarioEmpleado
 
 # Intervalo de los bloques de tiempo (cada cuánto inicia una cita)
 INTERVALO_MINUTOS = 30
@@ -35,13 +35,13 @@ def obtener_bloques_disponibles(empleado, fecha_date, duracion_servicio):
     # 2. Obtener Citas y Ausencias que SOLAPEN con el turno
     citas = Cita.objects.filter(
         empleado=empleado, 
-        estado__in=['C', 'P'], 
+        estado__in=['confirmada', 'pendiente'], 
         fecha_hora_fin__gt=inicio_turno,
         fecha_hora_inicio__lt=fin_turno
     )
     
     ausencias = Ausencia.objects.filter(
-        empleado=empleado, 
+        professional=empleado, 
         fecha_fin__gt=inicio_turno,
         fecha_inicio__lt=fin_turno
     )
@@ -49,8 +49,8 @@ def obtener_bloques_disponibles(empleado, fecha_date, duracion_servicio):
     hora_actual = inicio_turno
 
     # 3. Iterar bloques
-    while hora_actual + duracion_servicio <= fin_turno:
-        fin_bloque = hora_actual + duracion_servicio
+    while hora_actual + timedelta(minutes=duracion_servicio) <= fin_turno:
+        fin_bloque = hora_actual + timedelta(minutes=duracion_servicio)
         ocupado = False
 
         if inicio_almuerzo and fin_almuerzo:
@@ -59,7 +59,9 @@ def obtener_bloques_disponibles(empleado, fecha_date, duracion_servicio):
 
         if not ocupado:
             for c in citas:
-                if (hora_actual < c.fecha_hora_fin) and (fin_bloque > c.fecha_hora_inicio):
+                # Se asume que c.fecha_hora_fin existe (ver save() en model Appointment)
+                fin_cita = c.fecha_hora_fin if c.fecha_hora_fin else (c.fecha_hora_inicio + timedelta(minutes=c.servicio.duracion))
+                if (hora_actual < fin_cita) and (fin_bloque > c.fecha_hora_inicio):
                     ocupado = True; break
         
         if not ocupado:
@@ -77,7 +79,7 @@ def obtener_bloques_disponibles(empleado, fecha_date, duracion_servicio):
 def verificar_conflicto_atomic(empleado, inicio, fin):
     return Cita.objects.filter(
         empleado=empleado, 
-        estado__in=['P', 'C'],
+        estado__in=['pendiente', 'confirmada'],
         fecha_hora_inicio__lt=fin, 
         fecha_hora_fin__gt=inicio
     ).exists()
