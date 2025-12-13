@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.db.models import Sum
 from django.contrib.auth.models import User
 from django.contrib.auth import login 
+from django.http import HttpResponse # Importante para ver el error
 
 # --- VISTA PORTADA (TU DISEÑO) ---
 def public_home(request):
@@ -129,9 +130,24 @@ def settings_view(request):
     return render(request, 'salon/settings.html', {'tenant': tenant})
 
 
-# --- VISTA LANDING PAGE (VENTAS) ---
+# --- VISTA LANDING PAGE (VENTAS) - CON MODO DIAGNOSTICO ---
 def landing_saas_view(request):
-    # Si el usuario ya está logueado y tiene negocio, mejor lo mandamos al dashboard directo
-    if request.user.is_authenticated and request.user.tenants.exists():
-        return redirect('panel_negocio')
-    return render(request, 'salon/landing_saas.html')
+    try:
+        # Si el usuario ya está logueado y tiene negocio, mejor lo mandamos al dashboard directo
+        if request.user.is_authenticated and hasattr(request.user, 'tenants') and request.user.tenants.exists():
+            return redirect('panel_negocio')
+        
+        return render(request, 'salon/landing_saas.html')
+
+    except Exception as e:
+        # ESTO ES LO QUE TE MOSTRARÁ EL ERROR EN PANTALLA EN LUGAR DEL ERROR 500
+        return HttpResponse(f"""
+            <div style='padding:20px; font-family:sans-serif;'>
+                <h1 style='color:red;'>Ocurrió un error interno</h1>
+                <h3>El sistema dice:</h3>
+                <code style='background:#eee; padding:10px; display:block;'>{e}</code>
+                <br>
+                <p><strong>Tipo de error:</strong> {type(e)}</p>
+                <p>Por favor, envía captura de esto a tu desarrollador.</p>
+            </div>
+        """)
