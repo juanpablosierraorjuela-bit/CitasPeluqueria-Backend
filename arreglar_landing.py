@@ -1,4 +1,12 @@
+import os
 
+print("--- 🚀 CREANDO LANDING PAGE DE VENTAS Y ARREGLANDO RUTAS 🚀 ---")
+
+# 1. CREAR LA LANDING PAGE (HTML)
+# Esta es la página que verán al dar clic en "Soy Dueño"
+os.makedirs('salon/templates/salon', exist_ok=True)
+
+html_landing = """
 {% extends 'salon/base.html' %}
 {% block content %}
 <style>
@@ -54,3 +62,65 @@
 </div>
 
 {% endblock %}
+"""
+with open('salon/templates/salon/landing_saas.html', 'w', encoding='utf-8') as f:
+    f.write(html_landing)
+print("✅ landing_saas.html creada con botón de Login abajo.")
+
+
+# 2. ARREGLAR URLS.PY (Para que 'landing_saas' NO sea el login, sino la página de ventas)
+urls_code = """from django.urls import path, include
+from . import views
+
+urlpatterns = [
+    # 1. PORTADA PRINCIPAL (Buscador de Salones)
+    path('', views.public_home, name='home'),
+    
+    # 2. LANDING PAGE PARA DUEÑOS (Ventas)
+    # Al dar clic en "Soy Dueño", vienes aquí:
+    path('negocios/', views.landing_saas_view, name='landing_saas'),
+    
+    # 3. LOGIN Y PANELES
+    path('accounts/', include('django.contrib.auth.urls')), # Login real
+    path('dashboard/', views.dashboard, name='panel_negocio'),
+    
+    # 4. RUTAS DE CLIENTE
+    path('reservar/<slug:slug>/', views.booking_page, name='agendar_cita'),
+    path('mi-agenda/', views.client_agenda, name='mi_agenda'),
+
+    # 5. HERRAMIENTAS INTERNAS
+    path('settings/', views.settings_view, name='settings'),
+    path('inventory/', views.inventory_list, name='inventory'),
+    path('inventory/add/', views.add_product, name='add_product'),
+    path('invite-pro/', views.invite_external, name='invite_external'),
+    path('register-external/<uuid:token>/', views.register_external_view, name='register_external'),
+    path('pay-pro/<int:pro_id>/', views.pay_external, name='pay_external'),
+]
+"""
+with open('salon/urls.py', 'w', encoding='utf-8') as f:
+    f.write(urls_code)
+print("✅ urls.py corregido: 'landing_saas' ahora apunta a la página de ventas.")
+
+
+# 3. ACTUALIZAR VIEWS.PY (Agregar la vista de la landing)
+# Leemos el archivo actual y agregamos la función que falta
+with open('salon/views.py', 'r', encoding='utf-8') as f:
+    content = f.read()
+
+if "def landing_saas_view(request):" not in content:
+    new_view = """
+
+# --- VISTA LANDING PAGE (VENTAS) ---
+def landing_saas_view(request):
+    # Si el usuario ya está logueado y tiene negocio, mejor lo mandamos al dashboard directo
+    if request.user.is_authenticated and request.user.tenants.exists():
+        return redirect('panel_negocio')
+    return render(request, 'salon/landing_saas.html')
+"""
+    with open('salon/views.py', 'a', encoding='utf-8') as f:
+        f.write(new_view)
+    print("✅ Vista landing_saas_view agregada a views.py.")
+else:
+    print("ℹ️ La vista ya existía.")
+
+print("--- REPARACIÓN COMPLETADA ---")

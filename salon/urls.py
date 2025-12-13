@@ -2,17 +2,22 @@ from django.urls import path, include
 from . import views
 
 urlpatterns = [
-    # Portada (Tu Diseño)
+    # 1. PORTADA PRINCIPAL (Buscador de Salones)
     path('', views.public_home, name='home'),
     
-    # Enlaces que pide tu HTML:
-    path('accounts/login/', views.custom_login, name='landing_saas'), # 'Soy Dueño' va al login
-    path('dashboard/', views.dashboard, name='panel_negocio'),        # 'Mi Negocio' va al dashboard
-    path('reservar/<slug:slug>/', views.booking_page, name='agendar_cita'), # Clic en tarjeta de peluquería
-    path('mi-agenda/', views.client_agenda, name='mi_agenda'),        # 'Mi Agenda' (Cliente)
+    # 2. LANDING PAGE PARA DUEÑOS (Ventas)
+    # Al dar clic en "Soy Dueño", vienes aquí:
+    path('negocios/', views.landing_saas_view, name='landing_saas'),
+    
+    # 3. LOGIN Y PANELES
+    path('accounts/', include('django.contrib.auth.urls')), # Login real
+    path('dashboard/', views.dashboard, name='panel_negocio'),
+    
+    # 4. RUTAS DE CLIENTE
+    path('reservar/<slug:slug>/', views.booking_page, name='agendar_cita'),
+    path('mi-agenda/', views.client_agenda, name='mi_agenda'),
 
-    # Rutas internas
-    path('accounts/', include('django.contrib.auth.urls')),
+    # 5. HERRAMIENTAS INTERNAS
     path('settings/', views.settings_view, name='settings'),
     path('inventory/', views.inventory_list, name='inventory'),
     path('inventory/add/', views.add_product, name='add_product'),

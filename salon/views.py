@@ -127,3 +127,11 @@ def settings_view(request):
         tenant.bold_api_key = request.POST.get('bold')
         tenant.save()
     return render(request, 'salon/settings.html', {'tenant': tenant})
+
+
+# --- VISTA LANDING PAGE (VENTAS) ---
+def landing_saas_view(request):
+    # Si el usuario ya está logueado y tiene negocio, mejor lo mandamos al dashboard directo
+    if request.user.is_authenticated and request.user.tenants.exists():
+        return redirect('panel_negocio')
+    return render(request, 'salon/landing_saas.html')
