@@ -8,14 +8,12 @@ class Tenant(models.Model):
     subdomain = models.SlugField(unique=True, verbose_name="Identificador (URL)")
     ciudad = models.CharField(max_length=100, default="Tunja", verbose_name="Ciudad")
     direccion = models.CharField(max_length=200, blank=True, null=True, verbose_name="Dirección")
-    # CORREGIDO: Aumentado de 20 a 50
     telefono = models.CharField(max_length=50, blank=True, null=True, verbose_name="Teléfono")
     
     # Redes y Pagos
     instagram = models.URLField(blank=True, null=True, verbose_name="Instagram")
     facebook = models.URLField(blank=True, null=True, verbose_name="Facebook")
     tiktok = models.URLField(blank=True, null=True, verbose_name="TikTok")
-    # CORREGIDO: Aumentado de 20 a 50
     nequi_number = models.CharField(max_length=50, blank=True, null=True, verbose_name="Nequi")
     bold_api_key = models.CharField(max_length=200, blank=True, null=True, verbose_name="API Key Bold")
 
@@ -31,7 +29,6 @@ class Professional(models.Model):
     nombre = models.CharField(max_length=100, verbose_name="Nombre Completo")
     especialidad = models.CharField(max_length=100, blank=True, verbose_name="Especialidad")
     email = models.EmailField(blank=True, null=True, verbose_name="Correo Electrónico")
-    # CORREGIDO: Aumentado de 20 a 50
     telefono = models.CharField(max_length=50, blank=True, null=True, verbose_name="Teléfono")
     
     # Vinculación opcional con usuario de sistema para login
@@ -43,6 +40,23 @@ class Professional(models.Model):
 
     def __str__(self):
         return self.nombre
+
+class HorarioEmpleado(models.Model):
+    """Modelo necesario para la gestión de bloques en services.py"""
+    empleado = models.ForeignKey(Professional, on_delete=models.CASCADE, related_name='horarios', verbose_name="Profesional")
+    dia_semana = models.IntegerField(choices=[
+        (0, 'Lunes'), (1, 'Martes'), (2, 'Miércoles'), (3, 'Jueves'), 
+        (4, 'Viernes'), (5, 'Sábado'), (6, 'Domingo')
+    ], verbose_name="Día de la semana")
+    hora_inicio = models.TimeField(verbose_name="Inicio Jornada")
+    hora_fin = models.TimeField(verbose_name="Fin Jornada")
+    almuerzo_inicio = models.TimeField(blank=True, null=True, verbose_name="Inicio Almuerzo")
+    almuerzo_fin = models.TimeField(blank=True, null=True, verbose_name="Fin Almuerzo")
+
+    class Meta:
+        verbose_name = "Horario Laboral"
+        verbose_name_plural = "Horarios Laborales"
+        unique_together = ('empleado', 'dia_semana')
 
 class Service(models.Model):
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='services')
@@ -83,8 +97,8 @@ class Appointment(models.Model):
     servicio = models.ForeignKey(Service, on_delete=models.CASCADE, verbose_name="Servicio")
     empleado = models.ForeignKey(Professional, on_delete=models.CASCADE, verbose_name="Profesional")
     fecha_hora_inicio = models.DateTimeField(verbose_name="Fecha y Hora")
+    fecha_hora_fin = models.DateTimeField(verbose_name="Fecha Fin", blank=True, null=True) # Agregado para cálculos
     cliente_nombre = models.CharField(max_length=100, verbose_name="Nombre Cliente")
-    # CORREGIDO: Aumentado de 20 a 50
     cliente_telefono = models.CharField(max_length=50, verbose_name="Teléfono Cliente")
     cliente_email = models.EmailField(blank=True, null=True, verbose_name="Email Cliente")
     estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
@@ -96,6 +110,13 @@ class Appointment(models.Model):
 
     def __str__(self):
         return f"{self.cliente_nombre} - {self.fecha_hora_inicio}"
+    
+    def save(self, *args, **kwargs):
+        # Calcular fecha fin automáticamente si no existe
+        if not self.fecha_hora_fin and self.servicio:
+             from datetime import timedelta
+             self.fecha_hora_fin = self.fecha_hora_inicio + timedelta(minutes=self.servicio.duracion)
+        super().save(*args, **kwargs)
 
 class ExternalPayment(models.Model):
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
