@@ -88,7 +88,8 @@
     </header>
     <div class="grid-wrapper" id="salon-grid">
         {% for p in peluquerias %}
-            <a href="{% url 'agendar_cita' p.slug %}" class="salon-card" data-lat="{{ p.latitud|default:'0' }}" data-lon="{{ p.longitud|default:'0' }}" data-ciudad="{{ p.ciudad }}">
+            {# ENLACE CORREGIDO: Se usa el nuevo nombre de URL 'agendar' #}
+            <a href="{% url 'agendar' p.slug %}" class="salon-card" data-lat="{{ p.latitud|default:'0' }}" data-lon="{{ p.longitud|default:'0' }}" data-ciudad="{{ p.ciudad }}">
                 <div class="card-header">
                     <div class="salon-avatar">{{ p.name|first|upper }}</div>
                     <div class="salon-info"><h3>{{ p.name }}</h3><span>{{ p.ciudad|default:"Tunja" }}</span></div>
