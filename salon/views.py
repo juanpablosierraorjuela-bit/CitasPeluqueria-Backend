@@ -20,14 +20,13 @@ logger = logging.getLogger(__name__)
 
 # --- UTILIDADES GEO ---
 def calcular_distancia(lat1, lon1, lat2, lon2):
-    # Fórmula de Haversine simplificada para distancias cortas
-    R = 6371  # Radio de la Tierra en km
+    R = 6371 
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
     a = math.sin(dlat/2) * math.sin(dlat/2) + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2) * math.sin(dlon/2)
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
     d = R * c
-    return d * 1000 # Retorna en metros
+    return d * 1000 
 
 # --- AUTENTICACIÓN ---
 
@@ -61,7 +60,6 @@ def landing_saas(request):
                 if User.objects.filter(username=email).exists(): 
                     raise ValueError("El correo ya está registrado.")
                 
-                # Crear Usuario
                 user = User.objects.create_user(
                     username=request.POST.get('username_owner', email), 
                     email=email, 
@@ -70,7 +68,6 @@ def landing_saas(request):
                     last_name=request.POST.get('apellido_owner')
                 )
                 
-                # Crear Peluquería
                 slug = slugify(request.POST.get('nombre_negocio'))
                 if Peluqueria.objects.filter(slug=slug).exists(): 
                     slug += f"-{int(datetime.now().timestamp())}"
@@ -82,13 +79,11 @@ def landing_saas(request):
                     fecha_inicio_contrato=timezone.now()
                 )
                 
-                # Asignar Perfil (Manejando el conflicto con signal)
                 perfil, created = PerfilUsuario.objects.get_or_create(user=user)
                 perfil.peluqueria = peluqueria
                 perfil.es_dueño = True
                 perfil.save()
                 
-                # Crear Empleado (Dueño también es empleado)
                 Empleado.objects.create(
                     user=user, 
                     peluqueria=peluqueria, 
@@ -98,7 +93,6 @@ def landing_saas(request):
                     activo=True
                 )
             
-            # Notificación Interna Telegram (Opcional)
             config = ConfiguracionPlataforma.objects.first()
             if config and config.telegram_token:
                 try: requests.post(f"https://api.telegram.org/bot{config.telegram_token}/sendMessage", data={"chat_id": config.telegram_chat_id, "text": f"💰 *NUEVO SAAS*\nNegocio: {peluqueria.nombre}", "parse_mode": "Markdown"}, timeout=3)
@@ -119,10 +113,7 @@ def pago_suscripcion_saas(request):
     config = ConfiguracionPlataforma.objects.first()
     monto = config.precio_mensualidad if config else 130000
     
-    # Si ya pagó o tiene periodo de prueba, podría saltar esto.
-    
     if request.method == 'POST':
-        # Intento pago Bold para suscripción
         if config and config.bold_secret_key:
             try:
                 ref = f"SUB-{peluqueria.id}-{int(datetime.now().timestamp())}"
@@ -141,7 +132,6 @@ def pago_suscripcion_saas(request):
             except Exception as e:
                 print(f"Error Bold Suscripcion: {e}")
 
-        # Fallback
         return redirect(config.link_pago_bold) if config else redirect('panel_negocio')
         
     return render(request, 'salon/pago_suscripcion.html', {'monto': monto, 'peluqueria': peluqueria})
@@ -154,7 +144,6 @@ def panel_negocio(request):
     peluqueria = request.user.perfil.peluqueria
     hoy = timezone.localdate()
     
-    # Lógica Fechas Pago
     inicio = peluqueria.fecha_inicio_contrato.date()
     proximo = inicio
     while proximo <= hoy: proximo += relativedelta(months=1)
@@ -164,27 +153,38 @@ def panel_negocio(request):
     if request.method == 'POST':
         accion = request.POST.get('accion')
         
-        if accion == 'guardar_pagos':
+        # --- MEJORA: GUARDAR INFORMACIÓN GENERAL Y REDES ---
+        if accion == 'guardar_general':
+            peluqueria.nombre_visible = request.POST.get('nombre_visible')
+            peluqueria.ciudad = request.POST.get('ciudad')
+            peluqueria.direccion = request.POST.get('direccion')
+            peluqueria.telefono = request.POST.get('telefono')
+            
+            peluqueria.instagram = request.POST.get('instagram')
+            peluqueria.facebook = request.POST.get('facebook')
+            peluqueria.tiktok = request.POST.get('tiktok')
+            
+            if 'logo' in request.FILES: 
+                peluqueria.logo = request.FILES['logo']
+            
+            peluqueria.save()
+            messages.success(request, "Información de perfil actualizada exitosamente.")
+
+        elif accion == 'guardar_pagos':
             peluqueria.porcentaje_abono = int(request.POST.get('porcentaje_abono') or 50)
             peluqueria.bold_api_key = request.POST.get('bold_api_key')
             peluqueria.bold_secret_key = request.POST.get('bold_secret_key')
             peluqueria.nequi_celular = request.POST.get('nequi_celular')
             peluqueria.ofrece_domicilio = request.POST.get('ofrece_domicilio') == 'on'
             peluqueria.comision_domicilio = int(request.POST.get('comision_domicilio') or 10)
+            peluqueria.telegram_token = request.POST.get('telegram_token')
+            peluqueria.telegram_chat_id = request.POST.get('telegram_chat_id')
             
             if 'nequi_qr_imagen' in request.FILES: 
                 peluqueria.nequi_qr_imagen = request.FILES['nequi_qr_imagen']
             
             peluqueria.save()
             messages.success(request, "Configuración financiera actualizada.")
-            
-        elif accion == 'guardar_redes':
-            peluqueria.instagram = request.POST.get('instagram')
-            peluqueria.facebook = request.POST.get('facebook')
-            peluqueria.tiktok = request.POST.get('tiktok')
-            if 'logo' in request.FILES: peluqueria.logo = request.FILES['logo']
-            peluqueria.save()
-            messages.success(request, "Imagen y redes actualizadas.")
 
         return redirect('panel_negocio')
 
@@ -200,7 +200,7 @@ def panel_negocio(request):
         'citas_futuras': citas_futuras, 
         'empleados': peluqueria.empleados.all(), 
         'servicios': peluqueria.servicios.all(),
-        'inventario': peluqueria.inventario.all()[:5], # Mostrar resumen inventario
+        'inventario': peluqueria.inventario.all()[:5],
         'link_invitacion': request.build_absolute_uri(reverse('registro_empleado', args=[peluqueria.slug]))
     }
     return render(request, 'salon/dashboard.html', ctx)
@@ -237,13 +237,10 @@ def mi_agenda(request):
     except: return redirect('login_custom')
     
     if request.method == 'POST':
-        # Guardar Redes del Empleado
         if 'instagram' in request.POST:
             empleado.instagram = request.POST.get('instagram')
             empleado.save()
             messages.success(request, "Perfil actualizado")
-        
-        # Guardar Horario
         else:
             HorarioEmpleado.objects.filter(empleado=empleado).delete()
             for i in range(7):
@@ -286,7 +283,6 @@ def registro_empleado_publico(request, slug_peluqueria):
             if User.objects.filter(username=data['email']).exists(): return render(request, 'salon/registro_empleado.html', {'peluqueria': peluqueria, 'form': form, 'error': 'Correo ya registrado'})
             with transaction.atomic():
                 u = User.objects.create_user(username=data['email'], email=data['email'], password=data['password'], first_name=data['nombre'], last_name=data['apellido'])
-                # Perfil se crea por signal, lo actualizamos
                 u.perfil.peluqueria = peluqueria
                 u.perfil.es_dueño = False
                 u.perfil.save()
@@ -299,25 +295,21 @@ def registro_empleado_publico(request, slug_peluqueria):
 
 def inicio(request):
     peluquerias = Peluqueria.objects.filter(activo_saas=True)
-    
-    # Geolocalización (Filtrado Básico)
     lat = request.GET.get('lat')
     lon = request.GET.get('lon')
     
     if lat and lon:
         try:
             lat, lon = float(lat), float(lon)
-            # Filtrar y ordenar por distancia (en memoria para SQLite, usar PostGIS para prod real)
             p_con_distancia = []
             for p in peluquerias:
                 dist = calcular_distancia(lat, lon, p.latitud, p.longitud)
-                if dist <= 5000: # Mostrar solo a 5km a la redonda (usuario pidió 500m, ampliamos un poco para UX)
+                if dist <= 5000: 
                     p.distancia_aprox = int(dist)
                     p_con_distancia.append(p)
             p_con_distancia.sort(key=lambda x: x.distancia_aprox)
             peluquerias = p_con_distancia
-        except:
-            pass # Si falla lat/lon, muestra todas
+        except: pass
             
     return render(request, 'salon/index.html', {'peluquerias': peluquerias, 'ciudades': Peluqueria.objects.values_list('ciudad', flat=True).distinct()})
 
@@ -332,7 +324,6 @@ def agendar_cita(request, slug_peluqueria):
     
     if request.method == 'POST':
         try:
-            # Validación Políticas
             if not request.POST.get('acepta_politicas'):
                 raise ValueError("Debes aceptar las políticas de cancelación.")
 
@@ -341,7 +332,6 @@ def agendar_cita(request, slug_peluqueria):
             hora = request.POST.get('hora_seleccionada')
             servs_ids = request.POST.getlist('servicios')
             
-            # Validar que si eligió domicilio, el local lo ofrezca
             es_domicilio = request.POST.get('es_domicilio') == 'on'
             if es_domicilio and not peluqueria.ofrece_domicilio:
                  raise ValueError("Este establecimiento no ofrece servicio a domicilio.")
@@ -358,11 +348,8 @@ def agendar_cita(request, slug_peluqueria):
             duracion = sum([s.duracion for s in servs], timedelta())
             precio = sum([s.precio for s in servs])
             
-            # Recargo domicilio si aplica (podría ser lógica futura)
-            
             ini = datetime.strptime(f"{fecha} {hora}", "%Y-%m-%d %H:%M")
             
-            # --- LOCKING DE RESERVA ---
             def _reserva(emp):
                 if Ausencia.objects.filter(empleado=emp, fecha_inicio__lt=ini + duracion, fecha_fin__gt=ini).exists(): 
                     raise ValueError("Estilista ausente")
@@ -377,7 +364,7 @@ def agendar_cita(request, slug_peluqueria):
                     fecha_hora_inicio=ini, 
                     fecha_hora_fin=ini + duracion, 
                     precio_total=precio, 
-                    estado='P',  # Siempre PENDIENTE hasta confirmar pago
+                    estado='P', 
                     metodo_pago=metodo,
                     tipo_cobro=tipo_cobro,
                     es_domicilio=es_domicilio,
@@ -388,19 +375,14 @@ def agendar_cita(request, slug_peluqueria):
             
             cita = BookingManager.ejecutar_reserva_segura(emp_id, _reserva)
             
-            # Redirección según método
             if metodo == 'BOLD' and tiene_bold:
-                # Redirige a vista intermedia para generar link
                 return redirect('procesar_pago_bold', cita_id=cita.id)
-            
             elif metodo == 'NEQUI' and tiene_nequi:
-                cita.enviar_notificacion_telegram() # Avisar intento
+                cita.enviar_notificacion_telegram() 
                 return render(request, 'salon/pago_nequi.html', {'cita': cita, 'peluqueria': peluqueria})
-            
-            else: # Pago en sitio
+            else: 
                 cita.estado = 'C'
                 cita.save()
-                # Descontar Inventario (Si aplica)
                 for s in cita.servicios.all():
                     if s.producto_asociado:
                         p = s.producto_asociado
@@ -432,12 +414,10 @@ def agendar_cita(request, slug_peluqueria):
     })
 
 def confirmacion_cita(request, slug_peluqueria, cita_id):
-    """ Vista genérica de confirmación """
     cita = get_object_or_404(Cita, id=cita_id)
     return render(request, 'salon/confirmacion.html', {'cita': cita})
 
 def procesar_pago_bold(request, cita_id):
-    """ Genera el link de pago y redirige a Bold """
     cita = get_object_or_404(Cita, id=cita_id)
     peluqueria = cita.peluqueria
     
@@ -453,25 +433,11 @@ def procesar_pago_bold(request, cita_id):
             desc = f"Abono {peluqueria.porcentaje_abono}% Cita #{cita.id}"
             
         ref = f"CITA-{cita.id}-{int(datetime.now().timestamp())}"
-        
         url = "https://integrations.api.bold.co/online/link/v1"
-        
-        headers = {
-            "Authorization": f"x-api-key {peluqueria.bold_secret_key}", 
-            "Content-Type": "application/json"
-        }
-        
-        # URL DE RETORNO CLAVE: Debe ser absoluta y pública
+        headers = {"Authorization": f"x-api-key {peluqueria.bold_secret_key}", "Content-Type": "application/json"}
         url_retorno = request.build_absolute_uri(reverse('retorno_bold')) + f"?cita_id={cita.id}"
         
-        payload = {
-            "name": desc, 
-            "description": "Servicio de Belleza", 
-            "amount": monto, 
-            "currency": "COP", 
-            "sku": ref, 
-            "redirection_url": url_retorno
-        }
+        payload = {"name": desc, "description": "Servicio de Belleza", "amount": monto, "currency": "COP", "sku": ref, "redirection_url": url_retorno}
         
         r = requests.post(url, json=payload, headers=headers, timeout=10)
         
@@ -480,27 +446,22 @@ def procesar_pago_bold(request, cita_id):
             cita.save()
             return redirect(r.json()["payload"]["url"])
         else:
-            print(f"Bold Error: {r.status_code} {r.text}") 
             return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'No se pudo generar el link de pago con Bold.'})
             
     except Exception as e:
-        print(f"Bold Excepción: {e}") 
         return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'Error de conexión con la pasarela.'})
 
 def retorno_bold(request): 
-    """ Maneja el retorno del usuario desde Bold """
     cita_id = request.GET.get('cita_id')
-    payment_status = request.GET.get('payment_status') # APPROVED, REJECTED, FAILED
-    
+    payment_status = request.GET.get('payment_status') 
     cita = get_object_or_404(Cita, id=cita_id)
     
     if payment_status == 'APPROVED':
-        if cita.estado != 'C': # Evitar doble confirmación
+        if cita.estado != 'C': 
             cita.estado = 'C'
             cita.abono_pagado = int(cita.precio_total * (cita.peluqueria.porcentaje_abono/100)) if cita.tipo_cobro == 'ABONO' else cita.precio_total
             cita.save()
             
-            # Descuento de Inventario Automático
             for s in cita.servicios.all():
                 if s.producto_asociado:
                     p = s.producto_asociado
@@ -512,7 +473,6 @@ def retorno_bold(request):
             
         return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': '¡Pago Exitoso! Tu cita ha sido confirmada.'})
     else:
-        # Si falló, la cita sigue en 'P' o se marca 'X'
         return render(request, 'salon/confirmacion.html', {'cita': cita, 'mensaje': 'El pago no fue aprobado. Intenta nuevamente.', 'error': True})
 
 def api_obtener_horarios(request):
