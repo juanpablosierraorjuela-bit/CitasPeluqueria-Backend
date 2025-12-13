@@ -1,4 +1,12 @@
+import os
 
+print("--- 🎨 IMPLANTANDO TU DISEÑO Y CONECTANDO RUTAS 🎨 ---")
+
+# 1. PEGAR TU CÓDIGO HTML EXACTO EN LA PORTADA
+# (Creamos el archivo index.html con TU código)
+os.makedirs('salon/templates/salon', exist_ok=True)
+
+html_code = """
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
@@ -136,3 +144,267 @@
     </script>
 </body>
 </html>
+"""
+with open('salon/templates/salon/index.html', 'w', encoding='utf-8') as f:
+    f.write(html_code)
+
+print("✅ Index.html actualizado con TU diseño.")
+
+
+# 2. ADAPTAR EL MODELO PARA QUE TENGA LOS CAMPOS QUE PIDE TU HTML
+# (Añadimos ciudad, redes sociales, latitud, etc.)
+models_code = """from django.db import models
+from django.contrib.auth.models import User
+import uuid
+
+class Tenant(models.Model):
+    users = models.ManyToManyField(User, related_name='tenants')
+    name = models.CharField(max_length=100, verbose_name="Nombre del Salón")
+    subdomain = models.CharField(max_length=100, unique=True, verbose_name="Identificador (Slug)")
+    address = models.CharField(max_length=200, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    
+    # CAMPOS NUEVOS PARA TU DISEÑO
+    ciudad = models.CharField(max_length=100, default="Tunja")
+    latitud = models.FloatField(default=0.0)
+    longitud = models.FloatField(default=0.0)
+    instagram = models.URLField(blank=True)
+    facebook = models.URLField(blank=True)
+    tiktok = models.URLField(blank=True)
+    
+    # Configuración de Pagos
+    nequi_number = models.CharField(max_length=20, blank=True, verbose_name="Nequi del Negocio")
+    bold_api_key = models.CharField(max_length=200, blank=True, verbose_name="Api Key Bold")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # PROPIEDAD MAGICA: Tu HTML pide 'p.slug', nosotros tenemos 'subdomain'.
+    # Esto hace que funcionen igual.
+    @property
+    def slug(self):
+        return self.subdomain
+
+    def __str__(self): return self.name
+
+class Professional(models.Model):
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    name = models.CharField(max_length=100)
+    phone = models.CharField(max_length=20)
+    photo = models.ImageField(upload_to='profesionales/', blank=True, null=True)
+    is_external = models.BooleanField(default=False)
+    commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
+    payment_info = models.TextField(blank=True)
+    telegram_chat_id = models.CharField(max_length=50, blank=True, null=True)
+    invite_token = models.UUIDField(default=uuid.uuid4, editable=False)
+    balance_due = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    def __str__(self): return self.name
+
+class Service(models.Model):
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    duration_min = models.IntegerField(default=30)
+    def __str__(self): return f"{self.name} - ${self.price}"
+
+class Product(models.Model):
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    stock = models.IntegerField(default=0)
+    def __str__(self): return self.name
+
+class Appointment(models.Model):
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
+    professional = models.ForeignKey(Professional, on_delete=models.CASCADE)
+    service = models.ForeignKey(Service, on_delete=models.CASCADE)
+    customer_name = models.CharField(max_length=100)
+    customer_phone = models.CharField(max_length=20)
+    date = models.DateField()
+    time = models.TimeField()
+    status = models.CharField(max_length=20, default='PENDING')
+    is_delivery = models.BooleanField(default=False)
+    address_delivery = models.TextField(blank=True, null=True)
+    def __str__(self): return f"{self.customer_name} - {self.status}"
+
+class ExternalPayment(models.Model):
+    professional = models.ForeignKey(Professional, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    date_paid = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True)
+"""
+with open('salon/models.py', 'w', encoding='utf-8') as f:
+    f.write(models_code)
+print("✅ Models.py actualizado (Ahora soporta ciudades y redes sociales).")
+
+
+# 3. CONECTAR LOS ENLACES (URLS.PY) PARA QUE COINCIDAN CON TU HTML
+urls_code = """from django.urls import path, include
+from . import views
+
+urlpatterns = [
+    # Portada (Tu Diseño)
+    path('', views.public_home, name='home'),
+    
+    # Enlaces que pide tu HTML:
+    path('accounts/login/', views.custom_login, name='landing_saas'), # 'Soy Dueño' va al login
+    path('dashboard/', views.dashboard, name='panel_negocio'),        # 'Mi Negocio' va al dashboard
+    path('reservar/<slug:slug>/', views.booking_page, name='agendar_cita'), # Clic en tarjeta de peluquería
+    path('mi-agenda/', views.client_agenda, name='mi_agenda'),        # 'Mi Agenda' (Cliente)
+
+    # Rutas internas
+    path('accounts/', include('django.contrib.auth.urls')),
+    path('settings/', views.settings_view, name='settings'),
+    path('inventory/', views.inventory_list, name='inventory'),
+    path('inventory/add/', views.add_product, name='add_product'),
+    path('invite-pro/', views.invite_external, name='invite_external'),
+    path('register-external/<uuid:token>/', views.register_external_view, name='register_external'),
+    path('pay-pro/<int:pro_id>/', views.pay_external, name='pay_external'),
+]
+"""
+with open('salon/urls.py', 'w', encoding='utf-8') as f:
+    f.write(urls_code)
+print("✅ Urls.py sincronizado con los nombres de tu HTML (panel_negocio, landing_saas, etc).")
+
+
+# 4. ACTUALIZAR VISTAS PARA QUE TODO FUNCIONE
+views_code = """from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from .models import Tenant, Professional, Service, Product, Appointment, ExternalPayment
+from django.contrib import messages
+from django.db.models import Sum
+from django.contrib.auth.models import User
+from django.contrib.auth import login 
+
+# --- VISTA PORTADA (TU DISEÑO) ---
+def public_home(request):
+    peluquerias = Tenant.objects.all()
+    # Sacamos lista unica de ciudades para el filtro
+    ciudades = peluquerias.values_list('ciudad', flat=True).distinct()
+    return render(request, 'salon/index.html', {'peluquerias': peluquerias, 'ciudades': ciudades})
+
+# --- VISTA PARA AGENDAR (CUANDO DAS CLIC EN UNA TARJETA) ---
+def booking_page(request, slug):
+    # Buscamos por subdomain (que es tu slug)
+    tenant = get_object_or_404(Tenant, subdomain=slug)
+    services = Service.objects.filter(tenant=tenant)
+    pros = Professional.objects.filter(tenant=tenant)
+    return render(request, 'salon/agendar.html', {'tenant': tenant, 'services': services, 'pros': pros})
+
+# --- VISTA LOGIN PERSONALIZADO ---
+def custom_login(request):
+    return redirect('login') # Redirige al login estandar de Django
+
+# --- VISTA AGENDA CLIENTE (Placeholder) ---
+def client_agenda(request):
+    return render(request, 'salon/mi_agenda.html') # Debes crear este html luego
+
+# --- DASHBOARD (PANEL DUEÑO) ---
+@login_required
+def dashboard(request):
+    tenant = Tenant.objects.filter(users=request.user).first()
+    if not tenant:
+        if request.method == 'POST':
+            name = request.POST.get('name')
+            subdomain = request.POST.get('subdomain')
+            try:
+                new_tenant = Tenant.objects.create(name=name, subdomain=subdomain)
+                new_tenant.users.add(request.user)
+                new_tenant.save()
+                messages.success(request, f"¡Bienvenido a {name}!")
+                return redirect('panel_negocio')
+            except:
+                messages.error(request, "ID ocupado.")
+        return render(request, 'salon/create_tenant.html')
+
+    professionals = Professional.objects.filter(tenant=tenant)
+    external_pros = professionals.filter(is_external=True)
+    services = Service.objects.filter(tenant=tenant)
+    products = Product.objects.filter(tenant=tenant)
+    appointments = Appointment.objects.filter(tenant=tenant).order_by('-date')
+    total_sales = appointments.filter(status='COMPLETED').aggregate(Sum('service__price'))['service__price__sum'] or 0
+
+    context = {
+        'tenant': tenant,
+        'professionals': professionals,
+        'external_pros': external_pros,
+        'services': services,
+        'products': products,
+        'appointments': appointments,
+        'total_sales': total_sales,
+        'show_inventory': True,
+        'show_settings': True,
+    }
+    return render(request, 'salon/dashboard.html', context)
+
+# --- OTRAS VISTAS NECESARIAS ---
+@login_required
+def inventory_list(request):
+    tenant = Tenant.objects.filter(users=request.user).first()
+    products = Product.objects.filter(tenant=tenant) if tenant else []
+    return render(request, 'salon/inventory_list.html', {'products': products})
+
+@login_required
+def add_product(request):
+    tenant = Tenant.objects.filter(users=request.user).first()
+    if request.method == 'POST':
+        Product.objects.create(tenant=tenant, name=request.POST.get('name'), price=request.POST.get('price'), stock=request.POST.get('stock'))
+        return redirect('panel_negocio')
+    return render(request, 'salon/add_product.html')
+
+@login_required
+def invite_external(request):
+    tenant = Tenant.objects.filter(users=request.user).first()
+    if request.method == 'POST':
+        pro = Professional.objects.create(tenant=tenant, name=request.POST.get('name'), phone="000", is_external=True, commission_rate=request.POST.get('commission'))
+        domain = request.build_absolute_uri('/')[:-1]
+        link = f"{domain}/register-external/{pro.invite_token}/"
+        messages.success(request, f"Link: {link}")
+        return redirect('panel_negocio')
+    return redirect('panel_negocio')
+
+def register_external_view(request, token):
+    pro = get_object_or_404(Professional, invite_token=token)
+    if request.method == 'POST':
+        phone = request.POST.get('phone')
+        password = request.POST.get('password')
+        pro.phone = phone
+        pro.payment_info = request.POST.get('payment_info')
+        pro.telegram_chat_id = request.POST.get('telegram')
+        if not User.objects.filter(username=phone).exists():
+            user = User.objects.create_user(username=phone, password=password)
+            pro.user = user
+        pro.save()
+        messages.success(request, "Registro Exitoso")
+        return redirect('login')
+    return render(request, 'salon/register_external.html', {'pro': pro})
+
+@login_required
+def pay_external(request, pro_id):
+    pro = get_object_or_404(Professional, id=pro_id)
+    if request.method == 'POST':
+        amount = float(request.POST.get('amount'))
+        ExternalPayment.objects.create(professional=pro, amount=amount)
+        pro.balance_due = float(pro.balance_due) - amount
+        pro.save()
+    return redirect('panel_negocio')
+
+@login_required
+def settings_view(request):
+    tenant = Tenant.objects.filter(users=request.user).first()
+    if request.method == 'POST':
+        tenant.nequi_number = request.POST.get('nequi')
+        tenant.bold_api_key = request.POST.get('bold')
+        tenant.save()
+    return render(request, 'salon/settings.html', {'tenant': tenant})
+"""
+with open('salon/views.py', 'w', encoding='utf-8') as f:
+    f.write(views_code)
+print("✅ Views.py reparado para alimentar tu diseño con datos reales.")
+
+# 5. CREAR ARCHIVOS VACIOS QUE FALTAN PARA QUE NO DE ERROR
+os.makedirs('salon/templates/salon', exist_ok=True)
+with open('salon/templates/salon/agendar.html', 'w') as f: f.write("<h1>Página de Agendamiento (En construcción)</h1>")
+with open('salon/templates/salon/mi_agenda.html', 'w') as f: f.write("<h1>Agenda del Cliente (En construcción)</h1>")
+
+print("--- TODO LISTO ---")

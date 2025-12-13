@@ -1,13 +1,18 @@
 from django.urls import path, include
 from . import views
-from django.contrib.auth import views as auth_views
 
 urlpatterns = [
-    # Rutas de Autenticación (Login/Logout)
-    path('accounts/', include('django.contrib.auth.urls')),
+    # Portada (Tu Diseño)
+    path('', views.public_home, name='home'),
     
-    # Rutas del Sistema
-    path('', views.dashboard, name='dashboard'),
+    # Enlaces que pide tu HTML:
+    path('accounts/login/', views.custom_login, name='landing_saas'), # 'Soy Dueño' va al login
+    path('dashboard/', views.dashboard, name='panel_negocio'),        # 'Mi Negocio' va al dashboard
+    path('reservar/<slug:slug>/', views.booking_page, name='agendar_cita'), # Clic en tarjeta de peluquería
+    path('mi-agenda/', views.client_agenda, name='mi_agenda'),        # 'Mi Agenda' (Cliente)
+
+    # Rutas internas
+    path('accounts/', include('django.contrib.auth.urls')),
     path('settings/', views.settings_view, name='settings'),
     path('inventory/', views.inventory_list, name='inventory'),
     path('inventory/add/', views.add_product, name='add_product'),
