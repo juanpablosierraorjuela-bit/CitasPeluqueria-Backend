@@ -65,12 +65,15 @@
         
         {% if request.user.is_authenticated %}
             {% if request.user.tenants.exists %} 
+                {# CAMBIO 1: Nombre unificado a 'panel_negocio' (OK) #}
                 <a href="{% url 'panel_negocio' %}" class="btn-access">Mi Negocio</a>
             {% else %} 
+                {# CAMBIO 2: Nombre unificado a 'mi_agenda' (OK) #}
                 <a href="{% url 'mi_agenda' %}" class="btn-access">Mi Agenda</a> 
             {% endif %}
         {% else %} 
-            <a href="{% url 'landing_saas' %}" class="btn-access">Soy Dueño</a> 
+            {# CAMBIO 3: 'landing_saas' AHORA ES 'landing_negocio' #}
+            <a href="{% url 'landing_negocio' %}" class="btn-access">Soy Dueño</a> 
         {% endif %}
         
     </nav>
@@ -88,8 +91,8 @@
     </header>
     <div class="grid-wrapper" id="salon-grid">
         {% for p in peluquerias %}
-            {# ENLACE CORREGIDO: Se usa el nuevo nombre de URL 'agendar' #}
-            <a href="{% url 'agendar' p.slug %}" class="salon-card" data-lat="{{ p.latitud|default:'0' }}" data-lon="{{ p.longitud|default:'0' }}" data-ciudad="{{ p.ciudad }}">
+            {# CAMBIO 4 (CRÍTICO): 'agendar' AHORA ES 'agendar_cita' #}
+            <a href="{% url 'agendar_cita' p.slug %}" class="salon-card" data-lat="{{ p.latitud|default:'0' }}" data-lon="{{ p.longitud|default:'0' }}" data-ciudad="{{ p.ciudad }}">
                 <div class="card-header">
                     <div class="salon-avatar">{{ p.name|first|upper }}</div>
                     <div class="salon-info"><h3>{{ p.name }}</h3><span>{{ p.ciudad|default:"Tunja" }}</span></div>
