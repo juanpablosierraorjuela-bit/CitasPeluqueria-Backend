@@ -27,7 +27,6 @@
         .pay-option.selected { border-color: var(--accent); background: #fdf2f8; color: var(--accent); font-weight: bold; }
         .pay-option i { font-size: 1.5rem; }
 
-        /* Opciones de Cobro */
         .cobro-options { display: flex; gap: 10px; margin-top: 15px; display: none; }
         .cobro-option { flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center; cursor: pointer; font-size: 0.9rem; }
         .cobro-option.active { background: var(--accent); color: white; border-color: var(--accent); }
@@ -35,6 +34,11 @@
         .price-summary { margin-top: 20px; padding: 15px; background: #fff1f2; border-radius: 12px; text-align: center; }
         .total-price { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
         .error-msg { background: #fee2e2; color: #b91c1c; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
+
+        /* ESTILO NUEVO: CAJA DE POLÍTICAS */
+        .policy-box { background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px dashed #cbd5e1; margin-top: 20px; font-size: 0.9rem; color: #475569; }
+        .policy-check { display: flex; align-items: flex-start; gap: 10px; margin-top: 10px; font-weight: 600; cursor: pointer; }
+        .policy-check input { width: 20px; height: 20px; accent-color: var(--accent); margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -144,10 +148,16 @@
                     Total a pagar ahora: <div class="total-price" id="final-price">$0</div>
                 </div>
 
-                <p style="font-size:0.8rem; color:#64748b; margin-top:10px; text-align: center;">
-                    * Al reservar aceptas nuestras políticas de cancelación.
-                </p>
-            </div>
+                <div class="policy-box">
+                    <strong><i class="fas fa-info-circle"></i> Política de Cancelación:</strong><br>
+                    <p style="margin: 5px 0;">Si no asistes a tu cita, pierdes el abono realizado. Si deseas reprogramar, debes avisarnos con al menos <strong>4 horas de anticipación</strong>.</p>
+                    
+                    <label class="policy-check">
+                        <input type="checkbox" name="acepta_politicas" required>
+                        <span>He leído y acepto las políticas de cancelación.</span>
+                    </label>
+                </div>
+                </div>
 
             <button type="submit" class="btn-main" id="btn-submit" disabled>CONFIRMAR RESERVA</button>
         </form>
@@ -159,23 +169,13 @@
         let totalServicios = 0;
         const porcentajeAbono = {{ peluqueria.porcentaje_abono }};
 
-        // Autoselección de método de pago al cargar
         document.addEventListener("DOMContentLoaded", function() {
             const sitio = document.getElementById('opt-sitio');
             const bold = document.getElementById('opt-bold');
             const nequi = document.getElementById('opt-nequi');
-            
-            // Si la opción de sitio no existe (porque es pago digital obligatorio)
             if (!sitio) {
-                if (bold) {
-                    setPago(bold, 'BOLD');
-                } else if (nequi) {
-                    setPago(nequi, 'NEQUI');
-                }
-            } else {
-                // Si existe sitio, es el default
-                setPago(sitio, 'SITIO'); 
-            }
+                if (bold) setPago(bold, 'BOLD'); else if (nequi) setPago(nequi, 'NEQUI');
+            } else setPago(sitio, 'SITIO'); 
         });
 
         function toggleService(card, precio) {
@@ -212,7 +212,6 @@
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('contenedor-horas').innerHTML = '';
             
-            // Fetch a la API con la fecha seleccionada
             const res = await fetch(`/api/horarios/?empleado_id=${emp}&fecha=${fecha}&s=${servs.join(',')}`);
             const data = await res.json();
             
@@ -247,7 +246,6 @@
             const divOpciones = document.getElementById('opciones-cobro');
             if (metodo === 'BOLD') {
                 divOpciones.style.display = 'flex'; 
-                // Seleccionar Total por defecto al cambiar a Bold
                 const optTotal = divOpciones.querySelector('.cobro-option');
                 if(optTotal) setTipoCobro('TOTAL', optTotal);
             } else {
