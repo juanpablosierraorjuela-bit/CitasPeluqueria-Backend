@@ -49,9 +49,13 @@ class SalonOwnerAdmin(admin.ModelAdmin):
 
 class HorarioEmpleadoInline(admin.TabularInline):
     model = HorarioEmpleado
-    extra = 0; can_delete = False; min_num = 7; max_num = 7
+    extra = 0
+    can_delete = False
+    min_num = 7
+    max_num = 7
     fields = ('dia_semana', 'hora_inicio', 'hora_fin', 'almuerzo_inicio', 'almuerzo_fin')
-    readonly_fields = ('dia_semana',); def has_add_permission(self, request, obj): return False 
+    readonly_fields = ('dia_semana',)
+    def has_add_permission(self, request, obj): return False 
 
 @admin.register(Empleado)
 class EmpleadoAdmin(SalonOwnerAdmin):
