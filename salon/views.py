@@ -1,137 +1,220 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import Tenant, Professional, Service, Product, Appointment, ExternalPayment
-from django.contrib import messages
-from django.db.models import Sum
 from django.contrib.auth.models import User
-from django.contrib.auth import login 
+from django.contrib import messages
+from django.utils import timezone
+from datetime import datetime, timedelta
 
-# --- VISTA PORTADA (TU DISEÑO) ---
-def public_home(request):
+from .models import Tenant, Professional, Service, Product, Appointment, ExternalPayment, Absence
+from .forms import ConfigNegocioForm, AbsenceForm
+
+# --- Vistas Públicas ---
+
+def landing_saas_view(request):
+    """Página de inicio / Landing Page"""
+    # Lógica simple de geolocalización o listado
+    ciudades = Tenant.objects.values_list('ciudad', flat=True).distinct()
     peluquerias = Tenant.objects.all()
-    # Sacamos lista unica de ciudades para el filtro
-    ciudades = peluquerias.values_list('ciudad', flat=True).distinct()
-    return render(request, 'salon/index.html', {'peluquerias': peluquerias, 'ciudades': ciudades})
+    
+    return render(request, 'salon/index.html', {
+        'ciudades': ciudades,
+        'peluquerias': peluquerias
+    })
 
-# --- VISTA PARA AGENDAR (CUANDO DAS CLIC EN UNA TARJETA) ---
 def booking_page(request, slug):
-    # Buscamos por subdomain (que es tu slug)
+    """Vista pública para que el cliente reserve"""
     tenant = get_object_or_404(Tenant, subdomain=slug)
-    services = Service.objects.filter(tenant=tenant)
-    pros = Professional.objects.filter(tenant=tenant)
-    return render(request, 'salon/agendar.html', {'tenant': tenant, 'services': services, 'pros': pros})
+    servicios = tenant.services.all()
+    profesionales = tenant.professionals.all()
 
-# --- VISTA LOGIN PERSONALIZADO ---
-def custom_login(request):
-    return redirect('login') # Redirige al login estandar de Django
+    if request.method == 'POST':
+        servicio_id = request.POST.get('servicio')
+        profesional_id = request.POST.get('profesional')
+        fecha = request.POST.get('fecha')
+        hora = request.POST.get('hora')
+        
+        # Datos del cliente
+        nombre = request.POST.get('nombre_cliente')
+        telefono = request.POST.get('telefono_cliente')
+        email = request.POST.get('email_cliente')
 
-# --- VISTA AGENDA CLIENTE (Placeholder) ---
-def client_agenda(request):
-    return render(request, 'salon/mi_agenda.html') # Debes crear este html luego
+        try:
+            # Construir fecha hora completa
+            fecha_hora_str = f"{fecha} {hora}"
+            fecha_hora = datetime.strptime(fecha_hora_str, "%Y-%m-%d %H:%M")
+            
+            servicio_obj = Service.objects.get(id=servicio_id)
+            profesional_obj = Professional.objects.get(id=profesional_id)
 
-# --- DASHBOARD (PANEL DUEÑO) ---
+            # Crear la cita
+            cita = Appointment.objects.create(
+                tenant=tenant,
+                servicio=servicio_obj,
+                empleado=profesional_obj,
+                fecha_hora_inicio=fecha_hora,
+                cliente_nombre=nombre,
+                cliente_telefono=telefono,
+                cliente_email=email,
+                precio_total=servicio_obj.precio,
+                estado='confirmada' # O pendiente según tu lógica
+            )
+            messages.success(request, "¡Cita reservada con éxito!")
+            return redirect('confirmacion_reserva', cita_id=cita.id)
+
+        except Exception as e:
+            messages.error(request, f"Error al reservar: {str(e)}")
+            return redirect('agendar_cita', slug=slug)
+
+    return render(request, 'salon/agendar.html', {
+        'tenant': tenant,
+        'servicios': servicios,
+        'profesionales': profesionales
+    })
+
+def confirmation_view(request, cita_id):
+    """Vista de confirmación post-reserva"""
+    cita = get_object_or_404(Appointment, id=cita_id)
+    return render(request, 'salon/confirmacion.html', {
+        'cita': cita,
+        'mensaje': 'Reserva Exitosa'
+    })
+
+# --- Panel de Gestión (Privado) ---
+
 @login_required
 def dashboard(request):
-    tenant = Tenant.objects.filter(users=request.user).first()
+    """Panel principal del dueño"""
+    # Verificar si tiene un Tenant asociado
+    try:
+        tenant = request.user.tenants.first()
+    except:
+        tenant = None
+
     if not tenant:
-        if request.method == 'POST':
-            name = request.POST.get('name')
-            subdomain = request.POST.get('subdomain')
-            try:
-                new_tenant = Tenant.objects.create(name=name, subdomain=subdomain)
-                new_tenant.users.add(request.user)
-                new_tenant.save()
-                messages.success(request, f"¡Bienvenido a {name}!")
-                return redirect('panel_negocio')
-            except:
-                messages.error(request, "ID ocupado.")
-        return render(request, 'salon/create_tenant.html')
+        return redirect('crear_negocio')
 
-    professionals = Professional.objects.filter(tenant=tenant)
-    external_pros = professionals.filter(is_external=True)
-    services = Service.objects.filter(tenant=tenant)
-    products = Product.objects.filter(tenant=tenant)
-    appointments = Appointment.objects.filter(tenant=tenant).order_by('-date')
-    total_sales = appointments.filter(status='COMPLETED').aggregate(Sum('service__price'))['service__price__sum'] or 0
-
+    # Datos para el dashboard
+    citas_hoy = Appointment.objects.filter(
+        tenant=tenant, 
+        fecha_hora_inicio__date=timezone.now().date()
+    ).order_by('fecha_hora_inicio')
+    
     context = {
         'tenant': tenant,
-        'professionals': professionals,
-        'external_pros': external_pros,
-        'services': services,
-        'products': products,
-        'appointments': appointments,
-        'total_sales': total_sales,
-        'show_inventory': True,
-        'show_settings': True,
+        'appointments': citas_hoy,
+        'total_sales': 0, # Implementar lógica de ventas si es necesario
     }
     return render(request, 'salon/dashboard.html', context)
 
-# --- OTRAS VISTAS NECESARIAS ---
 @login_required
-def inventory_list(request):
-    tenant = Tenant.objects.filter(users=request.user).first()
-    products = Product.objects.filter(tenant=tenant) if tenant else []
-    return render(request, 'salon/inventory_list.html', {'products': products})
+def create_tenant_view(request):
+    """Vista para crear el negocio por primera vez"""
+    if request.method == 'POST':
+        form = ConfigNegocioForm(request.POST)
+        if form.is_valid():
+            tenant = form.save(commit=False)
+            tenant.user = request.user
+            tenant.save()
+            messages.success(request, "¡Negocio creado correctamente!")
+            return redirect('panel_negocio')
+    else:
+        form = ConfigNegocioForm()
+    
+    return render(request, 'salon/create_tenant.html', {'form': form})
 
 @login_required
-def add_product(request):
-    tenant = Tenant.objects.filter(users=request.user).first()
-    if request.method == 'POST':
-        Product.objects.create(tenant=tenant, name=request.POST.get('name'), price=request.POST.get('price'), stock=request.POST.get('stock'))
-        return redirect('panel_negocio')
-    return render(request, 'salon/add_product.html')
+def create_professional_view(request):
+    """Crear un nuevo empleado/profesional"""
+    try:
+        tenant = request.user.tenants.first()
+    except:
+        return redirect('inicio')
 
-@login_required
-def invite_external(request):
-    tenant = Tenant.objects.filter(users=request.user).first()
     if request.method == 'POST':
-        pro = Professional.objects.create(tenant=tenant, name=request.POST.get('name'), phone="000", is_external=True, commission_rate=request.POST.get('commission'))
-        domain = request.build_absolute_uri('/')[:-1]
-        link = f"{domain}/register-external/{pro.invite_token}/"
-        messages.success(request, f"Link: {link}")
-        return redirect('panel_negocio')
-    return redirect('panel_negocio')
-
-def register_external_view(request, token):
-    pro = get_object_or_404(Professional, invite_token=token)
-    if request.method == 'POST':
-        phone = request.POST.get('phone')
+        nombre = request.POST.get('nombre')
+        email = request.POST.get('email')
         password = request.POST.get('password')
-        pro.phone = phone
-        pro.payment_info = request.POST.get('payment_info')
-        pro.telegram_chat_id = request.POST.get('telegram')
-        if not User.objects.filter(username=phone).exists():
-            user = User.objects.create_user(username=phone, password=password)
-            pro.user = user
-        pro.save()
-        messages.success(request, "Registro Exitoso")
-        return redirect('login')
-    return render(request, 'salon/register_external.html', {'pro': pro})
+
+        try:
+            # Opcional: Crear usuario de Django para el empleado
+            user_pro = User.objects.create_user(username=email, email=email, password=password)
+            
+            Professional.objects.create(
+                tenant=tenant,
+                nombre=nombre,
+                email=email,
+                user=user_pro
+            )
+            messages.success(request, "Profesional creado correctamente.")
+            return redirect('panel_negocio')
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+
+    return render(request, 'salon/crear_empleado.html')
+
+# --- Gestión de Agenda y Ausencias ---
 
 @login_required
-def pay_external(request, pro_id):
-    pro = get_object_or_404(Professional, id=pro_id)
+def client_agenda(request):
+    """Vista de agenda para el profesional/dueño"""
+    # Si es dueño, ve todo. Si es empleado, ve lo suyo.
+    # Por simplicidad asumimos acceso de dueño:
+    tenant = request.user.tenants.first()
+    citas = Appointment.objects.filter(tenant=tenant).order_by('-fecha_hora_inicio')
+    
+    return render(request, 'salon/mi_agenda.html', {'citas': citas})
+
+@login_required
+def manage_absences(request):
+    """Gestionar bloqueos de horario"""
+    # Identificar profesional asociado al usuario actual
+    try:
+        profesional = Professional.objects.get(user=request.user)
+    except Professional.DoesNotExist:
+        # Si es el dueño, quizás quiera gestionar sus propias ausencias o elegir un pro
+        # Simplificación: Redirigir si no es profesional
+        messages.error(request, "Debes tener un perfil profesional para gestionar ausencias.")
+        return redirect('panel_negocio')
+
     if request.method == 'POST':
-        amount = float(request.POST.get('amount'))
-        ExternalPayment.objects.create(professional=pro, amount=amount)
-        pro.balance_due = float(pro.balance_due) - amount
-        pro.save()
-    return redirect('panel_negocio')
+        form = AbsenceForm(request.POST)
+        if form.is_valid():
+            ausencia = form.save(commit=False)
+            ausencia.professional = profesional
+            ausencia.save()
+            messages.success(request, "Ausencia registrada.")
+            return redirect('mis_ausencias')
+    else:
+        form = AbsenceForm()
+
+    ausencias = Absence.objects.filter(professional=profesional, fecha_inicio__gte=timezone.now())
+    
+    return render(request, 'salon/ausencias.html', {
+        'form': form,
+        'ausencias': ausencias
+    })
+
+@login_required
+def delete_absence(request, absence_id):
+    ausencia = get_object_or_404(Absence, id=absence_id)
+    # Validar permisos (solo el propio profesional o el dueño)
+    if ausencia.professional.user == request.user or request.user.tenants.exists():
+        ausencia.delete()
+        messages.success(request, "Ausencia eliminada.")
+    return redirect('mis_ausencias')
+
+# --- Vistas Placeholder (para evitar errores de importación) ---
 
 @login_required
 def settings_view(request):
-    tenant = Tenant.objects.filter(users=request.user).first()
-    if request.method == 'POST':
-        tenant.nequi_number = request.POST.get('nequi')
-        tenant.bold_api_key = request.POST.get('bold')
-        tenant.save()
-    return render(request, 'salon/settings.html', {'tenant': tenant})
+    return render(request, 'negocio/configuracion.html')
 
+@login_required
+def inventory_view(request):
+    return render(request, 'salon/dashboard.html') # Placeholder
 
-# --- VISTA LANDING PAGE (VENTAS) ---
-def landing_saas_view(request):
-    # Si el usuario ya está logueado y tiene negocio, mejor lo mandamos al dashboard directo
-    if request.user.is_authenticated and request.user.tenants.exists():
-        return redirect('panel_negocio')
-    return render(request, 'salon/landing_saas.html')
+def pay_external(request, pro_id):
+    return render(request, 'salon/pago_bold.html') # Placeholder
+
+def invite_external(request):
+    return render(request, 'salon/registro_empleado.html') # Placeholder
