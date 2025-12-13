@@ -1,29 +1,72 @@
-
 {% extends 'salon/base.html' %}
+{% load static %}
+
+{% block title %}Crear Negocio - PASO{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center mt-5">
-    <div class="col-md-6">
-        <div class="card shadow-lg">
-            <div class="card-header bg-primary text-white text-center">
-                <h3>🚀 Inicia tu Negocio</h3>
+    <div class="col-md-6 col-lg-5">
+        
+        <div class="card shadow-lg border-0 rounded-4">
+            <div class="card-header bg-dark text-white text-center py-4 rounded-top-4">
+                <h3 class="mb-0 fw-bold"><i class="fas fa-rocket me-2"></i>Inicia tu Negocio</h3>
+                <small class="text-white-50">Configura tu espacio en PASO</small>
             </div>
-            <div class="card-body p-4">
-                <p class="text-center text-muted">Aún no tienes un salón registrado. Crea uno para comenzar.</p>
+            
+            <div class="card-body p-5">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <p class="text-center text-muted mb-4">
+                    Aún no tienes un salón registrado bajo tu cuenta.<br>
+                    Crea uno para comenzar a gestionar citas.
+                </p>
+                
                 <form method="POST">
                     {% csrf_token %}
-                    <div class="mb-3">
-                        <label class="form-label">Nombre del Negocio</label>
-                        <input type="text" name="name" class="form-control" placeholder="Ej: Barbería Styles" required>
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Nombre del Negocio</label>
+                        <input type="text" name="name" id="inputName" class="form-control form-control-lg" placeholder="Ej: Barbería Styles" required autocomplete="off">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Identificador (URL)</label>
-                        <input type="text" name="subdomain" class="form-control" placeholder="Ej: styles-bogota" required>
-                        <small class="text-muted">Sin espacios ni tildes.</small>
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Identificador (URL)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light">pasotunja.com/</span>
+                            <input type="text" name="subdomain" id="inputSlug" class="form-control" placeholder="barberia-styles" required>
+                        </div>
+                        <div class="form-text">Este será el enlace único para tus clientes. Sin espacios ni tildes.</div>
                     </div>
-                    <button type="submit" class="btn btn-success w-100 btn-lg">Crear Panel</button>
+                    
+                    <button type="submit" class="btn btn-dark w-100 btn-lg rounded-pill py-3 fw-bold shadow-sm">
+                        Crear Panel de Control
+                    </button>
                 </form>
             </div>
         </div>
+
     </div>
 </div>
+
+<script>
+    document.getElementById('inputName').addEventListener('input', function() {
+        const name = this.value;
+        const slug = name
+            .toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Quitar tildes
+            .replace(/[^a-z0-9\s-]/g, '') // Quitar caracteres raros
+            .trim()
+            .replace(/\s+/g, '-'); // Espacios a guiones
+        
+        document.getElementById('inputSlug').value = slug;
+    });
+</script>
+
 {% endblock %}
