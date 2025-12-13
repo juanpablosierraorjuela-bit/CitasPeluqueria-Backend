@@ -1,334 +1,113 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | {{ peluqueria.nombre_visible }}</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <style>
-        :root {
-            --primary: #0f172a;
-            --secondary: #64748b;
-            --accent: #db2777; 
-            --accent-hover: #be185d;
-            --bg-light: #f8fafc;
-            --sidebar-width: 260px;
-        }
+{% extends 'salon/base.html' %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1>{{ tenant.name }} <span class="badge bg-secondary">Admin</span></h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'settings' %}" class="btn btn-outline-secondary"><i class="fas fa-cog"></i> Configurar</a>
+    </div>
+</div>
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: var(--bg-light);
-            overflow-x: hidden;
-        }
-
-        /* --- SIDEBAR --- */
-        .sidebar {
-            width: var(--sidebar-width);
-            height: 100vh;
-            background: white;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1000;
-            border-right: 1px solid #e2e8f0;
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.3s ease;
-        }
-
-        .brand {
-            padding: 30px 25px;
-            font-size: 1.4rem;
-            font-weight: 800;
-            color: var(--accent);
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .brand-logo {
-            width: 40px; height: 40px; object-fit: contain; border-radius: 8px;
-        }
-
-        .menu {
-            list-style: none;
-            padding: 0 15px;
-            margin: 0;
-            flex-grow: 1;
-        }
-
-        .menu li { margin-bottom: 8px; }
-
-        .menu a {
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            color: var(--secondary);
-            text-decoration: none;
-            border-radius: 12px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .menu a i { width: 25px; font-size: 1.1rem; }
-
-        .menu a:hover, .menu a.active {
-            background-color: #fdf2f8; 
-            color: var(--accent);
-            transform: translateX(5px);
-        }
-
-        .logout-container {
-            padding: 20px;
-            border-top: 1px solid #f1f5f9;
-        }
-        .btn-logout {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            padding: 12px;
-            background: #fee2e2;
-            color: #dc2626;
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: 0.2s;
-        }
-        .btn-logout:hover { background: #fecaca; color: #b91c1c; }
-
-        .main-content {
-            margin-left: var(--sidebar-width);
-            padding: 30px;
-            width: calc(100% - var(--sidebar-width));
-            transition: margin-left 0.3s ease, width 0.3s ease;
-        }
-
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 40px;
-        }
-
-        .welcome-text h1 { font-size: 1.8rem; font-weight: 700; color: var(--primary); margin: 0; }
-        .welcome-text p { color: var(--secondary); margin: 0; }
-
-        .btn-web {
-            background: var(--primary);
-            color: white;
-            padding: 10px 25px;
-            border-radius: 50px;
-            text-decoration: none;
-            font-weight: 600;
-            box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2);
-            transition: 0.3s;
-        }
-        .btn-web:hover { background: var(--accent); transform: translateY(-3px); color: white; }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 25px;
-            border-radius: 20px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.03);
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.3s;
-            border: 1px solid white;
-        }
-        .stat-card:hover { transform: translateY(-5px); border-color: #fce7f3; }
-
-        .stat-card h3 { font-size: 0.9rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
-        .stat-card .number { font-size: 2.5rem; font-weight: 800; color: var(--primary); margin: 10px 0; }
-        .stat-card .link { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
-        
-        .stat-card i.bg-icon {
-            position: absolute;
-            right: -10px;
-            bottom: -10px;
-            font-size: 6rem;
-            opacity: 0.05;
-            color: var(--primary);
-            transform: rotate(-15deg);
-        }
-
-        .mobile-toggle {
-            display: none;
-            font-size: 1.5rem;
-            color: var(--primary);
-            background: none;
-            border: none;
-            cursor: pointer;
-        }
-        
-        /* Alertas de Pagos Pendientes */
-        .alert-pending {
-            background-color: #fff7ed;
-            border: 1px solid #ffedd5;
-            color: #c2410c;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); } 
-            .sidebar.active { transform: translateX(0); }
-            .main-content { margin-left: 0; width: 100%; }
-            .mobile-toggle { display: block; margin-right: 15px; }
-            .overlay {
-                display: none;
-                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                background: rgba(0,0,0,0.5); z-index: 999;
-            }
-            .overlay.active { display: block; }
-        }
-    </style>
-</head>
-<body>
-
-    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
-
-    <aside class="sidebar" id="sidebar">
-        <a href="#" class="brand">
-            {% if peluqueria.logo %}
-                <img src="{{ peluqueria.logo.url }}" alt="Logo" class="brand-logo">
-            {% else %}
-                <i class="fas fa-cut"></i>
-            {% endif %}
-            PASO Manager
-        </a>
-        
-        <ul class="menu">
-            <li><a href="{% url 'panel_negocio' %}" class="active"><i class="fas fa-chart-pie"></i> Resumen</a></li>
-            <li><a href="{% url 'gestionar_servicios' %}"><i class="fas fa-scissors"></i> Servicios</a></li>
-            <li><a href="{% url 'gestionar_equipo' %}"><i class="fas fa-users"></i> Mi Equipo</a></li>
-            <li><a href="{% url 'gestionar_inventario' %}"><i class="fas fa-boxes"></i> Inventario</a></li>
-        </ul>
-
-        <div class="logout-container">
-            <a href="{% url 'logout_usuario' %}" class="btn-logout">
-                <i class="fas fa-sign-out-alt me-2"></i> Cerrar Sesión
-            </a>
-        </div>
-    </aside>
-
-    <main class="main-content">
-        
-        <div class="top-bar">
-            <div class="d-flex align-items-center">
-                <button class="mobile-toggle" onclick="toggleMenu()">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div class="welcome-text">
-                    <h1>Hola, {{ request.user.first_name }} 👋</h1>
-                    <p>Administrando: <strong>{{ peluqueria.nombre_visible }}</strong></p>
-                </div>
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Ventas Totales</h5>
+                <p class="card-text display-6">${{ total_sales }}</p>
             </div>
-            <a href="{% url 'agendar_cita' peluqueria.slug %}" target="_blank" class="btn-web">
-                <i class="fas fa-external-link-alt me-2"></i> Ver mi Web
-            </a>
         </div>
-        
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} mb-4">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-
-        {% if citas_por_confirmar %}
-        <div class="alert-pending">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <i class="fas fa-exclamation-circle me-2"></i>
-                    <strong>Tienes {{ citas_por_confirmar.count }} pagos de Nequi por validar.</strong>
-                </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Citas</h5>
+                <p class="card-text display-6">{{ appointments.count }}</p>
             </div>
-            <div class="mt-3">
-                {% for c in citas_por_confirmar %}
-                <div class="bg-white p-2 rounded mb-2 d-flex justify-content-between align-items-center shadow-sm">
-                    <small>📅 {{ c.fecha_hora_inicio|date:"d M H:i" }} - 👤 {{ c.cliente_nombre }} - 💰 ${{ c.precio_total }}</small>
-                    <a href="{% url 'confirmar_pago_manual' c.id %}" class="btn btn-sm btn-success" onclick="return confirm('¿Confirmas que recibiste el dinero en Nequi?')">Confirmar Pago</a>
-                </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-motorcycle"></i> Domiciliarios Externos</h5>
+        <button class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#inviteModal">
+            <i class="fas fa-plus"></i> Invitar Nuevo
+        </button>
+    </div>
+    <div class="card-body">
+        {% if external_pros %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead><tr><th>Nombre</th><th>Comisión Dueño</th><th>Saldo Pendiente</th><th>Acción</th></tr></thead>
+                <tbody>
+                {% for pro in external_pros %}
+                <tr>
+                    <td>{{ pro.name }}</td>
+                    <td>{{ pro.commission_rate }}%</td>
+                    <td class="text-danger fw-bold">${{ pro.balance_due }}</td>
+                    <td>
+                        <form action="{% url 'pay_external' pro.id %}" method="POST" class="d-flex gap-2">
+                            {% csrf_token %}
+                            <input type="number" name="amount" class="form-control form-control-sm" placeholder="Monto a pagar" style="width: 100px;">
+                            <button type="submit" class="btn btn-sm btn-success">Pagar</button>
+                        </form>
+                    </td>
+                </tr>
                 {% endfor %}
-            </div>
+                </tbody>
+            </table>
         </div>
+        {% else %}
+            <p class="text-muted">No tienes domiciliarios registrados.</p>
         {% endif %}
+    </div>
+</div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <i class="fas fa-calendar-check bg-icon"></i>
-                <h3>Citas Hoy</h3>
-                <div class="number">{{ citas_hoy_count }}</div>
-                <span class="text-muted small">Reservas para hoy</span>
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-boxes"></i> Inventario</h5>
+        <a href="{% url 'inventory' %}" class="btn btn-sm btn-light">Ver Todo</a>
+    </div>
+    <div class="card-body">
+        <form action="{% url 'add_product' %}" method="POST" class="row g-3">
+            {% csrf_token %}
+            <div class="col-md-4"><input type="text" name="name" class="form-control" placeholder="Producto" required></div>
+            <div class="col-md-3"><input type="number" name="price" class="form-control" placeholder="Precio" required></div>
+            <div class="col-md-3"><input type="number" name="stock" class="form-control" placeholder="Stock" required></div>
+            <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Añadir</button></div>
+        </form>
+        <hr>
+        <ul class="list-group">
+        {% for p in products|slice:":5" %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ p.name }}
+                <span class="badge bg-primary rounded-pill">{{ p.stock }} un.</span>
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<div class="modal fade" id="inviteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form class="modal-content" method="POST" action="{% url 'invite_external' %}">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Invitar Domiciliario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-
-            <div class="stat-card">
-                <i class="fas fa-user-friends bg-icon"></i>
-                <h3>Equipo</h3>
-                <div class="number">{{ empleados.count }}</div>
-                <a href="{% url 'gestionar_equipo' %}" class="link">Gestionar <i class="fas fa-arrow-right"></i></a>
+            <div class="modal-body">
+                <label>Nombre del Profesional</label>
+                <input type="text" name="name" class="form-control mb-3" required>
+                <label>Comisión que cobras tú (Dueño) %</label>
+                <input type="number" name="commission" class="form-control" value="20" required>
             </div>
-            
-            <div class="stat-card">
-                <i class="fas fa-boxes bg-icon"></i>
-                <h3>Inventario</h3>
-                <div class="number">{{ inventario_count }}</div>
-                <a href="{% url 'gestionar_inventario' %}" class="link">Administrar <i class="fas fa-arrow-right"></i></a>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Generar Link</button>
             </div>
-        </div>
-        
-        <div class="card p-4 border-0 shadow-sm mb-4">
-             <h5 class="fw-bold mb-3">Configuración del Negocio</h5>
-             <form method="POST" enctype="multipart/form-data">
-                 {% csrf_token %}
-                 <input type="hidden" name="accion" value="guardar_general">
-                 <div class="row g-3">
-                     <div class="col-md-6">
-                         <label class="form-label">Nombre Visible</label>
-                         <input type="text" name="nombre_visible" class="form-control" value="{{ peluqueria.nombre_visible }}">
-                     </div>
-                     <div class="col-md-6">
-                         <label class="form-label">Logo (Transparente Recomendado)</label>
-                         <input type="file" name="logo" class="form-control">
-                     </div>
-                     <div class="col-md-4">
-                         <label class="form-label">Teléfono</label>
-                         <input type="text" name="telefono" class="form-control" value="{{ peluqueria.telefono }}">
-                     </div>
-                     <div class="col-md-4">
-                         <label class="form-label">Instagram</label>
-                         <input type="url" name="instagram" class="form-control" value="{{ peluqueria.instagram|default:'' }}">
-                     </div>
-                     <div class="col-md-4 d-flex align-items-end">
-                         <button type="submit" class="btn btn-primary w-100">Guardar Cambios</button>
-                     </div>
-                 </div>
-             </form>
-        </div>
-
-    </main>
-
-    <script>
-        function toggleMenu() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-        }
-    </script>
-</body>
-</html>
+        </form>
+    </div>
+</div>
+{% endblock %}

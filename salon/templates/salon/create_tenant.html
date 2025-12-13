@@ -1,0 +1,29 @@
+
+{% extends 'salon/base.html' %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card shadow-lg">
+            <div class="card-header bg-primary text-white text-center">
+                <h3>🚀 Inicia tu Negocio</h3>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-center text-muted">Aún no tienes un salón registrado. Crea uno para comenzar.</p>
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Nombre del Negocio</label>
+                        <input type="text" name="name" class="form-control" placeholder="Ej: Barbería Styles" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Identificador (URL)</label>
+                        <input type="text" name="subdomain" class="form-control" placeholder="Ej: styles-bogota" required>
+                        <small class="text-muted">Sin espacios ni tildes.</small>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100 btn-lg">Crear Panel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
