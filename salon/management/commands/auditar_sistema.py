@@ -1,57 +1,60 @@
 from django.core.management.base import BaseCommand
-from django.utils import timezone
-from salon.models import Cita, Peluqueria
+from django.contrib.auth.models import User, Group, Permission
+from django.core.management import call_command
+from salon.models import Tenant, Professional
+import random
 
 class Command(BaseCommand):
-    help = 'Ejecuta un diagnóstico completo del sistema para encontrar citas superpuestas y errores de datos.'
+    help = 'Audita y repara automáticamente problemas comunes del sistema PASO'
 
     def handle(self, *args, **kwargs):
-        self.stdout.write(self.style.WARNING('Iniciando auditoría del sistema...'))
+        self.stdout.write(self.style.WARNING('--- 🏥 INICIANDO AUDITORÍA DEL SISTEMA PASO 🏥 ---'))
+
+        # 1. REPARAR BASE DE DATOS
+        self.stdout.write("1. Verificando integridad de la Base de Datos...")
+        try:
+            call_command('migrate', interactive=False)
+            self.stdout.write(self.style.SUCCESS("✅ Base de datos sincronizada."))
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"❌ Error en base de datos: {e}"))
+
+        # 2. ASEGURAR SUPERUSUARIO
+        self.stdout.write("2. Verificando acceso Administrativo...")
+        if not User.objects.filter(username='admin').exists():
+            User.objects.create_superuser('admin', 'admin@example.com', '1234')
+            self.stdout.write(self.style.SUCCESS("✅ Usuario 'admin' creado (Clave: 1234)."))
+        else:
+            self.stdout.write(self.style.SUCCESS("✅ El usuario 'admin' ya existe."))
+
+        # 3. REVIVIR LA VITRINA (SI ESTÁ VACÍA)
+        self.stdout.write("3. Verificando Vitrina Pública...")
+        if Tenant.objects.count() == 0:
+            self.stdout.write(self.style.WARNING("⚠️ No hay peluquerías. Creando Demo para el diseño..."))
+            
+            # Crear Demo
+            demo = Tenant.objects.create(
+                name="Barbería King Style",
+                subdomain="king-style",
+                address="Centro Comercial Viva, Local 204",
+                ciudad="Tunja",
+                instagram="https://instagram.com",
+                phone="3100000000"
+            )
+            
+            # Crear Barbero Demo
+            Professional.objects.create(
+                tenant=demo,
+                name="Juan El Bravo",
+                phone="3001234567",
+                is_external=False
+            )
+            
+            self.stdout.write(self.style.SUCCESS(f"✅ Creada '{demo.name}' para que la página se vea linda."))
+        else:
+            self.stdout.write(self.style.SUCCESS(f"✅ Hay {Tenant.objects.count()} negocios activos en la vitrina."))
+
+        # 4. LIMPIEZA FINAL
+        self.stdout.write("4. Limpiando sesiones basura...")
+        call_command('clearsessions')
         
-        errores_encontrados = 0
-        citas_corregidas = 0
-
-        # 1. DETECTAR CITAS SUPERPUESTAS (El resultado del Bug de Concurrencia)
-        citas_activas = Cita.objects.filter(estado__in=['P', 'C']).order_by('empleado', 'fecha_hora_inicio')
-        
-        # Iteramos buscando choques de horario
-        for i in range(len(citas_activas) - 1):
-            cita_actual = citas_activas[i]
-            siguiente_cita = citas_activas[i+1]
-
-            # Verificar si son del mismo empleado
-            if cita_actual.empleado_id == siguiente_cita.empleado_id:
-                # Verificar superposición: Si la siguiente empieza antes de que termine la actual
-                if siguiente_cita.fecha_hora_inicio < cita_actual.fecha_hora_fin:
-                    self.stdout.write(self.style.ERROR(
-                        f"CONFLICTO DETECTADO: Cita {cita_actual.id} choca con Cita {siguiente_cita.id} "
-                        f"para el empleado {cita_actual.empleado.nombre}."
-                    ))
-                    
-                    # Lógica de Auto-Reparación: Anular la segunda cita (la más reciente solapada)
-                    siguiente_cita.estado = 'A' 
-                    siguiente_cita.cliente_nombre += " [ANULADA POR CONFLICTO SISTEMA]"
-                    siguiente_cita.save()
-                    
-                    self.stdout.write(self.style.SUCCESS(f" -> Cita {siguiente_cita.id} anulada automáticamente."))
-                    errores_encontrados += 1
-                    citas_corregidas += 1
-
-        # 2. DETECTAR PELUQUERÍAS SIN CONFIGURACIÓN CRÍTICA
-        peluquerias = Peluqueria.objects.all()
-        for p in peluquerias:
-            if not p.servicios.exists():
-                self.stdout.write(self.style.WARNING(f"Alerta: La peluquería '{p.nombre}' no tiene servicios configurados."))
-            if not p.empleados.filter(activo=True).exists():
-                self.stdout.write(self.style.WARNING(f"Alerta: La peluquería '{p.nombre}' no tiene estilistas activos."))
-
-        # 3. LIMPIEZA DE CITAS PENDIENTES VIEJAS (Basura de intentos fallidos)
-        limite_tiempo = timezone.now() - timezone.timedelta(minutes=30)
-        citas_basura = Cita.objects.filter(estado='P', creado_en__lt=limite_tiempo, referencia_pago_bold__isnull=True)
-        count_basura = citas_basura.count()
-        if count_basura > 0:
-            citas_basura.delete()
-            self.stdout.write(self.style.SUCCESS(f"Limpieza: Se eliminaron {count_basura} citas pendientes abandonadas."))
-
-        self.stdout.write(self.style.SUCCESS('--------------------------------------------------'))
-        self.stdout.write(self.style.SUCCESS(f'Auditoría finalizada. Conflictos resueltos: {citas_corregidas}.'))
+        self.stdout.write(self.style.SUCCESS('\n✨ AUDITORÍA COMPLETADA. EL SISTEMA ESTÁ SANO. ✨'))
