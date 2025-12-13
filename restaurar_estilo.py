@@ -1,4 +1,19 @@
+import os
+import django
+from django.conf import settings
 
+# Configurar Django para poder crear datos
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "salon_project.settings")
+django.setup()
+
+from salon.models import Tenant
+
+print("--- 💎 RESTAURANDO TU DISEÑO PREMIUM Y CREANDO DATOS DE EJEMPLO 💎 ---")
+
+# 1. ESCRIBIR TU CÓDIGO HTML EXACTO (CON BLOBS Y ANIMACIONES)
+os.makedirs('salon/templates/salon', exist_ok=True)
+
+html_code = """
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
@@ -110,3 +125,38 @@
     </script>
 </body>
 </html>
+"""
+with open('salon/templates/salon/index.html', 'w', encoding='utf-8') as f:
+    f.write(html_code)
+print("✅ Diseño HTML re-escrito exitosamente.")
+
+
+# 2. ASEGURAR QUE VIEWS.PY CARGA ESTE DISEÑO
+views_update = """
+from django.shortcuts import render, redirect
+from .models import Tenant
+
+def public_home(request):
+    peluquerias = Tenant.objects.all()
+    ciudades = peluquerias.values_list('ciudad', flat=True).distinct()
+    # FORZAMOS que cargue 'index.html' que es tu diseño
+    return render(request, 'salon/index.html', {'peluquerias': peluquerias, 'ciudades': ciudades})
+"""
+# (No sobrescribimos todo views.py para no dañar el dashboard, solo recordamos que use index.html)
+
+
+# 3. CREAR UN SALÓN DE EJEMPLO (Para que la vitrina no se vea vacía)
+if not Tenant.objects.filter(subdomain="salon-demo").exists():
+    t = Tenant.objects.create(
+        name="Barbería Demo Style",
+        subdomain="salon-demo",
+        address="Av. Universitaria #45-10",
+        ciudad="Tunja",
+        instagram="https://instagram.com",
+        phone="3101234567"
+    )
+    print("✅ Creada 'Barbería Demo Style' para que veas tu diseño en acción.")
+else:
+    print("ℹ️ El salón demo ya existe.")
+
+print("\n--- TODO LISTO. SUBIENDO A LA NUBE... ---")
