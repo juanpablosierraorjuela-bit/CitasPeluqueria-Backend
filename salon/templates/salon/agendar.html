@@ -1,1 +1,116 @@
-<h1>Página de Agendamiento (En construcción)</h1>
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Agendar Cita - PASO{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            
+            <div class="card shadow-lg border-0 rounded-3">
+                <div class="card-header bg-dark text-white text-center py-3">
+                    <h4 class="mb-0"><i class="bi bi-calendar-check me-2"></i>Reserva tu Cita</h4>
+                    <small>Elige tu experiencia de belleza</small>
+                </div>
+                
+                <div class="card-body p-4">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="POST" action="" id="bookingForm">
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label for="id_servicio" class="form-label fw-bold">1. ¿Qué servicio deseas?</label>
+                            <select name="servicio" id="id_servicio" class="form-select form-select-lg" required>
+                                <option value="" selected disabled>Selecciona un servicio...</option>
+                                {% for servicio in servicios %}
+                                    <option value="{{ servicio.id }}" data-precio="{{ servicio.precio }}" data-duracion="{{ servicio.duracion }}">
+                                        {{ servicio.nombre }} - ${{ servicio.precio }} ({{ servicio.duracion }} min)
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="id_profesional" class="form-label fw-bold">2. Elige tu profesional</label>
+                            <select name="profesional" id="id_profesional" class="form-select" required>
+                                <option value="" selected disabled>Cualquiera disponible</option>
+                                {% for pro in profesionales %}
+                                    <option value="{{ pro.id }}">{{ pro.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <label for="id_fecha" class="form-label fw-bold">3. Fecha</label>
+                                <input type="date" name="fecha" id="id_fecha" class="form-control" required>
+                            </div>
+                            <div class="col-6">
+                                <label for="id_hora" class="form-label fw-bold">Hora</label>
+                                <input type="time" name="hora" id="id_hora" class="form-control" required>
+                                <div class="form-text text-muted">Horario: 9:00 AM - 8:00 PM</div>
+                            </div>
+                        </div>
+
+                        {% if not user.is_authenticated %}
+                        <div class="card bg-light mb-4 border-0">
+                            <div class="card-body">
+                                <h6 class="card-title fw-bold mb-3">Tus Datos de Contacto</h6>
+                                <div class="mb-3">
+                                    <input type="text" name="nombre_cliente" class="form-control" placeholder="Tu nombre completo" required>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="tel" name="telefono_cliente" class="form-control" placeholder="Tu número de celular" required>
+                                </div>
+                                <div class="mb-0">
+                                    <input type="email" name="email_cliente" class="form-control" placeholder="Tu correo electrónico (opcional)">
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-dark btn-lg">
+                                Confirmar Reserva
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center text-muted py-3">
+                    <small>Gracias por confiar en PASO</small>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 1. Establecer fecha mínima como HOY
+        const fechaInput = document.getElementById('id_fecha');
+        const hoy = new Date().toISOString().split('T')[0];
+        fechaInput.setAttribute('min', hoy);
+
+        // 2. Lógica opcional: Mostrar resumen del precio (si deseas agregar interactividad)
+        const servicioSelect = document.getElementById('id_servicio');
+        
+        servicioSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const precio = selectedOption.getAttribute('data-precio');
+            // Aquí podrías actualizar un elemento HTML para mostrar el total a pagar
+            console.log("Precio seleccionado: " + precio);
+        });
+    });
+</script>
+
+{% endblock %}
