@@ -125,7 +125,7 @@ STATICFILES_DIRS = [
 ]
 
 # Compresión para producción
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # Media (Imágenes subidas por usuarios)
 MEDIA_URL = '/media/'
