@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Tenant, Professional, Service, Product, Appointment, ExternalPayment, Absence
+from .models import Tenant, Professional, Service, Product, Appointment, ExternalPayment, Absence, HorarioEmpleado
 
 @admin.register(Tenant)
 class TenantAdmin(admin.ModelAdmin):
@@ -10,6 +10,11 @@ class TenantAdmin(admin.ModelAdmin):
 class ProfessionalAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'tenant', 'especialidad')
     list_filter = ('tenant',)
+
+@admin.register(HorarioEmpleado)
+class HorarioEmpleadoAdmin(admin.ModelAdmin):
+    list_display = ('empleado', 'dia_semana', 'hora_inicio', 'hora_fin')
+    list_filter = ('empleado',)
 
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
