@@ -6,13 +6,13 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 
 from .models import Tenant, Professional, Service, Product, Appointment, ExternalPayment, Absence
-from .forms import ConfigNegocioForm, AbsenceForm
+# Asegurate de haber creado el archivo forms.py que te puse arriba
+from .forms import ConfigNegocioForm, AbsenceForm 
 
 # --- Vistas Públicas ---
 
 def landing_saas_view(request):
     """Página de inicio / Landing Page"""
-    # Lógica simple de geolocalización o listado
     ciudades = Tenant.objects.values_list('ciudad', flat=True).distinct()
     peluquerias = Tenant.objects.all()
     
@@ -56,7 +56,7 @@ def booking_page(request, slug):
                 cliente_telefono=telefono,
                 cliente_email=email,
                 precio_total=servicio_obj.precio,
-                estado='confirmada' # O pendiente según tu lógica
+                estado='confirmada' 
             )
             messages.success(request, "¡Cita reservada con éxito!")
             return redirect('confirmacion_reserva', cita_id=cita.id)
@@ -84,7 +84,6 @@ def confirmation_view(request, cita_id):
 @login_required
 def dashboard(request):
     """Panel principal del dueño"""
-    # Verificar si tiene un Tenant asociado
     try:
         tenant = request.user.tenants.first()
     except:
@@ -102,7 +101,7 @@ def dashboard(request):
     context = {
         'tenant': tenant,
         'appointments': citas_hoy,
-        'total_sales': 0, # Implementar lógica de ventas si es necesario
+        'total_sales': 0, 
     }
     return render(request, 'salon/dashboard.html', context)
 
@@ -128,7 +127,7 @@ def create_professional_view(request):
     try:
         tenant = request.user.tenants.first()
     except:
-        return redirect('inicio')
+        return redirect('panel_negocio')
 
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
@@ -136,17 +135,20 @@ def create_professional_view(request):
         password = request.POST.get('password')
 
         try:
-            # Opcional: Crear usuario de Django para el empleado
-            user_pro = User.objects.create_user(username=email, email=email, password=password)
-            
-            Professional.objects.create(
-                tenant=tenant,
-                nombre=nombre,
-                email=email,
-                user=user_pro
-            )
-            messages.success(request, "Profesional creado correctamente.")
-            return redirect('panel_negocio')
+            # Check si usuario existe
+            if User.objects.filter(username=email).exists():
+                messages.error(request, "Ya existe un usuario con este correo.")
+            else:
+                user_pro = User.objects.create_user(username=email, email=email, password=password)
+                
+                Professional.objects.create(
+                    tenant=tenant,
+                    nombre=nombre,
+                    email=email,
+                    user=user_pro
+                )
+                messages.success(request, "Profesional creado correctamente.")
+                return redirect('panel_negocio')
         except Exception as e:
             messages.error(request, f"Error: {str(e)}")
 
@@ -157,9 +159,9 @@ def create_professional_view(request):
 @login_required
 def client_agenda(request):
     """Vista de agenda para el profesional/dueño"""
-    # Si es dueño, ve todo. Si es empleado, ve lo suyo.
-    # Por simplicidad asumimos acceso de dueño:
     tenant = request.user.tenants.first()
+    if not tenant:
+        return redirect('crear_negocio')
     citas = Appointment.objects.filter(tenant=tenant).order_by('-fecha_hora_inicio')
     
     return render(request, 'salon/mi_agenda.html', {'citas': citas})
@@ -167,12 +169,10 @@ def client_agenda(request):
 @login_required
 def manage_absences(request):
     """Gestionar bloqueos de horario"""
-    # Identificar profesional asociado al usuario actual
     try:
+        # Intentamos obtener el profesional ligado al usuario logueado
         profesional = Professional.objects.get(user=request.user)
     except Professional.DoesNotExist:
-        # Si es el dueño, quizás quiera gestionar sus propias ausencias o elegir un pro
-        # Simplificación: Redirigir si no es profesional
         messages.error(request, "Debes tener un perfil profesional para gestionar ausencias.")
         return redirect('panel_negocio')
 
@@ -197,13 +197,13 @@ def manage_absences(request):
 @login_required
 def delete_absence(request, absence_id):
     ausencia = get_object_or_404(Absence, id=absence_id)
-    # Validar permisos (solo el propio profesional o el dueño)
-    if ausencia.professional.user == request.user or request.user.tenants.exists():
+    # Validar permisos simple
+    if (ausencia.professional.user == request.user) or (request.user.tenants.exists()):
         ausencia.delete()
         messages.success(request, "Ausencia eliminada.")
     return redirect('mis_ausencias')
 
-# --- Vistas Placeholder (para evitar errores de importación) ---
+# --- Vistas Placeholder ---
 
 @login_required
 def settings_view(request):
@@ -211,10 +211,10 @@ def settings_view(request):
 
 @login_required
 def inventory_view(request):
-    return render(request, 'salon/dashboard.html') # Placeholder
+    return render(request, 'salon/dashboard.html')
 
 def pay_external(request, pro_id):
-    return render(request, 'salon/pago_bold.html') # Placeholder
+    return render(request, 'salon/pago_bold.html')
 
 def invite_external(request):
-    return render(request, 'salon/registro_empleado.html') # Placeholder
+    return render(request, 'salon/registro_empleado.html')
