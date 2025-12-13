@@ -171,4 +171,4 @@ LOGOUT_REDIRECT_URL = 'inicio'
 # --- CONFIGURACION LOGIN AUTOMATICA ---
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'dashboard'
-LOGIN_URL = '/accounts/login/'
+LOGIN_URL = '/accounts/login/' 
