@@ -2,22 +2,22 @@ from django.urls import path, include
 from . import views
 
 urlpatterns = [
-    # 1. PORTADA PRINCIPAL (Buscador de Salones)
+    # 1. PORTADA (Buscador)
     path('', views.public_home, name='home'),
     
-    # 2. LANDING PAGE PARA DUEÑOS (Ventas)
+    # 2. TU LANDING PAGE (Ventas)
     # Al dar clic en "Soy Dueño", vienes aquí:
     path('negocios/', views.landing_saas_view, name='landing_saas'),
     
     # 3. LOGIN Y PANELES
-    path('accounts/', include('django.contrib.auth.urls')), # Login real
+    path('accounts/', include('django.contrib.auth.urls')),
     path('dashboard/', views.dashboard, name='panel_negocio'),
     
     # 4. RUTAS DE CLIENTE
     path('reservar/<slug:slug>/', views.booking_page, name='agendar_cita'),
     path('mi-agenda/', views.client_agenda, name='mi_agenda'),
 
-    # 5. HERRAMIENTAS INTERNAS
+    # 5. HERRAMIENTAS
     path('settings/', views.settings_view, name='settings'),
     path('inventory/', views.inventory_list, name='inventory'),
     path('inventory/add/', views.add_product, name='add_product'),
