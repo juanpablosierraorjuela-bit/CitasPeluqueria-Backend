@@ -8,6 +8,7 @@
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 font-weight=%22bold%22 fill=%22black%22>P</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         :root {
@@ -15,10 +16,7 @@
             --primary: #0f172a;
             --secondary: #64748b;
             --accent: #ec4899;
-            --accent-glow: rgba(236, 72, 153, 0.4);
             --bg-body: #f8fafc;
-            --glass: rgba(255, 255, 255, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.8);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -30,177 +28,111 @@
             min-height: 100vh;
             margin: 0; padding: 0;
             overflow-x: hidden;
-            position: relative;
         }
 
-        /* --- FONDO ANIMADO "AURORA" --- */
+        /* --- FONDO ANIMADO --- */
         .ambient-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
             background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
             overflow: hidden;
         }
-        .blob {
-            position: absolute; filter: blur(80px); opacity: 0.6;
-            animation: float 10s infinite alternate ease-in-out;
-        }
-        .blob-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: #fce7f3; animation-delay: 0s; }
+        .blob { position: absolute; filter: blur(80px); opacity: 0.6; animation: float 10s infinite alternate ease-in-out; }
+        .blob-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: #fce7f3; }
         .blob-2 { bottom: -10%; right: -10%; width: 600px; height: 600px; background: #e0e7ff; animation-delay: -5s; }
         .blob-3 { top: 40%; left: 40%; width: 300px; height: 300px; background: #fae8ff; animation-delay: -2s; }
+        @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(30px, 50px) scale(1.1); } }
 
-        @keyframes float {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(30px, 50px) scale(1.1); }
-        }
-
-        /* --- NAVBAR FLOTANTE --- */
+        /* --- NAVBAR --- */
         .navbar {
             padding: 20px 40px; display: flex; justify-content: space-between; align-items: center;
             position: sticky; top: 0; z-index: 100; 
             background: rgba(255,255,255,0.05); backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255,255,255,0.2);
-            transition: all 0.3s;
+            border-bottom: 1px solid rgba(255,255,255,0.2); transition: all 0.3s;
         }
         .navbar.scrolled { background: rgba(255,255,255,0.9); box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
-
-        .brand-pill {
-            text-decoration: none; font-weight: 800; color: var(--primary); font-size: 1.2rem;
-            display: flex; align-items: center; gap: 8px; letter-spacing: -0.5px;
-        }
+        .brand-pill { text-decoration: none; font-weight: 800; color: var(--primary); font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
         .dot { width: 8px; height: 8px; background: var(--primary); border-radius: 50%; }
-
         .btn-access {
             text-decoration: none; background: var(--primary); color: white;
             padding: 10px 24px; border-radius: 50px; font-size: 0.9rem; font-weight: 600;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2);
         }
         .btn-access:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(15, 23, 42, 0.3); }
 
-        /* --- HERO SECTION --- */
-        header { 
-            text-align: center; padding: 100px 20px 60px; max-width: 900px; margin: 0 auto; 
-            position: relative;
-        }
-        
+        /* --- HERO --- */
+        header { text-align: center; padding: 100px 20px 60px; max-width: 900px; margin: 0 auto; }
         .hero-title { 
             font-size: 4.5rem; font-weight: 800; margin: 0 0 15px; line-height: 1.05; letter-spacing: -2px;
             background: linear-gradient(180deg, #0f172a 20%, #475569 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            opacity: 0; animation: fadeUp 0.8s ease-out forwards;
+            animation: fadeUp 0.8s ease-out forwards;
         }
-        .hero-title span { 
-            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-
-        .hero-subtitle {
-            font-size: 1.25rem; color: var(--secondary); margin-bottom: 30px; line-height: 1.6;
-            opacity: 0; animation: fadeUp 0.8s ease-out 0.2s forwards;
-        }
-
-        /* BOTÓN LEGADO - EFECTO CRISTAL */
+        .hero-title span { background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero-subtitle { font-size: 1.25rem; color: var(--secondary); margin-bottom: 30px; animation: fadeUp 0.8s ease-out 0.2s forwards; }
         .btn-legado {
-            display: inline-flex; align-items: center; gap: 10px;
-            background: rgba(255, 255, 255, 0.4); border: 1px solid rgba(255,255,255,0.6);
-            padding: 12px 28px; border-radius: 50px; text-decoration: none;
-            color: #475569; font-weight: 600; font-size: 0.95rem;
-            transition: all 0.3s ease; backdrop-filter: blur(10px);
-            margin-bottom: 50px;
-            opacity: 0; animation: fadeUp 0.8s ease-out 0.3s forwards;
+            display: inline-flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.4); border: 1px solid rgba(255,255,255,0.6);
+            padding: 12px 28px; border-radius: 50px; text-decoration: none; color: #475569; font-weight: 600;
+            transition: all 0.3s ease; backdrop-filter: blur(10px); margin-bottom: 50px; animation: fadeUp 0.8s ease-out 0.3s forwards;
         }
-        .btn-legado:hover {
-            background: white; border-color: #d4af37; color: #d4af37;
-            box-shadow: 0 10px 30px -10px rgba(212, 175, 55, 0.2); transform: translateY(-3px);
-        }
+        .btn-legado:hover { background: white; border-color: #d4af37; color: #d4af37; transform: translateY(-3px); }
 
-        /* --- BARRA DE BÚSQUEDA FLOTANTE (SUPER WOW) --- */
+        /* --- SEARCH --- */
         .search-container {
-            display: flex; align-items: center; gap: 10px;
-            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px);
-            padding: 8px; border-radius: 50px;
-            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08);
-            border: 1px solid white; width: fit-content; margin: 0 auto 60px;
-            opacity: 0; animation: fadeUp 0.8s ease-out 0.4s forwards;
-            transition: transform 0.3s;
+            display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px);
+            padding: 8px; border-radius: 50px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08); border: 1px solid white;
+            width: fit-content; margin: 0 auto 60px; animation: fadeUp 0.8s ease-out 0.4s forwards; transition: transform 0.3s;
         }
-        .search-container:hover { transform: translateY(-5px); box-shadow: 0 25px 50px -10px rgba(0,0,0,0.12); }
-
-        .city-select {
-            border: none; background: transparent; padding: 12px 20px;
-            font-family: var(--font-main); font-size: 1rem; color: var(--primary);
-            font-weight: 600; outline: none; cursor: pointer; min-width: 200px;
-        }
-
-        .btn-geo {
-            width: 48px; height: 48px; border-radius: 50%; border: none;
-            background: var(--primary); color: white; font-size: 1.2rem;
-            cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center;
-            position: relative; overflow: hidden;
-        }
+        .search-container:hover { transform: translateY(-5px); }
+        .city-select { border: none; background: transparent; padding: 12px 20px; font-family: var(--font-main); font-size: 1rem; color: var(--primary); font-weight: 600; outline: none; cursor: pointer; min-width: 200px; }
+        .btn-geo { width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--primary); color: white; font-size: 1.2rem; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
         .btn-geo:hover { background: var(--accent); transform: rotate(15deg); }
-        .btn-geo::after {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            border-radius: 50%; border: 2px solid rgba(255,255,255,0.5);
-            animation: pulse-ring 2s infinite; opacity: 0;
-        }
-        .btn-geo.searching::after { opacity: 1; }
 
-        @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
-
-        /* --- GRID DE SALONES --- */
-        .grid-wrapper {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 30px; max-width: 1100px; margin: 0 auto; padding: 0 20px 100px;
-        }
+        /* --- GRID --- */
+        .grid-wrapper { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; max-width: 1100px; margin: 0 auto; padding: 0 20px 100px; }
 
         .salon-card {
-            background: white; border-radius: 28px; padding: 25px;
-            box-shadow: 0 10px 30px -5px rgba(0,0,0,0.03); text-decoration: none; color: inherit;
-            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-            border: 1px solid rgba(255,255,255,0.8); position: relative; overflow: hidden;
-            display: block; opacity: 0; animation: fadeUp 0.6s ease-out forwards;
+            background: white; border-radius: 28px; padding: 25px; box-shadow: 0 10px 30px -5px rgba(0,0,0,0.03);
+            text-decoration: none; color: inherit; transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            border: 1px solid rgba(255,255,255,0.8); position: relative; overflow: hidden; display: block;
+            animation: fadeUp 0.6s ease-out forwards;
         }
-        
         .salon-card:hover { transform: translateY(-10px) scale(1.02); box-shadow: 0 25px 50px -10px rgba(0,0,0,0.08); z-index: 10; }
         .salon-card.hidden { display: none; }
 
         .card-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
         
+        /* LOGO MEJORADO */
         .salon-avatar {
-            width: 54px; height: 54px; background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+            width: 60px; height: 60px; /* Tamaño fijo */
+            background: white;
             border-radius: 18px; display: flex; align-items: center; justify-content: center;
-            font-weight: 800; color: #64748b; font-size: 1.4rem; box-shadow: inset 0 2px 5px rgba(255,255,255,0.5);
+            font-weight: 800; color: #64748b; font-size: 1.5rem; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;
+            object-fit: contain; /* Clave para no deformar logos */
+            padding: 5px; /* Espacio para que respire */
         }
-
+        
         .salon-info h3 { margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--primary); }
         .salon-info span { font-size: 0.85rem; color: #94a3b8; font-weight: 600; }
+        .address { font-size: 0.95rem; color: var(--secondary); margin-bottom: 15px; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .address { font-size: 0.95rem; color: var(--secondary); margin-bottom: 20px; line-height: 1.5; }
-
-        .status-pill {
-            font-size: 0.75rem; font-weight: 800; padding: 8px 16px; border-radius: 30px;
-            display: inline-flex; align-items: center; gap: 8px; letter-spacing: 0.5px;
-        }
+        .status-pill { font-size: 0.75rem; font-weight: 800; padding: 8px 16px; border-radius: 30px; display: inline-flex; align-items: center; gap: 8px; }
         .status-pill.open { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-        .status-pill.open::before { content:''; width:8px; height:8px; background:#16a34a; border-radius:50%; box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2); }
-        
+        .status-pill.open::before { content:''; width:8px; height:8px; background:#16a34a; border-radius:50%; }
         .status-pill.closed-online { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
 
-        /* FOOTER */
-        footer { text-align: center; padding: 40px; color: #94a3b8; font-size: 0.85rem; position: relative; z-index: 1; }
-
-        /* ANIMACIONES */
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* ICONOS REDES SOCIALES (NUEVO) */
+        .social-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .social-icon {
+            width: 30px; height: 30px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: #f1f5f9; color: var(--secondary);
+            font-size: 0.9rem; transition: 0.2s; text-decoration: none;
         }
+        .social-icon:hover { background: var(--accent); color: white; transform: translateY(-2px); }
 
-        @media (max-width: 768px) {
-            .hero-title { font-size: 3rem; }
-            .search-container { width: 100%; }
-            .city-select { width: 100%; flex: 1; }
-            .navbar { padding: 15px 20px; }
-        }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 768px) { .hero-title { font-size: 3rem; } .search-container { width: 100%; } .city-select { width: 100%; } .navbar { padding: 15px 20px; } }
     </style>
 </head>
 <body>
@@ -212,10 +144,7 @@
     </div>
 
     <nav class="navbar" id="navbar">
-        <a href="https://pasotunja.com" target="_blank" class="brand-pill">
-            <div class="dot"></div> PASO
-        </a>
-        
+        <a href="https://pasotunja.com" target="_blank" class="brand-pill"><div class="dot"></div> PASO</a>
         {% if request.user.is_authenticated %}
             {% if request.user.perfil.es_dueño %}
                 <a href="{% url 'panel_negocio' %}" class="btn-access">Mi Negocio</a>
@@ -230,34 +159,27 @@
     <header>
         <h1 class="hero-title">Tu estilo,<br><span>tu tiempo.</span></h1>
         <p class="hero-subtitle">Reserva en los mejores salones y barberías cerca de ti.<br>Sin llamadas, sin esperas.</p>
-        
-        <a href="https://pasotunja.com/nuestro-legado/?v=9d69c558f982" target="_blank" class="btn-legado">
-            📖 Conoce nuestro legado
-        </a>
-
+        <a href="https://pasotunja.com/nuestro-legado/?v=9d69c558f982" target="_blank" class="btn-legado">📖 Conoce nuestro legado</a>
         <div class="search-container">
             <select id="city-selector" class="city-select" onchange="filtrarCiudad(this.value)">
                 <option value="">🌎 Ver todas las ciudades</option>
-                {% for c in ciudades %}
-                    <option value="{{ c }}">📍 {{ c }}</option>
-                {% endfor %}
+                {% for c in ciudades %}<option value="{{ c }}">📍 {{ c }}</option>{% endfor %}
             </select>
-            
-            <button class="btn-geo" onclick="usarUbicacion()" title="Buscar cerca de mí">
-                📍
-            </button>
+            <button class="btn-geo" onclick="usarUbicacion()" title="Buscar cerca de mí">📍</button>
         </div>
     </header>
 
     <div class="grid-wrapper" id="salon-grid">
         {% for p in peluquerias %}
-            <a href="{% url 'agendar_cita' p.slug %}" class="salon-card" 
-               data-lat="{{ p.latitud|stringformat:'.6f' }}" 
-               data-lon="{{ p.longitud|stringformat:'.6f' }}"
-               data-ciudad="{{ p.ciudad }}">
+            <a href="{% url 'agendar_cita' p.slug %}" class="salon-card" data-lat="{{ p.latitud|stringformat:'.6f' }}" data-lon="{{ p.longitud|stringformat:'.6f' }}" data-ciudad="{{ p.ciudad }}">
                 
                 <div class="card-header">
-                    <div class="salon-avatar">{{ p.nombre_visible|first|upper }}</div>
+                    {% if p.logo %}
+                        <img src="{{ p.logo.url }}" class="salon-avatar" alt="Logo {{ p.nombre_visible }}">
+                    {% else %}
+                        <div class="salon-avatar">{{ p.nombre_visible|first|upper }}</div>
+                    {% endif %}
+                    
                     <div class="salon-info">
                         <h3>{{ p.nombre_visible }}</h3>
                         <span>{{ p.ciudad }}</span>
@@ -265,6 +187,19 @@
                 </div>
                 
                 <p class="address">{{ p.direccion|default:"Ubicación pendiente" }}</p>
+
+                {% if p.instagram or p.facebook or p.tiktok %}
+                <div class="social-row" onclick="event.stopPropagation();"> {% if p.instagram %}
+                        <object><a href="{{ p.instagram }}" target="_blank" class="social-icon" title="Instagram"><i class="fab fa-instagram"></i></a></object>
+                    {% endif %}
+                    {% if p.facebook %}
+                        <object><a href="{{ p.facebook }}" target="_blank" class="social-icon" title="Facebook"><i class="fab fa-facebook-f"></i></a></object>
+                    {% endif %}
+                    {% if p.tiktok %}
+                        <object><a href="{{ p.tiktok }}" target="_blank" class="social-icon" title="TikTok"><i class="fab fa-tiktok"></i></a></object>
+                    {% endif %}
+                </div>
+                {% endif %}
                 
                 <div style="display:flex; justify-content: space-between; align-items: center;">
                     <div style="display:flex; gap:8px;">
@@ -272,7 +207,6 @@
                             <div class="status-pill open">ABIERTO</div>
                         {% else %}
                             <div class="status-pill" style="background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;">CERRADO</div>
-                            <div class="status-pill closed-online">🌙 AGENDA 24/7</div>
                         {% endif %}
                     </div>
                     <span style="font-size:1.2rem; color:#cbd5e1;">→</span>
@@ -286,77 +220,32 @@
         {% endfor %}
     </div>
 
-    <footer>
-        &copy; 2026 PASO Manager. Todos los derechos reservados.
-    </footer>
+    <footer>&copy; 2026 PASO Manager. Todos los derechos reservados.</footer>
 
     <script>
-        // Efecto Navbar
-        window.addEventListener('scroll', () => {
-            document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20);
-        });
-
-        // 1. Filtrar por Ciudad (Dropdown)
+        window.addEventListener('scroll', () => { document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20); });
         function filtrarCiudad(ciudad) {
             document.querySelectorAll('.salon-card').forEach(card => {
-                const cardCity = card.dataset.ciudad;
-                if (ciudad === "" || cardCity === ciudad) {
-                    card.classList.remove('hidden');
-                } else {
-                    card.classList.add('hidden');
-                }
+                if (ciudad === "" || card.dataset.ciudad === ciudad) card.classList.remove('hidden');
+                else card.classList.add('hidden');
             });
         }
-
-        // 2. Filtrar por Geolocalización (Botón Icono)
-        function getDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; 
-            const dLat = (lat2-lat1) * Math.PI/180;
-            const dLon = (lon2-lon1) * Math.PI/180;
-            const a = Math.sin(dLat/2)*Math.sin(dLat/2) +
-                      Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)* Math.sin(dLon/2)*Math.sin(dLon/2);
-            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
-        }
-
         function usarUbicacion() {
-            const btn = document.querySelector('.btn-geo');
-            btn.classList.add('searching'); // Activa animación
-            
-            if(!navigator.geolocation) { 
-                alert("GPS no soportado."); 
-                btn.classList.remove('searching');
-                return; 
-            }
-            
+            if(!navigator.geolocation) { alert("GPS no soportado."); return; }
             navigator.geolocation.getCurrentPosition(pos => {
-                const myLat = pos.coords.latitude;
-                const myLon = pos.coords.longitude;
-                let count = 0;
-
-                // Resetear dropdown visualmente
-                document.getElementById('city-selector').value = "";
-
+                const myLat = pos.coords.latitude, myLon = pos.coords.longitude;
+                let count = 0; document.getElementById('city-selector').value = "";
                 document.querySelectorAll('.salon-card').forEach(card => {
-                    const sLat = parseFloat(card.dataset.lat);
-                    const sLon = parseFloat(card.dataset.lon);
-                    const dist = getDistance(myLat, myLon, sLat, sLon);
-                    
-                    // Radio de 1.5 km para ser un poco más flexible
-                    if(dist <= 1.5) { 
-                        card.classList.remove('hidden'); 
-                        count++; 
-                    } else {
-                        card.classList.add('hidden');
-                    }
+                    const dist = getDistance(myLat, myLon, parseFloat(card.dataset.lat), parseFloat(card.dataset.lon));
+                    if(dist <= 1.5) { card.classList.remove('hidden'); count++; } else card.classList.add('hidden');
                 });
-                
-                btn.classList.remove('searching');
                 if(count === 0) alert("No encontramos salones a menos de 1.5km.");
-                
-            }, err => {
-                alert("Necesitamos permiso de ubicación.");
-                btn.classList.remove('searching');
-            });
+            }, () => alert("Necesitamos permiso de ubicación."));
+        }
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+            const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)* Math.sin(dLon/2)*Math.sin(dLon/2);
+            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
         }
     </script>
 </body>
