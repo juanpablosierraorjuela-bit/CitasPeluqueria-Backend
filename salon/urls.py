@@ -29,8 +29,8 @@ urlpatterns = [
 
     # Panel Dueño
     path('negocio/dashboard/', views.panel_negocio, name='panel_negocio'),
-    path('negocio/confirmar-pago/<int:cita_id>/', views.confirmar_pago_manual, name='confirmar_pago_manual'), # NUEVO
-    path('negocio/inventario/', views.gestionar_inventario, name='gestionar_inventario'), # NUEVO
+    path('negocio/confirmar-pago/<int:cita_id>/', views.confirmar_pago_manual, name='confirmar_pago_manual'), 
+    path('negocio/inventario/', views.gestionar_inventario, name='gestionar_inventario'), 
     path('negocio/servicios/', views.gestionar_servicios, name='gestionar_servicios'),
     path('negocio/servicios/eliminar/<int:servicio_id>/', views.eliminar_servicio, name='eliminar_servicio'),
     path('negocio/equipo/', views.gestionar_equipo, name='gestionar_equipo'),
@@ -41,6 +41,6 @@ urlpatterns = [
     path('mi-agenda/ausencias/borrar/<int:ausencia_id>/', views.eliminar_ausencia, name='eliminar_ausencia'),
 ]
 
-# Configuración para servir imágenes en desarrollo (Arregla bug visual de logos)
+# --- ESTO ES CRÍTICO PARA VER LOS LOGOS ---
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
